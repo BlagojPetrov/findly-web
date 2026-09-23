@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-24
 - **Current phase:** Phase 2 — Authentication (in progress)
-- **Next step:** P2.S5 (§22)
+- **Next step:** P2.S9 (§22) — moved before P2.S5
 
 ---
 
@@ -126,7 +126,7 @@ to these IDs. "Next step" always means the step named in
 | P2.S6  | Forgot / reset password                        | `NOT STARTED` |
 | P2.S7  | Google OAuth                                   | `NOT STARTED` |
 | P2.S8  | Profile page and avatar upload                 | `NOT STARTED` |
-| P2.S9  | SMTP and email templates (manual)              | `NOT STARTED` |
+| P2.S9  | SMTP setup (manual) — done before P2.S5        | `IN PROGRESS` |
 | P2.S10 | GitHub remote and first Vercel deployment      | `IN PROGRESS` |
 | P3.S1  | Items and images schema                        | `NOT STARTED` |
 | P3.S2  | Item images storage bucket                     | `NOT STARTED` |
@@ -1183,7 +1183,7 @@ reset their password and edit their profile; protected routes work.
 - **Sub-steps:**
   1. Route handler: `verifyOtp({ type, token_hash })`, redirect to a safe `next` or to an error state.
   2. `/verify-email` page: "check your inbox" + resend button (cooldown 60 s).
-  3. Manual: Site URL and redirect URLs; "Confirm signup" template link → `{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/dashboard`.
+  3. Manual: "Confirm signup" template (bilingual mk/en) with link → `{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/dashboard` (URL configuration is already done in P2.S9).
 - **Verify:** new account → email link → signed in and redirected; expired/reused link shows an error page; resend works. (Until P2.S9 the built-in SMTP delivers only to the project team's addresses, so test with your own address.)
 
 #### P2.S6 — Forgot / reset password — `NOT STARTED`
@@ -1210,12 +1210,30 @@ reset their password and edit their profile; protected routes work.
 - **Sub-steps:** edit display name and preferred language; avatar upload (resize to 256 px WebP, path `{uid}/avatar.webp`, upsert); change password for email users; show sign-in method; add "Profile" to the user menu and show the avatar there.
 - **Verify:** changes persist; another user cannot overwrite your avatar (storage policy test); invalid names rejected.
 
-#### P2.S9 — SMTP and email templates (manual) — `NOT STARTED`
+#### P2.S9 — SMTP setup (manual) — `IN PROGRESS`
 
-- **Depends on:** P2.S5, P2.S6.
-- **Sub-steps:** create a Brevo or Resend account (free); SMTP settings in Supabase → Auth → SMTP; sender name "Findly"; bilingual (mk first, then en) templates for confirm signup, reset password, email change.
-- **Also:** after enabling SMTP, raise "Rate limit for sending emails" in Supabase → Authentication → Rate Limits (the built-in mailer's tiny quota caused F-15).
-- **Verify:** confirmation email reaches an address that is not a Supabase team member; links work; email does not land in spam (check once).
+> **Order changed (2026-09-24):** done right after P2.S4 and before P2.S5, because
+> the built-in mailer's quota blocked registration (F-15). Email **templates**
+> moved into the steps that need them: confirm-signup template → P2.S5,
+> reset-password template → P2.S6.
+
+- **Depends on:** P2.S4.
+- **Provider:** Brevo free plan (300 emails/day, SMTP relay, a single verified
+  sender address is enough — no own domain needed). Resend was not chosen: without
+  a verified domain it only delivers to the account owner's own address.
+- **Sub-steps (manual, dashboard):**
+  1. Brevo: create account, verify a sender address, generate an SMTP key.
+  2. Supabase → Authentication → Emails → SMTP Settings: enable custom SMTP
+     (host `smtp-relay.brevo.com`, port 587, Brevo SMTP login + key, sender
+     name "Findly", sender email = verified Brevo sender).
+  3. Supabase → Authentication → Rate Limits: raise "Rate limit for sending emails"
+     (e.g. 30/hour).
+  4. Supabase → Authentication → URL Configuration: Site URL
+     `http://localhost:3000`, redirect URL `http://localhost:3000/**`.
+- **Verify:** register in the app with an address that is **not** a Supabase team
+  member; the email arrives (check spam once); `auth.users.confirmation_sent_at` is
+  set; the link confirms the address (`email_confirmed_at` set). No code changes
+  in this step.
 
 #### P2.S10 — GitHub remote and first Vercel deployment — `IN PROGRESS`
 
@@ -1634,23 +1652,26 @@ started (no auth code or profile tables exist yet).
 | 2026-09-24 | P2.S2     | `profiles`, sign-up trigger, `private.is_admin/can_write`, `current_profile()`, column-level privileges, SQL test runner. |
 | 2026-09-24 | P2.S3     | `getCurrentUser`/`requireUser`/`requireAdmin` (server-only DAL), route rules in `auth-routes.ts`, proxy auth redirects.   |
 | 2026-09-24 | P2.S4     | Login, register and verify-email pages, auth actions, form components, user menu; 3 bugs found in browser testing fixed.  |
+| 2026-09-24 | plan      | P2.S9 (SMTP) moved before P2.S5; email templates moved into P2.S5/P2.S6; Brevo chosen.                                    |
 | 2026-09-24 | P2.S4 fix | Diagnosed sign-up 429 (project email quota, F-15); `email_rate_limited` error code; operational auth errors logged.       |
 
 ---
 
 ## 25. Next Recommended Step
 
-**P2.S5 — Email verification** (see §22, Phase 2).
+**P2.S9 — SMTP setup** (see §22, Phase 2), moved before P2.S5.
 
-Why next: users can register, but the confirmation link does not sign them in
-yet and there is no way to resend it.
+Why next: the built-in Supabase mailer's quota blocks registration (F-15). P2.S5
+starts only after SMTP is configured and a real registration email has been
+received and confirmed.
 
-Open items from P2.S4 (manual, not blocking P2.S5):
+Then: **P2.S5 — Email verification.**
+
+Open items from P2.S4 (manual):
 
 - Set the minimum password length to 8 in the Supabase dashboard (F-07).
 - Decide on locale detection (F-13).
 
 Manual preparation you can do in parallel:
 
-- Create a Brevo or Resend account for SMTP (needed in P2.S9).
 - Create a Google Cloud project for OAuth (needed in P2.S7).

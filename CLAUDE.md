@@ -22,7 +22,7 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S4 done. Next: P2.S5.
+- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S4 done. Next: P2.S9 (SMTP, moved before P2.S5), then P2.S5.
 - Open manual items: minimum password length 8 in the Supabase dashboard (F-07);
   decision on next-intl locale detection (F-13).
 - Supabase dev project `lyvudeaxwibgpqsinqyz` (eu-central-1, Postgres 17), linked.
