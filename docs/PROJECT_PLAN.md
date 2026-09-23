@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-24
 - **Current phase:** Phase 2 — Authentication (in progress)
-- **Next step:** P2.S4 (§22)
+- **Next step:** P2.S5 (§22)
 
 ---
 
@@ -121,7 +121,7 @@ to these IDs. "Next step" always means the step named in
 | P2.S1  | Test tooling and action conventions            | `COMPLETED`   |
 | P2.S2  | Profiles table, helper functions, RLS          | `COMPLETED`   |
 | P2.S3  | Auth helpers and route protection              | `COMPLETED`   |
-| P2.S4  | Register and login (email/password)            | `NOT STARTED` |
+| P2.S4  | Register and login (email/password)            | `COMPLETED`   |
 | P2.S5  | Email verification                             | `NOT STARTED` |
 | P2.S6  | Forgot / reset password                        | `NOT STARTED` |
 | P2.S7  | Google OAuth                                   | `NOT STARTED` |
@@ -216,28 +216,28 @@ Firestore rules covering only `items`, single image, no coordinates or event dat
 
 ## 4. Architectural decisions
 
-| ID    | Decision                                                                                                                                                            | Reason                                                                                              |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| AD-01 | Next.js 16 App Router + TypeScript, no separate backend.                                                                                                            | One codebase, Server Components/Actions cover the API needs.                                        |
-| AD-02 | Supabase for Postgres, Auth, Storage and Realtime.                                                                                                                  | Free tier, SQL + RLS, all needed services in one place.                                             |
-| AD-03 | Business logic that needs data consistency (search, matching, notification creation) lives in Postgres functions and triggers.                                      | Works no matter which client writes; no queue/worker needed; easy to explain in the thesis.         |
-| AD-04 | Reads in Server Components; writes via Server Actions validated with Zod. Route Handlers only where a URL endpoint is required (auth callbacks, optional webhooks). | Single, consistent write path; validation on the server.                                            |
-| AD-05 | RLS is the authorization layer. Server code checks auth for UX and early errors, but correctness never depends on it.                                               | Defense in depth; Supabase grants table privileges to `anon`/`authenticated` by default (see F-03). |
-| AD-06 | Only the publishable key is used in the app. No secret/service-role key in the Next.js app.                                                                         | Every request runs as the real user under RLS. Privileged work happens in `security definer` SQL.   |
-| AD-07 | Migrations in `supabase/migrations/`, applied with `supabase db push` to hosted projects. No local Supabase stack.                                                  | Local stack needs Docker, which is out of scope.                                                    |
-| AD-08 | next-intl with `localePrefix: "as-needed"`: Macedonian at `/`, English at `/en`.                                                                                    | Macedonian is the primary audience; both languages indexable by search engines.                     |
-| AD-09 | Locations stored as PostGIS `geography(Point, 4326)`.                                                                                                               | Correct distances in meters, indexed radius queries (`ST_DWithin`).                                 |
-| AD-10 | Search: normalized text (lowercase, unaccent, Cyrillic→Latin transliteration) with full-text search + trigram similarity.                                           | Postgres has no Macedonian dictionary; users mix Cyrillic and Latin spelling.                       |
-| AD-11 | Matching is a deterministic weighted score (category, distance, date, text) with a stored breakdown.                                                                | Explainable to users and to the thesis committee; tunable.                                          |
-| AD-12 | In-app notifications stored in a table and pushed with Supabase Realtime. No web push.                                                                              | History + live updates without service workers.                                                     |
-| AD-13 | Leaflet + OpenStreetMap tiles, Nominatim geocoding called from the browser (debounced, ≤1 req/s).                                                                   | Free, no API keys.                                                                                  |
-| AD-14 | shadcn/ui (Base UI primitives, `cn` package) for components; Tailwind 4 tokens in `globals.css`.                                                                    | Owned component code, consistent design.                                                            |
-| AD-15 | Forms use React 19 `useActionState` + Server Actions; no form library.                                                                                              | Fewer dependencies; progressive enhancement.                                                        |
-| AD-16 | Server Actions return typed results with **error codes**, not translated strings; the UI translates.                                                                | Keeps i18n in one place.                                                                            |
-| AD-17 | Images compressed in the browser (canvas → WebP, max 1600 px) before upload to Supabase Storage.                                                                    | Free tier has 1 GB storage; faster uploads.                                                         |
-| AD-18 | Two Supabase projects: the current one for development, a separate one for production (created in P11.S5).                                                          | Test data and destructive tests never touch production. Free tier allows 2 projects.                |
-| AD-19 | Font Inter (latin + cyrillic) via `next/font`, exposed as `--font-inter`; `--font-sans` points to it.                                                               | Geist has no Cyrillic glyphs.                                                                       |
-| AD-20 | Item URLs are `/items/<uuid>` (no slug).                                                                                                                            | Stable links; title goes in metadata. Revisit only if SEO requires it.                              |
+| ID    | Decision                                                                                                                                                            | Reason                                                                                                          |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| AD-01 | Next.js 16 App Router + TypeScript, no separate backend.                                                                                                            | One codebase, Server Components/Actions cover the API needs.                                                    |
+| AD-02 | Supabase for Postgres, Auth, Storage and Realtime.                                                                                                                  | Free tier, SQL + RLS, all needed services in one place.                                                         |
+| AD-03 | Business logic that needs data consistency (search, matching, notification creation) lives in Postgres functions and triggers.                                      | Works no matter which client writes; no queue/worker needed; easy to explain in the thesis.                     |
+| AD-04 | Reads in Server Components; writes via Server Actions validated with Zod. Route Handlers only where a URL endpoint is required (auth callbacks, optional webhooks). | Single, consistent write path; validation on the server.                                                        |
+| AD-05 | RLS is the authorization layer. Server code checks auth for UX and early errors, but correctness never depends on it.                                               | Defense in depth; Supabase grants table privileges to `anon`/`authenticated` by default (see F-03).             |
+| AD-06 | Only the publishable key is used in the app. No secret/service-role key in the Next.js app.                                                                         | Every request runs as the real user under RLS. Privileged work happens in `security definer` SQL.               |
+| AD-07 | Migrations in `supabase/migrations/`, applied with `supabase db push` to hosted projects. No local Supabase stack.                                                  | Local stack needs Docker, which is out of scope.                                                                |
+| AD-08 | next-intl with `localePrefix: "as-needed"`: Macedonian at `/`, English at `/en`.                                                                                    | Macedonian is the primary audience; both languages indexable by search engines.                                 |
+| AD-09 | Locations stored as PostGIS `geography(Point, 4326)`.                                                                                                               | Correct distances in meters, indexed radius queries (`ST_DWithin`).                                             |
+| AD-10 | Search: normalized text (lowercase, unaccent, Cyrillic→Latin transliteration) with full-text search + trigram similarity.                                           | Postgres has no Macedonian dictionary; users mix Cyrillic and Latin spelling.                                   |
+| AD-11 | Matching is a deterministic weighted score (category, distance, date, text) with a stored breakdown.                                                                | Explainable to users and to the thesis committee; tunable.                                                      |
+| AD-12 | In-app notifications stored in a table and pushed with Supabase Realtime. No web push.                                                                              | History + live updates without service workers.                                                                 |
+| AD-13 | Leaflet + OpenStreetMap tiles, Nominatim geocoding called from the browser (debounced, ≤1 req/s).                                                                   | Free, no API keys.                                                                                              |
+| AD-14 | shadcn/ui (Base UI primitives, `cn` package) for components; Tailwind 4 tokens in `globals.css`.                                                                    | Owned component code, consistent design.                                                                        |
+| AD-15 | Forms use React 19 `useActionState` + Server Actions; no form library.                                                                                              | Fewer dependencies. Forms wrap the action in a client function to keep entered values, so they need JavaScript. |
+| AD-16 | Server Actions return typed results with **error codes**, not translated strings; the UI translates.                                                                | Keeps i18n in one place.                                                                                        |
+| AD-17 | Images compressed in the browser (canvas → WebP, max 1600 px) before upload to Supabase Storage.                                                                    | Free tier has 1 GB storage; faster uploads.                                                                     |
+| AD-18 | Two Supabase projects: the current one for development, a separate one for production (created in P11.S5).                                                          | Test data and destructive tests never touch production. Free tier allows 2 projects.                            |
+| AD-19 | Font Inter (latin + cyrillic) via `next/font`, exposed as `--font-inter`; `--font-sans` points to it.                                                               | Geist has no Cyrillic glyphs.                                                                                   |
+| AD-20 | Item URLs are `/items/<uuid>` (no slug).                                                                                                                            | Stable links; title goes in metadata. Revisit only if SEO requires it.                                          |
 
 ---
 
@@ -365,7 +365,6 @@ Every action in `src/actions/*.ts` follows the same shape:
 ```ts
 "use server";
 export async function createItem(
-  _prev: ActionResult<{ id: string }> | null,
   formData: FormData,
 ): Promise<ActionResult<{ id: string }>> {
   const user = await requireUser(); // 1. authenticate (redirects if signed out)
@@ -391,8 +390,17 @@ type ActionResult<T = void> =
   `messages/mk.json` (currently `unauthorized`, `forbidden`, `validation`,
   `not_found`, `rate_limited`, `database`, `unknown`). Adding a code means adding
   its translation in both files; the UI shows it with `useTranslations("Errors")`.
-- Zod field errors use translation keys as messages (for example
-  `"Validation.titleTooShort"`), so forms can show translated field errors.
+- Zod messages are keys of the `Validation` namespace, written with
+  `msg("passwordTooShort")` from `src/lib/validation/messages.ts` (typos are type
+  errors). `FormField` translates `fieldErrors[field][0]`; put
+  `min(1, msg("required"))` before other length rules so empty fields say "required".
+- Supabase Auth errors go through `authFailure()` (`src/lib/auth-errors.ts`).
+- **Forms (P2.S4 pattern):** actions take `(formData)`. The client form calls it
+  inside `useActionState` and keeps the non-secret entered values in state for
+  `defaultValue` (React resets forms after an action). Shared pieces:
+  `src/components/forms/{form-field,form-error,submit-button}.tsx`. `FormError`
+  shows the form-level error; for `validation` it only appears when no field
+  error is shown, so a failure is never silent.
 - Actions never trust IDs from the client for ownership; RLS enforces it and the
   action checks affected row counts.
 
@@ -1152,7 +1160,7 @@ reset their password and edit their profile; protected routes work.
 - **Result:** `src/lib/auth-routes.ts` (+30 unit tests), `src/lib/auth.ts`, `updateSession()` returns `{ userId }`, proxy redirects (refreshed cookies copied, `Cache-Control: private, no-store`), dependency `server-only`. Verified on a production build with a temporary confirmed test user signed in through `@supabase/ssr` (user, temp page and sessions deleted afterwards): guest redirects for `/profile`, `/en/profile`, `/items/new?type=lost`, `/items/<id>/edit`, `/%70rofile`; `/mk/profile` → `/profile` (i18n first); signed-in `/login` → `/`, `/login?next=/profile` → `/profile`, `/en/login?next=//evil.com` → `/en`; `getCurrentUser()` returns the profile for a user and null for a guest; `requireUser()` redirects guests with `next`; `requireAdmin()` 404 for a user, OK after promotion to admin; an invalid session cookie is treated as a guest.
 - **Deviations:** signed-in users go to `/` instead of `/dashboard` until P3.S8 (`AFTER_SIGN_IN_PATH`); `/login` and `/profile` still 404 until P2.S4 / P2.S8.
 
-#### P2.S4 — Register and login — `NOT STARTED`
+#### P2.S4 — Register and login — `COMPLETED`
 
 - **Depends on:** P2.S3.
 - **Affects:** `src/lib/validation/form-data.ts` (FormData → object helper, if multi-value fields need it), `messages/*.json` (`Validation`), `src/app/[locale]/(auth)/{layout,login/page,register/page}.tsx`, `src/components/auth/*`, `src/actions/auth.ts`, `src/lib/validation/auth.ts`, `src/components/layout/site-header.tsx` (+ `user-menu.tsx`), `messages/*.json` (`Auth`).
@@ -1163,11 +1171,15 @@ reset their password and edit their profile; protected routes work.
   4. Header: "Sign in" button for guests; avatar dropdown (profile, dashboard, sign out) for users.
   5. Manual: set minimum password length to 8 in the dashboard.
 - **Verify:** register → redirected to `/verify-email`; login with unconfirmed email shows the right message; login with a confirmed user works and header updates; sign out works; both languages; unit tests for schemas.
+- **Result:** `src/lib/validation/{messages,auth}.ts`, `src/lib/auth-errors.ts` (`authErrorCode`, `authFailure`), `src/actions/auth.ts` (`signIn`, `signUp`, `signOut` with `scope: "local"`), `src/components/forms/*`, `src/components/auth/{auth-card,login-form,register-form}.tsx`, `(auth)/{layout,login,register,verify-email}` (noindex), `src/components/layout/user-menu.tsx`, header with sign-in/register or user menu. Translations: `Auth`, `Validation`, more `Errors` and `Header` keys. 74 unit tests. Browser check (headless Edge via `playwright-core` in the scratchpad, production build, temporary confirmed + unconfirmed users, deleted afterwards): 23/23 — required/length/match errors, values kept and passwords cleared, `aria-invalid`, address rejected by Supabase shown on the email field, wrong password (mk/en), unconfirmed email, login with `next`, header initials and menu, signed-in `/login` → `/`, sign out, protected page after sign out, no overflow at 360 px, no browser errors.
+- **Bugs found and fixed during verification:** Supabase rejects some syntactically valid addresses (`email_address_invalid`, e.g. reserved domains) — this produced a "validation" result with no field error, so nothing was shown; now mapped to the email field, and `FormError` shows a generic message when a validation failure has no field errors. Empty fields said "too short" instead of "required". The mobile header's register button was not hidden (`buttonVariants({ className })` does not merge conflicting classes — use `cn(buttonVariants(), …)`).
+- **Deviations:** the static `/verify-email` page was added here (P2.S5 adds resend); no `email_taken` code, because Supabase does not reveal existing emails when confirmation is on — both cases show the same page; the user menu has only sign-out (profile link in P2.S8, dashboard link in P3.S8); `emailRedirectTo` is not set yet (P2.S5), so confirmation links currently land on the Site URL; a successful real sign-up was not tested automatically (the built-in mailer only sends to team members — test manually with your own address).
+- **Manual (open):** minimum password length 8 in the dashboard (F-07). The app already enforces 8.
 
 #### P2.S5 — Email verification — `NOT STARTED`
 
 - **Depends on:** P2.S4.
-- **Affects:** `src/app/api/auth/confirm/route.ts`, `src/app/[locale]/(auth)/verify-email/page.tsx`, `src/actions/auth.ts` (`resendConfirmation`), Supabase dashboard (templates, URL configuration).
+- **Affects:** `src/app/api/auth/confirm/route.ts`, `src/app/[locale]/(auth)/verify-email/page.tsx` (exists since P2.S4; add resend), `src/actions/auth.ts` (`resendConfirmation`, `emailRedirectTo` in `signUp`), login form (link to resend when `email_not_confirmed`), Supabase dashboard (templates, URL configuration).
 - **Sub-steps:**
   1. Route handler: `verifyOtp({ type, token_hash })`, redirect to a safe `next` or to an error state.
   2. `/verify-email` page: "check your inbox" + resend button (cooldown 60 s).
@@ -1195,7 +1207,7 @@ reset their password and edit their profile; protected routes work.
 
 - **Depends on:** P2.S4.
 - **Affects:** migration `*_avatars_bucket.sql` (bucket + storage policies), `(app)/layout.tsx`, `(app)/profile/page.tsx`, `src/actions/profile.ts`, `src/lib/validation/profile.ts`, `src/components/profile/*`, `src/lib/images.ts` (resize helper, reused in P3.S4).
-- **Sub-steps:** edit display name and preferred language; avatar upload (resize to 256 px WebP, path `{uid}/avatar.webp`, upsert); change password for email users; show sign-in method.
+- **Sub-steps:** edit display name and preferred language; avatar upload (resize to 256 px WebP, path `{uid}/avatar.webp`, upsert); change password for email users; show sign-in method; add "Profile" to the user menu and show the avatar there.
 - **Verify:** changes persist; another user cannot overwrite your avatar (storage policy test); invalid names rejected.
 
 #### P2.S9 — SMTP and email templates (manual) — `NOT STARTED`
@@ -1589,20 +1601,22 @@ insert attempt, auth settings endpoint, `db advisors`); built CSS.
 **Result:** Phase 1 matches the planned architecture. Phase 2 has **not** been
 started (no auth code or profile tables exist yet).
 
-| ID   | Finding                                                                                                                                                                                                                                                     | Decision                                                                                                                                              | Status        |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
-| F-01 | next/font variable was named `--font-sans` while `@theme` also defined `--font-sans: var(--font-sans)` on `:root`. It only worked because unlayered CSS wins over the theme layer.                                                                          | Renamed the font variable to `--font-inter`; `--font-sans` now references it (AD-19).                                                                 | Fixed         |
-| F-02 | `supabase/config.toml` holds CLI defaults (`site_url` 127.0.0.1, confirmations off, password length 6) that differ from the hosted project.                                                                                                                 | Keep the file (the CLI needs it); it is not a source of truth. Never run `supabase config push` (§8).                                                 | Documented    |
-| F-03 | Supabase grants `anon`/`authenticated` all table privileges (INSERT, UPDATE, DELETE, …) on `public` tables by default; the anonymous insert into `categories` was stopped by RLS, not by privileges. The migration's `grant select` is therefore redundant. | Keep defaults; RLS on every table is mandatory (§11), column grants where needed. Applied migration not edited.                                       | Documented    |
-| F-04 | `NextIntlClientProvider` sends all messages to the browser.                                                                                                                                                                                                 | Fine while small; limit client namespaces in P11.S3.                                                                                                  | Open (P11.S3) |
-| F-05 | The Supabase URL was configured with `/rest/v1/`, which broke all queries.                                                                                                                                                                                  | Fixed in `.env.local`; `env.ts` now rejects URLs with a path.                                                                                         | Fixed         |
-| F-06 | Default branch is `main` (an earlier instruction said `master`). No GitHub remote yet.                                                                                                                                                                      | Use `main`; remote `origin` = github.com/BlagojPetrov/findly-web, pushed 2026-09-24.                                                                  | Fixed         |
-| F-07 | Hosted minimum password length is 6.                                                                                                                                                                                                                        | Raise to 8 in P2.S4.                                                                                                                                  | Open (P2.S4)  |
-| F-08 | Built-in Supabase email only delivers to project team members.                                                                                                                                                                                              | Custom SMTP in P2.S9; test with own address before that.                                                                                              | Open (P2.S9)  |
-| F-09 | `supabase login` fails in non-interactive shells.                                                                                                                                                                                                           | Run it in a normal terminal (documented in §8 and `CLAUDE.md`).                                                                                       | Documented    |
-| F-11 | `supabase migration new` names files with the **UTC** time, but the init migration was named with the local date (`20260924000000`). Until 2026-09-24 00:00 UTC new files would sort before it.                                                             | New migrations must sort after the latest existing file; the profiles migration was renamed to `20260924000100`. Check the name after every `db:new`. | Documented    |
-| F-12 | Advisors warn that `current_profile()` (a `security definer` function in `public`) is callable by `anon`/`authenticated`.                                                                                                                                   | Intentional: it returns only the caller's own row (nothing for anon). Accepted warning.                                                               | Accepted      |
-| F-10 | No automated tests yet.                                                                                                                                                                                                                                     | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                          | Fixed         |
+| ID   | Finding                                                                                                                                                                                                                                                     | Decision                                                                                                                                                                                                                                             | Status        |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| F-01 | next/font variable was named `--font-sans` while `@theme` also defined `--font-sans: var(--font-sans)` on `:root`. It only worked because unlayered CSS wins over the theme layer.                                                                          | Renamed the font variable to `--font-inter`; `--font-sans` now references it (AD-19).                                                                                                                                                                | Fixed         |
+| F-02 | `supabase/config.toml` holds CLI defaults (`site_url` 127.0.0.1, confirmations off, password length 6) that differ from the hosted project.                                                                                                                 | Keep the file (the CLI needs it); it is not a source of truth. Never run `supabase config push` (§8).                                                                                                                                                | Documented    |
+| F-03 | Supabase grants `anon`/`authenticated` all table privileges (INSERT, UPDATE, DELETE, …) on `public` tables by default; the anonymous insert into `categories` was stopped by RLS, not by privileges. The migration's `grant select` is therefore redundant. | Keep defaults; RLS on every table is mandatory (§11), column grants where needed. Applied migration not edited.                                                                                                                                      | Documented    |
+| F-04 | `NextIntlClientProvider` sends all messages to the browser.                                                                                                                                                                                                 | Fine while small; limit client namespaces in P11.S3.                                                                                                                                                                                                 | Open (P11.S3) |
+| F-05 | The Supabase URL was configured with `/rest/v1/`, which broke all queries.                                                                                                                                                                                  | Fixed in `.env.local`; `env.ts` now rejects URLs with a path.                                                                                                                                                                                        | Fixed         |
+| F-06 | Default branch is `main` (an earlier instruction said `master`). No GitHub remote yet.                                                                                                                                                                      | Use `main`; remote `origin` = github.com/BlagojPetrov/findly-web, pushed 2026-09-24.                                                                                                                                                                 | Fixed         |
+| F-07 | Hosted minimum password length is 6.                                                                                                                                                                                                                        | Raise to 8 in P2.S4.                                                                                                                                                                                                                                 | Open (P2.S4)  |
+| F-08 | Built-in Supabase email only delivers to project team members.                                                                                                                                                                                              | Custom SMTP in P2.S9; test with own address before that.                                                                                                                                                                                             | Open (P2.S9)  |
+| F-09 | `supabase login` fails in non-interactive shells.                                                                                                                                                                                                           | Run it in a normal terminal (documented in §8 and `CLAUDE.md`).                                                                                                                                                                                      | Documented    |
+| F-11 | `supabase migration new` names files with the **UTC** time, but the init migration was named with the local date (`20260924000000`). Until 2026-09-24 00:00 UTC new files would sort before it.                                                             | New migrations must sort after the latest existing file; the profiles migration was renamed to `20260924000100`. Check the name after every `db:new`.                                                                                                | Documented    |
+| F-13 | next-intl locale detection is on: a visitor whose browser prefers English (`Accept-Language`) or who last used English (`NEXT_LOCALE` cookie) is redirected from `/…` to `/en/…`. `/` is therefore not always Macedonian.                                   | **Decision needed.** Keep (standard, convenient) or set `localeDetection: false` in `src/i18n/routing.ts` so `/` is always Macedonian and English only via the switcher. Recommendation: disable, for a Macedonian-first site with predictable URLs. | Open          |
+| F-14 | Next.js renders a hidden route announcer with `role="alert"`.                                                                                                                                                                                               | Browser tests must look for alerts inside the form (`form [role=alert]`).                                                                                                                                                                            | Documented    |
+| F-12 | Advisors warn that `current_profile()` (a `security definer` function in `public`) is callable by `anon`/`authenticated`.                                                                                                                                   | Intentional: it returns only the caller's own row (nothing for anon). Accepted warning.                                                                                                                                                              | Accepted      |
+| F-10 | No automated tests yet.                                                                                                                                                                                                                                     | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                                                                                                                         | Fixed         |
 
 ---
 
@@ -1617,21 +1631,23 @@ started (no auth code or profile tables exist yet).
 | 2026-09-24 | P2.S1    | Vitest, `ActionResult` helpers, `safeRedirectPath`, translation parity tests, `Errors` messages.                          |
 | 2026-09-24 | P2.S2    | `profiles`, sign-up trigger, `private.is_admin/can_write`, `current_profile()`, column-level privileges, SQL test runner. |
 | 2026-09-24 | P2.S3    | `getCurrentUser`/`requireUser`/`requireAdmin` (server-only DAL), route rules in `auth-routes.ts`, proxy auth redirects.   |
+| 2026-09-24 | P2.S4    | Login, register and verify-email pages, auth actions, form components, user menu; 3 bugs found in browser testing fixed.  |
 
 ---
 
 ## 25. Next Recommended Step
 
-**P2.S4 — Register and login** (see §22, Phase 2).
+**P2.S5 — Email verification** (see §22, Phase 2).
 
-Why next: route protection now sends guests to `/login`, which does not exist
-yet. P2.S4 adds the login and register pages, the auth actions and the user
-menu in the header.
+Why next: users can register, but the confirmation link does not sign them in
+yet and there is no way to resend it.
 
-Manual step in P2.S4: set the minimum password length to 8 in the Supabase
-dashboard (Authentication → Providers → Email / Password security).
+Open items from P2.S4 (manual, not blocking P2.S5):
 
-Manual preparation you can do in parallel (not blocking P2.S4):
+- Set the minimum password length to 8 in the Supabase dashboard (F-07).
+- Decide on locale detection (F-13).
+
+Manual preparation you can do in parallel:
 
 - Create a Brevo or Resend account for SMTP (needed in P2.S9).
 - Create a Google Cloud project for OAuth (needed in P2.S7).

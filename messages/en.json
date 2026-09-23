@@ -5,7 +5,10 @@
   },
   "Header": {
     "home": "Home",
-    "language": "Language"
+    "language": "Language",
+    "signIn": "Sign in",
+    "register": "Register",
+    "accountMenu": "Account"
   },
   "Home": {
     "title": "Find what was lost, return what was found",
@@ -43,6 +46,43 @@
     "not_found": "The requested item was not found.",
     "rate_limited": "Too many attempts. Please try again later.",
     "database": "Something went wrong while saving. Please try again.",
-    "unknown": "An unexpected error occurred. Please try again."
+    "unknown": "An unexpected error occurred. Please try again.",
+    "invalid_credentials": "Incorrect email or password.",
+    "email_not_confirmed": "Your email is not confirmed yet. Open the link we sent you.",
+    "weak_password": "The password is too weak. Choose a longer or more complex password.",
+    "email_send_failed": "The confirmation email could not be sent. Please try again later."
+  },
+  "Validation": {
+    "required": "This field is required.",
+    "emailInvalid": "Enter a valid email address.",
+    "passwordTooShort": "The password must be at least 8 characters.",
+    "passwordTooLong": "The password can be at most 72 characters.",
+    "passwordsDontMatch": "The passwords do not match.",
+    "displayNameTooShort": "The name must be at least 2 characters.",
+    "displayNameTooLong": "The name can be at most 50 characters."
+  },
+  "Auth": {
+    "loginTitle": "Sign in",
+    "loginDescription": "Sign in to report items and talk to other people.",
+    "registerTitle": "Register",
+    "registerDescription": "Create an account to report a lost or found item.",
+    "displayName": "Name",
+    "displayNameHint": "Other users will see this name.",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "At least 8 characters.",
+    "confirmPassword": "Confirm password",
+    "signIn": "Sign in",
+    "signUp": "Create account",
+    "signOut": "Sign out",
+    "noAccount": "No account yet?",
+    "createAccount": "Register",
+    "haveAccount": "Already have an account?",
+    "signInInstead": "Sign in",
+    "verifyTitle": "Check your email",
+    "verifyDescription": "If this account is new, we sent a confirmation link to {email}. Open it to activate your account.",
+    "verifyDescriptionNoEmail": "If this account is new, we sent you a confirmation link. Open it to activate your account.",
+    "verifySpamHint": "Can't find the message? Check your spam folder.",
+    "backToLogin": "Back to sign in"
   }
 }

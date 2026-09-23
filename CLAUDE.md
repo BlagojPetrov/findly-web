@@ -22,7 +22,9 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S3 done. Next: P2.S4.
+- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S4 done. Next: P2.S5.
+- Open manual items: minimum password length 8 in the Supabase dashboard (F-07);
+  decision on next-intl locale detection (F-13).
 - Supabase dev project `lyvudeaxwibgpqsinqyz` (eu-central-1, Postgres 17), linked.
 - GitHub: `origin` = https://github.com/BlagojPetrov/findly-web, branch `main`.
   Not deployed to Vercel yet (P2.S10).
@@ -44,7 +46,16 @@ status and the next step. Read it before any work.
   `@/lib/auth` (server-only, cached per request) in every protected page, layout and
   action. The proxy only does optimistic redirects; its rules are in
   `src/lib/auth-routes.ts` — add every new protected route there.
-- Unit tests: Vitest, colocated as `src/**/*.test.ts`.
+- Forms: action takes `(formData)`; the client form wraps it in `useActionState` and
+  keeps non-secret values for `defaultValue`. Use `FormField`, `FormError`,
+  `SubmitButton` from `src/components/forms/`. Zod messages are `Validation` keys via
+  `msg()` (`@/lib/validation/messages`), with `min(1, msg("required"))` first. Auth
+  errors go through `authFailure()`.
+- Combine `buttonVariants()` with conflicting classes via `cn(buttonVariants(), "…")`,
+  not `buttonVariants({ className })` (no class merging there).
+- Unit tests: Vitest, colocated as `src/**/*.test.ts`. Browser checks: headless Edge via
+  `playwright-core` installed in the scratchpad (not the project) against `next start`;
+  create temporary users with SQL and delete them afterwards.
 - Security: RLS on every table in the same migration that creates it (Supabase grants
   table privileges to anon/authenticated by default). `private.can_write()` in write
   policies, `private.is_admin()` for admin access. Policy helpers go in schema

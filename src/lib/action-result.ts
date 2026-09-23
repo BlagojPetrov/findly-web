@@ -24,7 +24,7 @@ export function fail(error: ErrorCode): ActionResult<never> {
 }
 
 // Field messages come from the Zod schemas and are translation keys
-// (for example "Validation.passwordTooShort").
+// from the "Validation" namespace (see src/lib/validation/messages.ts).
 export function validationError(error: z.ZodError): ActionResult<never> {
   return {
     ok: false,

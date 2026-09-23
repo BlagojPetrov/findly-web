@@ -14,8 +14,8 @@ describe("action results", () => {
 
   it("maps Zod issues to field errors", () => {
     const schema = z.object({
-      email: z.email("Validation.emailInvalid"),
-      name: z.string().min(2, "Validation.nameTooShort"),
+      email: z.email("emailInvalid"),
+      name: z.string().min(2, "nameTooShort"),
     });
     const parsed = schema.safeParse({ email: "x", name: "a" });
     if (parsed.success) throw new Error("expected validation to fail");
@@ -24,8 +24,8 @@ describe("action results", () => {
       ok: false,
       error: "validation",
       fieldErrors: {
-        email: ["Validation.emailInvalid"],
-        name: ["Validation.nameTooShort"],
+        email: ["emailInvalid"],
+        name: ["nameTooShort"],
       },
     });
   });
