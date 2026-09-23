@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Findly Web
 
-## Getting Started
+Веб-платформа за управување и автоматско поврзување на пријави за изгубени и пронајдени предмети.
 
-First, run the development server:
+A web platform for reporting lost and found items with automatic matching of reports.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Stack
+
+- **Next.js 16** (App Router, Server Components, Server Actions) + TypeScript
+- **Tailwind CSS 4** + shadcn/ui components
+- **Supabase**: PostgreSQL (PostGIS, pg_trgm), Auth, Storage, Realtime
+- **next-intl**: Macedonian (default, `/`) and English (`/en`)
+- **Leaflet + OpenStreetMap** for maps
+- Deployed on **Vercel**
+
+## Project structure
+
+```
+messages/              translations (mk.json, en.json)
+src/app/[locale]/      pages, all routes are localized
+src/components/ui/     shadcn/ui components
+src/components/        app components grouped by feature
+src/i18n/              locale routing and locale-aware navigation
+src/lib/supabase/      Supabase clients (server, browser, proxy session refresh)
+src/lib/env.ts         validated environment variables
+src/proxy.ts           i18n routing + Supabase session refresh on every request
+src/types/database.ts  generated database types
+supabase/migrations/   SQL migrations (schema, RLS policies, functions)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Local setup
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Install dependencies: `npm install`
+2. Copy `.env.example` to `.env.local` and fill in the Supabase values.
+3. Link the Supabase project and apply migrations:
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <your-project-ref>
+   npm run db:push
+   npm run db:types
+   ```
+4. Start the dev server: `npm run dev` → http://localhost:3000
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Script              | Description                                          |
+| ------------------- | ---------------------------------------------------- |
+| `npm run dev`       | Start the development server                         |
+| `npm run build`     | Production build                                     |
+| `npm run lint`      | ESLint                                               |
+| `npm run typecheck` | TypeScript check                                     |
+| `npm run format`    | Prettier                                             |
+| `npm run db:new`    | Create a new migration: `npm run db:new -- <name>`   |
+| `npm run db:push`   | Apply pending migrations to the linked project       |
+| `npm run db:types`  | Regenerate `src/types/database.ts` from the database |
