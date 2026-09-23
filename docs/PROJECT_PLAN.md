@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-24
 - **Current phase:** Phase 2 — Authentication (in progress)
-- **Next step:** P2.S3 (§22)
+- **Next step:** P2.S4 (§22)
 
 ---
 
@@ -120,7 +120,7 @@ to these IDs. "Next step" always means the step named in
 | P1.S9  | Phase 1 audit and master plan                  | `COMPLETED`   |
 | P2.S1  | Test tooling and action conventions            | `COMPLETED`   |
 | P2.S2  | Profiles table, helper functions, RLS          | `COMPLETED`   |
-| P2.S3  | Auth helpers and route protection              | `NOT STARTED` |
+| P2.S3  | Auth helpers and route protection              | `COMPLETED`   |
 | P2.S4  | Register and login (email/password)            | `NOT STARTED` |
 | P2.S5  | Email verification                             | `NOT STARTED` |
 | P2.S6  | Forgot / reset password                        | `NOT STARTED` |
@@ -685,9 +685,14 @@ profiles 1─* reports *─1 items
    (`/dashboard`, `/items/new`, `/items/*/edit`, `/profile`, `/messages`,
    `/favorites`, `/notifications`, `/admin`, with or without `/en`) without a user
    are redirected to `/login?next=<path>`. Signed-in users visiting
-   `/login`/`/register` are redirected to `/dashboard`.
-2. **Server (authoritative):** `requireUser()` / `requireAdmin()` in
-   `src/lib/auth.ts`, called in protected layouts/pages and in every action.
+   `/login`/`/register` are redirected to a safe `next` or to
+   `AFTER_SIGN_IN_PATH` (currently `/`, becomes `/dashboard` in P3.S8).
+   Rules live in `src/lib/auth-routes.ts` (pure, unit-tested); the path is
+   URL-decoded before matching. **New protected routes must be added there.**
+2. **Server (authoritative):** `getCurrentUser()` / `requireUser(next?)` /
+   `requireAdmin(next?)` in `src/lib/auth.ts` (`server-only`, React
+   `cache()` per request), called in protected layouts/pages and in every action.
+   `requireAdmin()` answers non-admins with 404.
 3. **Database (final):** RLS.
 
 ### Flows
@@ -1135,7 +1140,7 @@ reset their password and edit their profile; protected routes work.
   - Google profile pictures are not imported: `avatar_path` is a storage path; users upload an avatar in P2.S8.
   - Dashboard "Add user" check left as an optional manual test; the trigger is covered by the SQL tests (inserting into `auth.users`).
 
-#### P2.S3 — Auth helpers and route protection — `NOT STARTED`
+#### P2.S3 — Auth helpers and route protection — `COMPLETED`
 
 - **Depends on:** P2.S2.
 - **Affects:** `src/lib/auth.ts`, `src/lib/supabase/proxy.ts`, `src/proxy.ts`.
@@ -1144,6 +1149,8 @@ reset their password and edit their profile; protected routes work.
   2. `updateSession()` returns the user claims; proxy redirects guests from protected prefixes and signed-in users away from `/login` and `/register` (locale-aware).
   3. Unit tests for the "is protected path" helper (with and without `/en`).
 - **Verify:** as a guest, `/profile` and `/en/profile` redirect to the right login URL with `next`; public pages unaffected; unit tests pass.
+- **Result:** `src/lib/auth-routes.ts` (+30 unit tests), `src/lib/auth.ts`, `updateSession()` returns `{ userId }`, proxy redirects (refreshed cookies copied, `Cache-Control: private, no-store`), dependency `server-only`. Verified on a production build with a temporary confirmed test user signed in through `@supabase/ssr` (user, temp page and sessions deleted afterwards): guest redirects for `/profile`, `/en/profile`, `/items/new?type=lost`, `/items/<id>/edit`, `/%70rofile`; `/mk/profile` → `/profile` (i18n first); signed-in `/login` → `/`, `/login?next=/profile` → `/profile`, `/en/login?next=//evil.com` → `/en`; `getCurrentUser()` returns the profile for a user and null for a guest; `requireUser()` redirects guests with `next`; `requireAdmin()` 404 for a user, OK after promotion to admin; an invalid session cookie is treated as a guest.
+- **Deviations:** signed-in users go to `/` instead of `/dashboard` until P3.S8 (`AFTER_SIGN_IN_PATH`); `/login` and `/profile` still 404 until P2.S4 / P2.S8.
 
 #### P2.S4 — Register and login — `NOT STARTED`
 
@@ -1265,7 +1272,7 @@ with up to 5 images; everyone can view an item page.
 #### P3.S8 — Dashboard ("My reports")
 
 - **Depends on:** P3.S7.
-- **Affects:** `(app)/dashboard/page.tsx`, `src/components/items/item-card.tsx` (reused in P4).
+- **Affects:** `(app)/dashboard/page.tsx`, `src/components/items/item-card.tsx` (reused in P4), `src/lib/auth-routes.ts` (`AFTER_SIGN_IN_PATH` → `/dashboard`).
 - **Verify:** lists own items by status with quick actions; empty state links to "Report item".
 
 **Definition of done — Phase 3:** full item lifecycle (create with images → view →
@@ -1609,17 +1616,22 @@ started (no auth code or profile tables exist yet).
 | 2026-09-24 | P2.S10   | GitHub repository created and `main` pushed (Vercel part still open).                                                     |
 | 2026-09-24 | P2.S1    | Vitest, `ActionResult` helpers, `safeRedirectPath`, translation parity tests, `Errors` messages.                          |
 | 2026-09-24 | P2.S2    | `profiles`, sign-up trigger, `private.is_admin/can_write`, `current_profile()`, column-level privileges, SQL test runner. |
+| 2026-09-24 | P2.S3    | `getCurrentUser`/`requireUser`/`requireAdmin` (server-only DAL), route rules in `auth-routes.ts`, proxy auth redirects.   |
 
 ---
 
 ## 25. Next Recommended Step
 
-**P2.S3 — Auth helpers and route protection** (see §22, Phase 2).
+**P2.S4 — Register and login** (see §22, Phase 2).
 
-Why next: login/register pages (P2.S4) and every protected page need
-`getCurrentUser()` / `requireUser()` and the proxy redirects.
+Why next: route protection now sends guests to `/login`, which does not exist
+yet. P2.S4 adds the login and register pages, the auth actions and the user
+menu in the header.
 
-Manual preparation you can do in parallel (not blocking P2.S3):
+Manual step in P2.S4: set the minimum password length to 8 in the Supabase
+dashboard (Authentication → Providers → Email / Password security).
+
+Manual preparation you can do in parallel (not blocking P2.S4):
 
 - Create a Brevo or Resend account for SMTP (needed in P2.S9).
 - Create a Google Cloud project for OAuth (needed in P2.S7).

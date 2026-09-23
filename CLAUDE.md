@@ -22,7 +22,7 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S2 done. Next: P2.S3.
+- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S3 done. Next: P2.S4.
 - Supabase dev project `lyvudeaxwibgpqsinqyz` (eu-central-1, Postgres 17), linked.
 - GitHub: `origin` = https://github.com/BlagojPetrov/findly-web, branch `main`.
   Not deployed to Vercel yet (P2.S10).
@@ -40,6 +40,10 @@ status and the next step. Read it before any work.
   `ActionResult` (`@/lib/action-result`: `ok`, `fail`, `validationError`) with error
   codes from the `Errors` messages namespace. User-supplied redirect targets go
   through `safeRedirectPath()` (`@/lib/safe-redirect`).
+- Auth: `getCurrentUser()`, `requireUser(next?)`, `requireAdmin(next?)` from
+  `@/lib/auth` (server-only, cached per request) in every protected page, layout and
+  action. The proxy only does optimistic redirects; its rules are in
+  `src/lib/auth-routes.ts` — add every new protected route there.
 - Unit tests: Vitest, colocated as `src/**/*.test.ts`.
 - Security: RLS on every table in the same migration that creates it (Supabase grants
   table privileges to anon/authenticated by default). `private.can_write()` in write
