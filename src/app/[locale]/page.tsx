@@ -20,6 +20,7 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
     .from("categories")
     .select("id, slug, name_mk, name_en, icon")
     .order("sort_order");
+  if (error) console.error("Failed to load categories:", error);
 
   return (
     <div className="mx-auto max-w-6xl px-4">
