@@ -50,7 +50,8 @@
     "invalid_credentials": "Incorrect email or password.",
     "email_not_confirmed": "Your email is not confirmed yet. Open the link we sent you.",
     "weak_password": "The password is too weak. Choose a longer or more complex password.",
-    "email_send_failed": "The confirmation email could not be sent. Please try again later."
+    "email_send_failed": "The confirmation email could not be sent. Please try again later.",
+    "email_rate_limited": "We cannot send emails right now because the sending limit has been reached. Please try again later."
   },
   "Validation": {
     "required": "This field is required.",

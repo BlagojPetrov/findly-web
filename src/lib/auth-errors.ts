@@ -13,9 +13,13 @@ export function authErrorCode(error: AuthError): ErrorCode {
     case "email_address_invalid":
     case "validation_failed":
       return "validation";
+    // Too many requests from this client.
     case "over_request_rate_limit":
-    case "over_email_send_rate_limit":
       return "rate_limited";
+    // The project's email quota is used up (with the built-in mailer it is a
+    // few emails per hour for the whole project) — not the user's fault.
+    case "over_email_send_rate_limit":
+      return "email_rate_limited";
     // The built-in Supabase mailer only sends to project team members, and
     // any SMTP failure also lands here.
     case "email_address_not_authorized":
@@ -38,6 +42,19 @@ export function authFailure(error: AuthError): ActionResult<never> {
     };
   }
   const code = authErrorCode(error);
-  if (code === "unknown") console.error("Supabase Auth error:", error);
+  if (operationalErrors.has(code)) {
+    // Problems the site owner has to act on (quotas, mail delivery, unknown
+    // failures). Logged without the user's email address.
+    console.error(
+      `Supabase Auth error: ${error.code ?? "no code"} (${error.status ?? "no status"}): ${error.message}`,
+    );
+  }
   return { ok: false, error: code };
 }
+
+const operationalErrors = new Set<ErrorCode>([
+  "rate_limited",
+  "email_rate_limited",
+  "email_send_failed",
+  "unknown",
+]);

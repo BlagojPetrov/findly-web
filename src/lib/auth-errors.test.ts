@@ -1,5 +1,5 @@
 import { AuthError } from "@supabase/supabase-js";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { authErrorCode, authFailure } from "./auth-errors";
 
 describe("authErrorCode", () => {
@@ -7,7 +7,8 @@ describe("authErrorCode", () => {
     ["invalid_credentials", 400, "invalid_credentials"],
     ["email_not_confirmed", 400, "email_not_confirmed"],
     ["weak_password", 422, "weak_password"],
-    ["over_email_send_rate_limit", 429, "rate_limited"],
+    ["over_request_rate_limit", 429, "rate_limited"],
+    ["over_email_send_rate_limit", 429, "email_rate_limited"],
     ["email_address_not_authorized", 400, "email_send_failed"],
     ["something_new", 429, "rate_limited"],
     ["something_new", 500, "unknown"],
@@ -41,5 +42,28 @@ describe("authFailure", () => {
       ok: false,
       error: "invalid_credentials",
     });
+  });
+
+  it("logs operational errors such as the email quota, but not user mistakes", () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    authFailure(
+      new AuthError(
+        "email rate limit exceeded",
+        429,
+        "over_email_send_rate_limit",
+      ),
+    );
+    expect(log).toHaveBeenCalledWith(
+      "Supabase Auth error: over_email_send_rate_limit (429): email rate limit exceeded",
+    );
+
+    log.mockClear();
+    authFailure(
+      new AuthError("Invalid login credentials", 400, "invalid_credentials"),
+    );
+    expect(log).not.toHaveBeenCalled();
+
+    log.mockRestore();
   });
 });
