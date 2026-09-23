@@ -4,6 +4,8 @@
 
 A web platform for reporting lost and found items with automatic matching of reports.
 
+Architecture, roadmap and progress: [`docs/PROJECT_PLAN.md`](docs/PROJECT_PLAN.md).
+
 ## Stack
 
 - **Next.js 16** (App Router, Server Components, Server Actions) + TypeScript

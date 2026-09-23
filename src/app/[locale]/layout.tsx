@@ -12,7 +12,7 @@ import "../globals.css";
 
 // Inter includes Cyrillic glyphs (Geist does not).
 const inter = Inter({
-  variable: "--font-sans",
+  variable: "--font-inter",
   subsets: ["latin", "cyrillic"],
 });
 
