@@ -7,8 +7,8 @@
 > updating it.
 
 - **Last updated:** 2026-09-24
-- **Current phase:** Phase 2 — Authentication (not started)
-- **Next step:** P2.S1 (§22)
+- **Current phase:** Phase 2 — Authentication (in progress)
+- **Next step:** P2.S2 (§22)
 
 ---
 
@@ -67,7 +67,7 @@ to these IDs. "Next step" always means the step named in
 2. **Explain** briefly what the step will change.
 3. **Implement only that step.** No unrelated changes; anything discovered on the
    way goes into [Audit log](#23-audit-log-and-known-issues) instead.
-4. **Check:** `npm run lint`, `npm run typecheck`, `npm test` (from P2.S1),
+4. **Check:** `npm run lint`, `npm run typecheck`, `npm test`,
    `npm run build`, plus the step's own verification list. For migrations also
    `npx supabase db advisors --linked`.
 5. **Fix** any issue caused by the step.
@@ -94,7 +94,7 @@ to these IDs. "Next step" always means the step named in
 | Phase | Name                                  | Status        |
 | ----- | ------------------------------------- | ------------- |
 | 1     | Project setup and architecture        | `COMPLETED`   |
-| 2     | Authentication                        | `NOT STARTED` |
+| 2     | Authentication                        | `IN PROGRESS` |
 | 3     | Items CRUD and image upload           | `NOT STARTED` |
 | 4     | Feed, search and advanced filters     | `NOT STARTED` |
 | 5     | Map and location                      | `NOT STARTED` |
@@ -118,7 +118,7 @@ to these IDs. "Next step" always means the step named in
 | P1.S7  | Base layout and home page                      | `COMPLETED`   |
 | P1.S8  | Link Supabase project, push migration, types   | `COMPLETED`   |
 | P1.S9  | Phase 1 audit and master plan                  | `COMPLETED`   |
-| P2.S1  | Test tooling and action conventions            | `NOT STARTED` |
+| P2.S1  | Test tooling and action conventions            | `COMPLETED`   |
 | P2.S2  | Profiles table, helper functions, RLS          | `NOT STARTED` |
 | P2.S3  | Auth helpers and route protection              | `NOT STARTED` |
 | P2.S4  | Register and login (email/password)            | `NOT STARTED` |
@@ -127,7 +127,7 @@ to these IDs. "Next step" always means the step named in
 | P2.S7  | Google OAuth                                   | `NOT STARTED` |
 | P2.S8  | Profile page and avatar upload                 | `NOT STARTED` |
 | P2.S9  | SMTP and email templates (manual)              | `NOT STARTED` |
-| P2.S10 | GitHub remote and first Vercel deployment      | `NOT STARTED` |
+| P2.S10 | GitHub remote and first Vercel deployment      | `IN PROGRESS` |
 | P3.S1  | Items and images schema                        | `NOT STARTED` |
 | P3.S2  | Item images storage bucket                     | `NOT STARTED` |
 | P3.S3  | Item validation schemas                        | `NOT STARTED` |
@@ -387,9 +387,10 @@ type ActionResult<T = void> =
   | { ok: false; error: ErrorCode; fieldErrors?: Record<string, string[]> };
 ```
 
-- `ErrorCode` is a string union (`"unauthorized" | "validation" | "database" |
-"not_found" | "rate_limited" | ...`), translated in the UI via the `Errors`
-  namespace.
+- `ErrorCode` is derived from the keys of the `Errors` namespace in
+  `messages/mk.json` (currently `unauthorized`, `forbidden`, `validation`,
+  `not_found`, `rate_limited`, `database`, `unknown`). Adding a code means adding
+  its translation in both files; the UI shows it with `useTranslations("Errors")`.
 - Zod field errors use translation keys as messages (for example
   `"Validation.titleTooShort"`), so forms can show translated field errors.
 - Actions never trust IDs from the client for ownership; RLS enforces it and the
@@ -1097,10 +1098,10 @@ clean · ✅ plan and `CLAUDE.md` in the repository.
 **Goal:** users can register, verify their email, sign in with email or Google,
 reset their password and edit their profile; protected routes work.
 
-#### P2.S1 — Test tooling and action conventions — `NOT STARTED`
+#### P2.S1 — Test tooling and action conventions — `COMPLETED`
 
 - **Depends on:** Phase 1.
-- **Affects:** `package.json` (vitest, `test` script), `vitest.config.ts`, `src/lib/action-result.ts`, `src/lib/validation/form-data.ts` (FormData → object helper), `src/lib/safe-redirect.ts`, `messages/*.json` (`Errors`, `Validation` namespaces), `tests/` or colocated `*.test.ts`.
+- **Affects:** `package.json` (vitest 5, `@types/node` 24, `test`/`test:watch` scripts), `vitest.config.mts`, `src/lib/action-result.ts`, `src/lib/safe-redirect.ts`, `messages/*.json` (`Errors` namespace), colocated tests `src/**/*.test.ts`.
 - **Sub-steps:**
   1. Install Vitest; configure the `@/*` alias; add `npm test`.
   2. `ActionResult`, `ok()`, `fail()`, `validationError()` helpers.
@@ -1108,6 +1109,7 @@ reset their password and edit their profile; protected routes work.
   4. Test: `mk.json` and `en.json` have identical key sets.
   5. Test: `safeRedirectPath` rejects `//evil.com`, `https://…`, `/\evil`.
 - **Verify:** `npm test` passes; the key-parity test fails if a key is removed from one file (try it, then revert).
+- **Result:** 23 unit tests (action results, 20 redirect cases, translation key parity and no empty messages). `ErrorCode` is derived from the keys of `Errors` in `mk.json`, so an untranslated error code is a type error. Removing `Errors.forbidden` from `en.json` made the parity test fail as expected. Deviations: `@types/node` raised from 20 to 24 (Vitest 5 peer requirement; matches Node 24); config is `.mts` because the package is CommonJS; the FormData helper and the `Validation` namespace moved to P2.S4, where the first form schemas need them.
 
 #### P2.S2 — Profiles table, helper functions, RLS — `NOT STARTED`
 
@@ -1135,7 +1137,7 @@ reset their password and edit their profile; protected routes work.
 #### P2.S4 — Register and login — `NOT STARTED`
 
 - **Depends on:** P2.S3.
-- **Affects:** `src/app/[locale]/(auth)/{layout,login/page,register/page}.tsx`, `src/components/auth/*`, `src/actions/auth.ts`, `src/lib/validation/auth.ts`, `src/components/layout/site-header.tsx` (+ `user-menu.tsx`), `messages/*.json` (`Auth`).
+- **Affects:** `src/lib/validation/form-data.ts` (FormData → object helper, if multi-value fields need it), `messages/*.json` (`Validation`), `src/app/[locale]/(auth)/{layout,login/page,register/page}.tsx`, `src/components/auth/*`, `src/actions/auth.ts`, `src/lib/validation/auth.ts`, `src/components/layout/site-header.tsx` (+ `user-menu.tsx`), `messages/*.json` (`Auth`).
 - **Sub-steps:**
   1. Zod schemas: email, password (8–72 chars), display name (2–50), password confirmation.
   2. Actions `signUp`, `signIn`, `signOut` with error codes (`invalid_credentials`, `email_not_confirmed`, `email_taken`, `weak_password`, `rate_limited`).
@@ -1184,10 +1186,11 @@ reset their password and edit their profile; protected routes work.
 - **Sub-steps:** create a Brevo or Resend account (free); SMTP settings in Supabase → Auth → SMTP; sender name "Findly"; bilingual (mk first, then en) templates for confirm signup, reset password, email change.
 - **Verify:** confirmation email reaches an address that is not a Supabase team member; links work; email does not land in spam (check once).
 
-#### P2.S10 — GitHub remote and first Vercel deployment — `NOT STARTED`
+#### P2.S10 — GitHub remote and first Vercel deployment — `IN PROGRESS`
 
 - **Depends on:** P2.S4 (can be done earlier).
-- **Sub-steps:** create a GitHub repo, `git remote add origin …`, `git push -u origin main`; import into Vercel; set env vars (`NEXT_PUBLIC_SITE_URL` = Vercel URL); add the Vercel URL to Supabase redirect URLs.
+- **Done (2026-09-24):** repository https://github.com/BlagojPetrov/findly-web created; `origin` added; `main` pushed and tracking `origin/main` (verified: same commit locally and remotely).
+- **Sub-steps (remaining):** import into Vercel; set env vars (`NEXT_PUBLIC_SITE_URL` = Vercel URL); add the Vercel URL to Supabase redirect URLs.
 - **Verify:** the deployed site loads in both languages; registration/login works on the deployed URL.
 
 **Definition of done — Phase 2:** register → confirm email → sign in → edit
@@ -1575,11 +1578,11 @@ started (no auth code or profile tables exist yet).
 | F-03 | Supabase grants `anon`/`authenticated` all table privileges (INSERT, UPDATE, DELETE, …) on `public` tables by default; the anonymous insert into `categories` was stopped by RLS, not by privileges. The migration's `grant select` is therefore redundant. | Keep defaults; RLS on every table is mandatory (§11), column grants where needed. Applied migration not edited. | Documented    |
 | F-04 | `NextIntlClientProvider` sends all messages to the browser.                                                                                                                                                                                                 | Fine while small; limit client namespaces in P11.S3.                                                            | Open (P11.S3) |
 | F-05 | The Supabase URL was configured with `/rest/v1/`, which broke all queries.                                                                                                                                                                                  | Fixed in `.env.local`; `env.ts` now rejects URLs with a path.                                                   | Fixed         |
-| F-06 | Default branch is `main` (an earlier instruction said `master`). No GitHub remote yet.                                                                                                                                                                      | Use `main`; remote added in P2.S10.                                                                             | Open (P2.S10) |
+| F-06 | Default branch is `main` (an earlier instruction said `master`). No GitHub remote yet.                                                                                                                                                                      | Use `main`; remote `origin` = github.com/BlagojPetrov/findly-web, pushed 2026-09-24.                            | Fixed         |
 | F-07 | Hosted minimum password length is 6.                                                                                                                                                                                                                        | Raise to 8 in P2.S4.                                                                                            | Open (P2.S4)  |
 | F-08 | Built-in Supabase email only delivers to project team members.                                                                                                                                                                                              | Custom SMTP in P2.S9; test with own address before that.                                                        | Open (P2.S9)  |
 | F-09 | `supabase login` fails in non-interactive shells.                                                                                                                                                                                                           | Run it in a normal terminal (documented in §8 and `CLAUDE.md`).                                                 | Documented    |
-| F-10 | No automated tests yet.                                                                                                                                                                                                                                     | Vitest in P2.S1, SQL tests from P2.S2.                                                                          | Open (P2.S1)  |
+| F-10 | No automated tests yet.                                                                                                                                                                                                                                     | Vitest added in P2.S1; SQL tests from P2.S2.                                                                    | Fixed         |
 
 ---
 
@@ -1590,18 +1593,20 @@ started (no auth code or profile tables exist yet).
 | 2026-09-24 | P1.S1–S8 | Project scaffold, i18n, Supabase clients, env validation, init migration, home page, project linked. |
 | 2026-09-24 | —        | Fixed Supabase URL misconfiguration; URL validation; generated types committed.                      |
 | 2026-09-24 | P1.S9    | Phase 1 audit, master plan created, `CLAUDE.md` project guide, font variable fix.                    |
+| 2026-09-24 | P2.S10   | GitHub repository created and `main` pushed (Vercel part still open).                                |
+| 2026-09-24 | P2.S1    | Vitest, `ActionResult` helpers, `safeRedirectPath`, translation parity tests, `Errors` messages.     |
 
 ---
 
 ## 25. Next Recommended Step
 
-**P2.S1 — Test tooling and action conventions** (see §22, Phase 2).
+**P2.S2 — Profiles table, helper functions, RLS** (see §22, Phase 2).
 
-Why first: every following Phase 2 step adds validation schemas, server actions
-and security-sensitive redirects that need unit tests and a shared result type.
+Why next: every other auth step needs a `profiles` row per user, and later
+policies depend on `is_admin()` and `can_write()`. It also introduces the SQL
+test runner (`npm run db:test`).
 
-Manual preparation you can do in parallel (not blocking P2.S1):
+Manual preparation you can do in parallel (not blocking P2.S2):
 
 - Create a Brevo or Resend account for SMTP (needed in P2.S9).
 - Create a Google Cloud project for OAuth (needed in P2.S7).
-- Create an empty GitHub repository (needed in P2.S10).

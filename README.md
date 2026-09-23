@@ -51,6 +51,7 @@ supabase/migrations/   SQL migrations (schema, RLS policies, functions)
 | `npm run build`     | Production build                                     |
 | `npm run lint`      | ESLint                                               |
 | `npm run typecheck` | TypeScript check                                     |
+| `npm test`          | Unit tests (Vitest)                                  |
 | `npm run format`    | Prettier                                             |
 | `npm run db:new`    | Create a new migration: `npm run db:new -- <name>`   |
 | `npm run db:push`   | Apply pending migrations to the linked project       |

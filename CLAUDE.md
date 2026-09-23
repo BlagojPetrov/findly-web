@@ -11,7 +11,7 @@ status and the next step. Read it before any work.
 1. Read the step in `docs/PROJECT_PLAN.md` (§22) and inspect the code it affects.
 2. Briefly explain what the step changes.
 3. Implement only that step. Log unrelated findings in §23 instead of fixing them.
-4. Run `npm run lint`, `npm run typecheck`, `npm test` (from P2.S1), `npm run build`,
+4. Run `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`,
    the step's Verify list, and `npx supabase db advisors --linked` after migrations.
 5. Update the plan: step status (§2 and §22), Changelog (§24), Next Recommended Step (§25).
 6. Update this file if conventions, commands or project state change.
@@ -22,9 +22,10 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phase 1 completed. Phase 2 (Authentication) not started. Next: P2.S1.
+- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1 done. Next: P2.S2.
 - Supabase dev project `lyvudeaxwibgpqsinqyz` (eu-central-1, Postgres 17), linked.
-- No GitHub remote yet (P2.S10). Branch `main`.
+- GitHub: `origin` = https://github.com/BlagojPetrov/findly-web, branch `main`.
+  Not deployed to Vercel yet (P2.S10).
 
 ## Stack and conventions
 
@@ -36,7 +37,10 @@ status and the next step. Read it before any work.
   (browser). Publishable key only; never add a service-role key to the app.
 - Reads in Server Components (`src/lib/queries/*`); writes via Server Actions
   (`src/actions/*`) validated with Zod (`src/lib/validation/*`), returning
-  `ActionResult` with error codes that the UI translates.
+  `ActionResult` (`@/lib/action-result`: `ok`, `fail`, `validationError`) with error
+  codes from the `Errors` messages namespace. User-supplied redirect targets go
+  through `safeRedirectPath()` (`@/lib/safe-redirect`).
+- Unit tests: Vitest, colocated as `src/**/*.test.ts`.
 - Security: RLS on every table in the same migration that creates it (Supabase grants
   table privileges to anon/authenticated by default). `can_write()` in write policies,
   `is_admin()` for admin access. `security definer` functions use `search_path = ''`.
@@ -50,6 +54,7 @@ status and the next step. Read it before any work.
 | ---------------------------------------- | ---------------------------------------------- |
 | `npm run dev` / `build` / `start`        | Next.js                                        |
 | `npm run lint`, `npm run typecheck`      | ESLint, `next typegen && tsc --noEmit`         |
+| `npm test` / `npm run test:watch`        | Vitest unit tests                              |
 | `npm run db:new -- <name>`               | New migration in `supabase/migrations/`        |
 | `npm run db:push`                        | Apply migrations to the linked project         |
 | `npm run db:types`                       | Regenerate `src/types/database.ts` (commit it) |
