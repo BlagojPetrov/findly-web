@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-24
 - **Current phase:** Phase 2 — Authentication (in progress)
-- **Next step:** P2.S2 (§22)
+- **Next step:** P2.S3 (§22)
 
 ---
 
@@ -119,7 +119,7 @@ to these IDs. "Next step" always means the step named in
 | P1.S8  | Link Supabase project, push migration, types   | `COMPLETED`   |
 | P1.S9  | Phase 1 audit and master plan                  | `COMPLETED`   |
 | P2.S1  | Test tooling and action conventions            | `COMPLETED`   |
-| P2.S2  | Profiles table, helper functions, RLS          | `NOT STARTED` |
+| P2.S2  | Profiles table, helper functions, RLS          | `COMPLETED`   |
 | P2.S3  | Auth helpers and route protection              | `NOT STARTED` |
 | P2.S4  | Register and login (email/password)            | `NOT STARTED` |
 | P2.S5  | Email verification                             | `NOT STARTED` |
@@ -453,7 +453,7 @@ Validated at startup by `src/lib/env.ts`. `.env.local` is gitignored;
   small lookup tables), `created_at`/`updated_at timestamptz`.
 - Enums as Postgres enum types for fixed sets (item_type, item_status, …); lookup
   tables where admins can change the values (categories).
-- Functions: `set search_path = ''` and fully qualified names. `security invoker`
+- Functions: `set search_path = ''` and fully qualified names. Policy helpers go in schema `private`; `public` holds only functions the app calls via `rpc()`. `security invoker`
   by default; `security definer` only when a function must write rows the caller
   cannot (matching, notifications), and then it validates its inputs itself.
 - Extensions live in schema `extensions` (postgis, pg_trgm, unaccent — installed).
@@ -481,17 +481,18 @@ Legend: **PK** primary key, **FK** foreign key, ✓ implemented.
 
 ### Helper functions
 
-| Function                   | Purpose                                                                              | Phase |
-| -------------------------- | ------------------------------------------------------------------------------------ | ----- |
-| `set_updated_at()`         | Trigger function that sets `updated_at = now()`.                                     | 2     |
-| `is_admin()`               | `true` if the current user's profile has role `admin`. `security definer`, `stable`. | 2     |
-| `can_write()`              | `true` if signed in and not banned. Used in every insert/update policy.              | 2     |
-| `handle_new_user()`        | Trigger on `auth.users` insert → creates the `profiles` row.                         | 2     |
-| `normalize_text(text)`     | lowercase + unaccent + Cyrillic→Latin transliteration, `immutable`.                  | 4     |
-| `search_items(...)`        | Filtered, paginated search (see §12).                                                | 4     |
-| `items_in_bounds(...)`     | Items inside a map bounding box (see §13).                                           | 5     |
-| `match_score(lost, found)` | Returns score + breakdown jsonb (see §14).                                           | 6     |
-| `compute_matches(item_id)` | Recomputes matches for one item.                                                     | 6     |
+| Function                   | Purpose                                                                                | Phase |
+| -------------------------- | -------------------------------------------------------------------------------------- | ----- |
+| `set_updated_at()`         | Trigger function that sets `updated_at = now()`.                                       | 2     |
+| `private.is_admin()`       | `true` if the current user's profile has role `admin`. `security definer`, `stable`. ✓ | 2     |
+| `private.can_write()`      | `true` if signed in and not banned. Used in every insert/update policy. ✓              | 2     |
+| `current_profile()`        | The signed-in user's full profile row (API-callable). ✓                                | 2     |
+| `handle_new_user()`        | Trigger on `auth.users` insert → creates the `profiles` row.                           | 2     |
+| `normalize_text(text)`     | lowercase + unaccent + Cyrillic→Latin transliteration, `immutable`.                    | 4     |
+| `search_items(...)`        | Filtered, paginated search (see §12).                                                  | 4     |
+| `items_in_bounds(...)`     | Items inside a map bounding box (see §13).                                             | 5     |
+| `match_score(lost, found)` | Returns score + breakdown jsonb (see §14).                                             | 6     |
+| `compute_matches(item_id)` | Recomputes matches for one item.                                                       | 6     |
 
 ### Enums
 
@@ -519,7 +520,9 @@ Legend: **PK** primary key, **FK** foreign key, ✓ implemented.
 
 Seed: electronics, documents, wallet, keys, accessories, clothing, pets, other.
 
-### `profiles` (P2.S2)
+### `profiles` ✓ (P2.S2)
+
+Column privileges: `anon`/`authenticated` may **select only** `id, display_name, avatar_path, created_at` and `authenticated` may **update only** `display_name, avatar_path, preferred_locale` (own row). Always select explicit columns — `select("*")` on `profiles` fails with 42501. The own full row comes from `rpc("current_profile")`. `avatar_path` must start with `<id>/`.
 
 | Column                     | Type        | Notes                                        |
 | -------------------------- | ----------- | -------------------------------------------- |
@@ -730,7 +733,8 @@ password" always reports success, so emails cannot be enumerated).
 - Column-level protection with `grant update (col, …)` where users may update only
   some columns (profiles: not `role`/`is_banned`; items: not `user_id`).
 - Every insert/update policy includes `can_write()` so banned users cannot write.
-- Admin access through `is_admin()` in policies. No service-role key in the app.
+- Admin access through `private.is_admin()` in policies. No service-role key in the app.
+- RLS helper functions live in schema `private`, which the Data API does not expose; only functions meant to be called by the app are in `public`.
 - `security definer` functions: `set search_path = ''`, check their inputs, and
   `revoke execute ... from public, anon` unless they are meant to be called.
 - Server Actions validate all input with Zod; the database also has `check`
@@ -741,18 +745,18 @@ password" always reports success, so emails cannot be enumerated).
 
 ### Policy matrix
 
-| Table         | select                                                                              | insert                                          | update                                                       | delete                   |
-| ------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------ | ------------------------ |
-| categories ✓  | everyone                                                                            | admin (P10.S6)                                  | admin (P10.S6)                                               | admin (P10.S6)           |
-| profiles      | everyone (only `id, display_name, avatar_path` exposed via column grants to `anon`) | trigger only                                    | own row, allowed columns; admin: `role`, `is_banned` via RPC | none (cascade from auth) |
-| items         | `status in (active, resolved)` or own or admin                                      | own `user_id` and `can_write()`                 | own and `can_write()` (status `hidden` only by admin)        | own or admin             |
-| item_images   | if parent item visible                                                              | parent item owned                               | parent item owned                                            | parent item owned        |
-| matches       | owner of either item                                                                | definer functions only                          | owner of either item, only `status`                          | none                     |
-| notifications | own                                                                                 | definer functions only                          | own, only `read_at`                                          | own                      |
-| conversations | participant                                                                         | requester = self, not item owner, `can_write()` | none (trigger updates `last_message_at`)                     | none                     |
-| messages      | participant                                                                         | participant, `sender_id = self`, `can_write()`  | recipient, only `read_at`                                    | none                     |
-| favorites     | own                                                                                 | own                                             | —                                                            | own                      |
-| reports       | own or admin                                                                        | self, `can_write()`                             | admin                                                        | none                     |
+| Table         | select                                                                                                              | insert                                          | update                                                       | delete                   |
+| ------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------ | ------------------------ |
+| categories ✓  | everyone                                                                                                            | admin (P10.S6)                                  | admin (P10.S6)                                               | admin (P10.S6)           |
+| profiles      | everyone, public columns only (`id, display_name, avatar_path, created_at`); own full row via `current_profile()` ✓ | trigger only                                    | own row, allowed columns; admin: `role`, `is_banned` via RPC | none (cascade from auth) |
+| items         | `status in (active, resolved)` or own or admin                                                                      | own `user_id` and `can_write()`                 | own and `can_write()` (status `hidden` only by admin)        | own or admin             |
+| item_images   | if parent item visible                                                                                              | parent item owned                               | parent item owned                                            | parent item owned        |
+| matches       | owner of either item                                                                                                | definer functions only                          | owner of either item, only `status`                          | none                     |
+| notifications | own                                                                                                                 | definer functions only                          | own, only `read_at`                                          | own                      |
+| conversations | participant                                                                                                         | requester = self, not item owner, `can_write()` | none (trigger updates `last_message_at`)                     | none                     |
+| messages      | participant                                                                                                         | participant, `sender_id = self`, `can_write()`  | recipient, only `read_at`                                    | none                     |
+| favorites     | own                                                                                                                 | own                                             | —                                                            | own                      |
+| reports       | own or admin                                                                                                        | self, `can_write()`                             | admin                                                        | none                     |
 
 ### Security verification per step
 
@@ -1111,7 +1115,7 @@ reset their password and edit their profile; protected routes work.
 - **Verify:** `npm test` passes; the key-parity test fails if a key is removed from one file (try it, then revert).
 - **Result:** 23 unit tests (action results, 20 redirect cases, translation key parity and no empty messages). `ErrorCode` is derived from the keys of `Errors` in `mk.json`, so an untranslated error code is a type error. Removing `Errors.forbidden` from `en.json` made the parity test fail as expected. Deviations: `@types/node` raised from 20 to 24 (Vitest 5 peer requirement; matches Node 24); config is `.mts` because the package is CommonJS; the FormData helper and the `Validation` namespace moved to P2.S4, where the first form schemas need them.
 
-#### P2.S2 — Profiles table, helper functions, RLS — `NOT STARTED`
+#### P2.S2 — Profiles table, helper functions, RLS — `COMPLETED`
 
 - **Depends on:** P2.S1.
 - **Affects:** new migration `*_profiles.sql`, `src/types/database.ts`, `supabase/tests/profiles.sql`, `package.json` (`db:test` script).
@@ -1123,13 +1127,20 @@ reset their password and edit their profile; protected routes work.
   5. `db:test` script running `supabase/tests/*.sql` with `supabase db query --linked` inside a rolled-back transaction.
   6. Push migration, regenerate types.
 - **Verify:** SQL tests: a user cannot update another profile; cannot set their own `role`/`is_banned`; `can_write()` false when banned; signing up (test via dashboard "Add user") creates a profile row. Advisors clean.
+- **Result:** migrations `20260924000100_profiles.sql` and `20260924000200_private_helpers.sql` applied to the dev project; `supabase/tests/_helpers.sql` (create user, `login_as`, `login_as_anon`, `logout`), `supabase/tests/profiles.sql` (profile creation incl. name fallbacks and truncation, column privileges, own/other updates, avatar folder check, insert/delete denied, anon access, banned user, admin detection, cascade delete), `scripts/db-test.mjs` (`npm run db:test [-- <name>]`, exits 1 on failure). A deliberately broken assertion was reported with its message; tests leave no data behind. REST API checked with the publishable key: public columns readable, `role`/`select=*` → 42501, `rpc/is_admin` and `rpc/can_write` not exposed, anonymous PATCH denied.
+- **Deviations from the plan:**
+  - Added `current_profile()` (public, `security definer`): the only way to read the signed-in user's own `role`, `is_banned`, `preferred_locale`, because those columns are not granted to API roles.
+  - `is_admin()` and `can_write()` live in schema `private` (not exposed by the Data API) after the advisors flagged them as callable RPCs. Policies call `private.can_write()` / `private.is_admin()`.
+  - Advisors: two accepted warnings remain for `current_profile()` (intentionally callable; returns only the caller's row) — see F-12.
+  - Google profile pictures are not imported: `avatar_path` is a storage path; users upload an avatar in P2.S8.
+  - Dashboard "Add user" check left as an optional manual test; the trigger is covered by the SQL tests (inserting into `auth.users`).
 
 #### P2.S3 — Auth helpers and route protection — `NOT STARTED`
 
 - **Depends on:** P2.S2.
 - **Affects:** `src/lib/auth.ts`, `src/lib/supabase/proxy.ts`, `src/proxy.ts`.
 - **Sub-steps:**
-  1. `getCurrentUser()` (claims + profile), `requireUser()` (redirects to `/login?next=`), `requireAdmin()` (404 for non-admins).
+  1. `getCurrentUser()` (claims + `rpc("current_profile")`), `requireUser()` (redirects to `/login?next=`), `requireAdmin()` (404 for non-admins, based on `current_profile().role`).
   2. `updateSession()` returns the user claims; proxy redirects guests from protected prefixes and signed-in users away from `/login` and `/register` (locale-aware).
   3. Unit tests for the "is protected path" helper (with and without `/en`).
 - **Verify:** as a guest, `/profile` and `/en/profile` redirect to the right login URL with `next`; public pages unaffected; unit tests pass.
@@ -1571,42 +1582,44 @@ insert attempt, auth settings endpoint, `db advisors`); built CSS.
 **Result:** Phase 1 matches the planned architecture. Phase 2 has **not** been
 started (no auth code or profile tables exist yet).
 
-| ID   | Finding                                                                                                                                                                                                                                                     | Decision                                                                                                        | Status        |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ------------- |
-| F-01 | next/font variable was named `--font-sans` while `@theme` also defined `--font-sans: var(--font-sans)` on `:root`. It only worked because unlayered CSS wins over the theme layer.                                                                          | Renamed the font variable to `--font-inter`; `--font-sans` now references it (AD-19).                           | Fixed         |
-| F-02 | `supabase/config.toml` holds CLI defaults (`site_url` 127.0.0.1, confirmations off, password length 6) that differ from the hosted project.                                                                                                                 | Keep the file (the CLI needs it); it is not a source of truth. Never run `supabase config push` (§8).           | Documented    |
-| F-03 | Supabase grants `anon`/`authenticated` all table privileges (INSERT, UPDATE, DELETE, …) on `public` tables by default; the anonymous insert into `categories` was stopped by RLS, not by privileges. The migration's `grant select` is therefore redundant. | Keep defaults; RLS on every table is mandatory (§11), column grants where needed. Applied migration not edited. | Documented    |
-| F-04 | `NextIntlClientProvider` sends all messages to the browser.                                                                                                                                                                                                 | Fine while small; limit client namespaces in P11.S3.                                                            | Open (P11.S3) |
-| F-05 | The Supabase URL was configured with `/rest/v1/`, which broke all queries.                                                                                                                                                                                  | Fixed in `.env.local`; `env.ts` now rejects URLs with a path.                                                   | Fixed         |
-| F-06 | Default branch is `main` (an earlier instruction said `master`). No GitHub remote yet.                                                                                                                                                                      | Use `main`; remote `origin` = github.com/BlagojPetrov/findly-web, pushed 2026-09-24.                            | Fixed         |
-| F-07 | Hosted minimum password length is 6.                                                                                                                                                                                                                        | Raise to 8 in P2.S4.                                                                                            | Open (P2.S4)  |
-| F-08 | Built-in Supabase email only delivers to project team members.                                                                                                                                                                                              | Custom SMTP in P2.S9; test with own address before that.                                                        | Open (P2.S9)  |
-| F-09 | `supabase login` fails in non-interactive shells.                                                                                                                                                                                                           | Run it in a normal terminal (documented in §8 and `CLAUDE.md`).                                                 | Documented    |
-| F-10 | No automated tests yet.                                                                                                                                                                                                                                     | Vitest added in P2.S1; SQL tests from P2.S2.                                                                    | Fixed         |
+| ID   | Finding                                                                                                                                                                                                                                                     | Decision                                                                                                                                              | Status        |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- |
+| F-01 | next/font variable was named `--font-sans` while `@theme` also defined `--font-sans: var(--font-sans)` on `:root`. It only worked because unlayered CSS wins over the theme layer.                                                                          | Renamed the font variable to `--font-inter`; `--font-sans` now references it (AD-19).                                                                 | Fixed         |
+| F-02 | `supabase/config.toml` holds CLI defaults (`site_url` 127.0.0.1, confirmations off, password length 6) that differ from the hosted project.                                                                                                                 | Keep the file (the CLI needs it); it is not a source of truth. Never run `supabase config push` (§8).                                                 | Documented    |
+| F-03 | Supabase grants `anon`/`authenticated` all table privileges (INSERT, UPDATE, DELETE, …) on `public` tables by default; the anonymous insert into `categories` was stopped by RLS, not by privileges. The migration's `grant select` is therefore redundant. | Keep defaults; RLS on every table is mandatory (§11), column grants where needed. Applied migration not edited.                                       | Documented    |
+| F-04 | `NextIntlClientProvider` sends all messages to the browser.                                                                                                                                                                                                 | Fine while small; limit client namespaces in P11.S3.                                                                                                  | Open (P11.S3) |
+| F-05 | The Supabase URL was configured with `/rest/v1/`, which broke all queries.                                                                                                                                                                                  | Fixed in `.env.local`; `env.ts` now rejects URLs with a path.                                                                                         | Fixed         |
+| F-06 | Default branch is `main` (an earlier instruction said `master`). No GitHub remote yet.                                                                                                                                                                      | Use `main`; remote `origin` = github.com/BlagojPetrov/findly-web, pushed 2026-09-24.                                                                  | Fixed         |
+| F-07 | Hosted minimum password length is 6.                                                                                                                                                                                                                        | Raise to 8 in P2.S4.                                                                                                                                  | Open (P2.S4)  |
+| F-08 | Built-in Supabase email only delivers to project team members.                                                                                                                                                                                              | Custom SMTP in P2.S9; test with own address before that.                                                                                              | Open (P2.S9)  |
+| F-09 | `supabase login` fails in non-interactive shells.                                                                                                                                                                                                           | Run it in a normal terminal (documented in §8 and `CLAUDE.md`).                                                                                       | Documented    |
+| F-11 | `supabase migration new` names files with the **UTC** time, but the init migration was named with the local date (`20260924000000`). Until 2026-09-24 00:00 UTC new files would sort before it.                                                             | New migrations must sort after the latest existing file; the profiles migration was renamed to `20260924000100`. Check the name after every `db:new`. | Documented    |
+| F-12 | Advisors warn that `current_profile()` (a `security definer` function in `public`) is callable by `anon`/`authenticated`.                                                                                                                                   | Intentional: it returns only the caller's own row (nothing for anon). Accepted warning.                                                               | Accepted      |
+| F-10 | No automated tests yet.                                                                                                                                                                                                                                     | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                          | Fixed         |
 
 ---
 
 ## 24. Changelog
 
-| Date       | Step     | Change                                                                                               |
-| ---------- | -------- | ---------------------------------------------------------------------------------------------------- |
-| 2026-09-24 | P1.S1–S8 | Project scaffold, i18n, Supabase clients, env validation, init migration, home page, project linked. |
-| 2026-09-24 | —        | Fixed Supabase URL misconfiguration; URL validation; generated types committed.                      |
-| 2026-09-24 | P1.S9    | Phase 1 audit, master plan created, `CLAUDE.md` project guide, font variable fix.                    |
-| 2026-09-24 | P2.S10   | GitHub repository created and `main` pushed (Vercel part still open).                                |
-| 2026-09-24 | P2.S1    | Vitest, `ActionResult` helpers, `safeRedirectPath`, translation parity tests, `Errors` messages.     |
+| Date       | Step     | Change                                                                                                                    |
+| ---------- | -------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-24 | P1.S1–S8 | Project scaffold, i18n, Supabase clients, env validation, init migration, home page, project linked.                      |
+| 2026-09-24 | —        | Fixed Supabase URL misconfiguration; URL validation; generated types committed.                                           |
+| 2026-09-24 | P1.S9    | Phase 1 audit, master plan created, `CLAUDE.md` project guide, font variable fix.                                         |
+| 2026-09-24 | P2.S10   | GitHub repository created and `main` pushed (Vercel part still open).                                                     |
+| 2026-09-24 | P2.S1    | Vitest, `ActionResult` helpers, `safeRedirectPath`, translation parity tests, `Errors` messages.                          |
+| 2026-09-24 | P2.S2    | `profiles`, sign-up trigger, `private.is_admin/can_write`, `current_profile()`, column-level privileges, SQL test runner. |
 
 ---
 
 ## 25. Next Recommended Step
 
-**P2.S2 — Profiles table, helper functions, RLS** (see §22, Phase 2).
+**P2.S3 — Auth helpers and route protection** (see §22, Phase 2).
 
-Why next: every other auth step needs a `profiles` row per user, and later
-policies depend on `is_admin()` and `can_write()`. It also introduces the SQL
-test runner (`npm run db:test`).
+Why next: login/register pages (P2.S4) and every protected page need
+`getCurrentUser()` / `requireUser()` and the proxy redirects.
 
-Manual preparation you can do in parallel (not blocking P2.S2):
+Manual preparation you can do in parallel (not blocking P2.S3):
 
 - Create a Brevo or Resend account for SMTP (needed in P2.S9).
 - Create a Google Cloud project for OAuth (needed in P2.S7).

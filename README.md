@@ -56,3 +56,4 @@ supabase/migrations/   SQL migrations (schema, RLS policies, functions)
 | `npm run db:new`    | Create a new migration: `npm run db:new -- <name>`   |
 | `npm run db:push`   | Apply pending migrations to the linked project       |
 | `npm run db:types`  | Regenerate `src/types/database.ts` from the database |
+| `npm run db:test`   | SQL tests (RLS, triggers) against the linked project |

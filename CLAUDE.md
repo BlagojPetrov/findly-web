@@ -22,7 +22,7 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1 done. Next: P2.S2.
+- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S2 done. Next: P2.S3.
 - Supabase dev project `lyvudeaxwibgpqsinqyz` (eu-central-1, Postgres 17), linked.
 - GitHub: `origin` = https://github.com/BlagojPetrov/findly-web, branch `main`.
   Not deployed to Vercel yet (P2.S10).
@@ -42,8 +42,17 @@ status and the next step. Read it before any work.
   through `safeRedirectPath()` (`@/lib/safe-redirect`).
 - Unit tests: Vitest, colocated as `src/**/*.test.ts`.
 - Security: RLS on every table in the same migration that creates it (Supabase grants
-  table privileges to anon/authenticated by default). `can_write()` in write policies,
-  `is_admin()` for admin access. `security definer` functions use `search_path = ''`.
+  table privileges to anon/authenticated by default). `private.can_write()` in write
+  policies, `private.is_admin()` for admin access. Policy helpers go in schema
+  `private` (not exposed by the API); `public` functions are only those the app calls
+  via `rpc()`. `security definer` functions use `search_path = ''`.
+- `profiles` has column-level privileges: select explicit public columns
+  (`id, display_name, avatar_path, created_at`), never `select("*")`. The signed-in
+  user's own full row (role, is_banned, preferred_locale) comes from
+  `rpc("current_profile")`.
+- SQL tests: `supabase/tests/<name>.sql` using helpers from `_helpers.sql`
+  (`pg_temp.create_user`, `login_as`, `login_as_anon`, `logout`) and `assert`.
+  The runner wraps each file in `begin … rollback`.
 - UI: shadcn/ui (Base UI primitives; `cn` from `@/lib/utils`), Tailwind 4 tokens in
   `src/app/globals.css`, lucide icons. Server Components by default.
 - Match the existing code style; Prettier formats (`npm run format`).
@@ -58,6 +67,7 @@ status and the next step. Read it before any work.
 | `npm run db:new -- <name>`               | New migration in `supabase/migrations/`        |
 | `npm run db:push`                        | Apply migrations to the linked project         |
 | `npm run db:types`                       | Regenerate `src/types/database.ts` (commit it) |
+| `npm run db:test [-- <name>]`            | SQL tests against the linked project           |
 | `npx supabase db query --linked "<sql>"` | Run SQL against the linked project             |
 | `npx supabase db advisors --linked`      | Security/performance checks                    |
 
@@ -68,6 +78,10 @@ status and the next step. Read it before any work.
   PowerShell window, not through the agent.
 - Never edit applied migrations; never run `supabase config push` (config.toml holds
   local defaults that differ from the hosted project).
+- `db:new` names migrations with the UTC time; make sure the new file sorts after
+  the latest existing migration (rename if needed). Dry-run a migration by running
+  it inside `begin; … rollback;` with `npx supabase db query --linked -f <file>`
+  before `npm run db:push -- --yes`.
 - `.env.local` holds `NEXT_PUBLIC_SUPABASE_URL` (base URL, no path),
   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL`.
 - The Android app (github.com/BlagojPetrov/Findly) is a functional reference only.
