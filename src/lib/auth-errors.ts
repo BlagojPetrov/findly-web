@@ -38,14 +38,22 @@ export function authErrorCode(error: AuthError): ErrorCode {
   }
 }
 
-// Action result for a failed auth call. Supabase rejects some addresses our
-// schema accepts (e.g. reserved domains); that error belongs on the email field.
+// Action result for a failed auth call. Some errors belong on a field:
+// Supabase rejects some addresses our schema accepts (e.g. reserved domains),
+// and a new password must differ from the current one.
 export function authFailure(error: AuthError): ActionResult<never> {
   if (error.code === "email_address_invalid") {
     return {
       ok: false,
       error: "validation",
       fieldErrors: { email: ["emailInvalid"] },
+    };
+  }
+  if (error.code === "same_password") {
+    return {
+      ok: false,
+      error: "validation",
+      fieldErrors: { password: ["samePassword"] },
     };
   }
   const code = authErrorCode(error);

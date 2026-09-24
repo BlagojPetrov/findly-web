@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
-import { signInSchema, signUpSchema } from "./auth";
+import { resetPasswordSchema, signInSchema, signUpSchema } from "./auth";
 
 const fieldErrors = (result: {
   success: boolean;
@@ -73,6 +73,33 @@ describe("signUpSchema", () => {
       confirmPassword: " spaces ok ",
     });
     expect(result.password).toBe(" spaces ok ");
+  });
+});
+
+describe("resetPasswordSchema", () => {
+  it("accepts matching passwords", () => {
+    const result = resetPasswordSchema.safeParse({
+      password: "nova-lozinka",
+      confirmPassword: "nova-lozinka",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it.each([
+    [{ password: "", confirmPassword: "" }, "password", "required"],
+    [
+      { password: "short", confirmPassword: "short" },
+      "password",
+      "passwordTooShort",
+    ],
+    [
+      { password: "nova-lozinka", confirmPassword: "druga-lozinka" },
+      "confirmPassword",
+      "passwordsDontMatch",
+    ],
+  ])("rejects %j", (input, field, message) => {
+    const errors = fieldErrors(resetPasswordSchema.safeParse(input));
+    expect(errors[field]?.[0]).toBe(message);
   });
 });
 

@@ -45,6 +45,19 @@ describe("authFailure", () => {
     });
   });
 
+  it("puts a reused password on the password field", () => {
+    const error = new AuthError(
+      "New password should be different from the old password.",
+      422,
+      "same_password",
+    );
+    expect(authFailure(error)).toEqual({
+      ok: false,
+      error: "validation",
+      fieldErrors: { password: ["samePassword"] },
+    });
+  });
+
   it("returns the mapped code for other errors", () => {
     const error = new AuthError("x", 400, "invalid_credentials");
     expect(authFailure(error)).toEqual({

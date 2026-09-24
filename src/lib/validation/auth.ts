@@ -29,16 +29,33 @@ export const signInSchema = z.object({
 
 export const resendSchema = z.object({ email: emailSchema });
 
+export const forgotPasswordSchema = z.object({ email: emailSchema });
+
+const confirmPasswordSchema = z
+  .string({ error: msg("required") })
+  .min(1, msg("required"));
+
+function passwordsMatch(data: { password: string; confirmPassword: string }) {
+  return data.password === data.confirmPassword;
+}
+
+const passwordsDontMatch = {
+  path: ["confirmPassword"],
+  error: msg("passwordsDontMatch"),
+};
+
+export const resetPasswordSchema = z
+  .object({
+    password: newPasswordSchema,
+    confirmPassword: confirmPasswordSchema,
+  })
+  .refine(passwordsMatch, passwordsDontMatch);
+
 export const signUpSchema = z
   .object({
     displayName: displayNameSchema,
     email: emailSchema,
     password: newPasswordSchema,
-    confirmPassword: z
-      .string({ error: msg("required") })
-      .min(1, msg("required")),
+    confirmPassword: confirmPasswordSchema,
   })
-  .refine((data) => data.password === data.confirmPassword, {
-    path: ["confirmPassword"],
-    error: msg("passwordsDontMatch"),
-  });
+  .refine(passwordsMatch, passwordsDontMatch);

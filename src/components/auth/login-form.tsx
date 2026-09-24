@@ -52,6 +52,12 @@ export function LoginForm({ next }: { next?: string }) {
         required
         errors={failure?.fieldErrors?.password}
       />
+      <Link
+        href="/forgot-password"
+        className="-mt-2 justify-self-end text-sm font-medium text-primary hover:underline"
+      >
+        {t("forgotPasswordLink")}
+      </Link>
       <SubmitButton pending={pending}>{t("signIn")}</SubmitButton>
     </form>
   );

@@ -50,7 +50,7 @@
     "invalid_credentials": "Incorrect email or password.",
     "email_not_confirmed": "Your email is not confirmed yet. Open the link we sent you.",
     "weak_password": "The password is too weak. Choose a longer or more complex password.",
-    "email_send_failed": "The confirmation email could not be sent. Please try again later.",
+    "email_send_failed": "The email could not be sent. Please try again later.",
     "email_rate_limited": "We cannot send emails right now because the sending limit has been reached. Please try again later.",
     "resend_cooldown": "Please wait a moment before requesting another email."
   },
@@ -61,7 +61,8 @@
     "passwordTooLong": "The password can be at most 72 characters.",
     "passwordsDontMatch": "The passwords do not match.",
     "displayNameTooShort": "The name must be at least 2 characters.",
-    "displayNameTooLong": "The name can be at most 50 characters."
+    "displayNameTooLong": "The name can be at most 50 characters.",
+    "samePassword": "The new password must be different from the current one."
   },
   "Auth": {
     "loginTitle": "Sign in",
@@ -92,6 +93,24 @@
     "resendButton": "Send a new link",
     "resendCooldown": "You can request a new link in {seconds}s",
     "resendSent": "If there is an unconfirmed account with this email, we sent a new link.",
-    "resendConfirmationLink": "Resend confirmation email"
+    "resendConfirmationLink": "Resend confirmation email",
+    "forgotPasswordLink": "Forgot password?",
+    "forgotTitle": "Forgot password",
+    "forgotDescription": "Enter your email and we will send you a link to choose a new password.",
+    "forgotButton": "Send reset link",
+    "forgotSent": "If an account with this email exists, we sent a link to reset the password. Check your inbox and spam folder.",
+    "forgotCooldown": "You can request a new link in {seconds}s",
+    "resetLinkInvalidTitle": "This link is not valid",
+    "resetLinkInvalid": "The password reset link is invalid, has expired or was already used. Request a new one below.",
+    "resetTitle": "Choose a new password",
+    "resetDescription": "Enter a new password for {email}.",
+    "newPassword": "New password",
+    "confirmNewPassword": "Confirm new password",
+    "resetButton": "Save new password",
+    "resetDone": "Your password has been changed and you are signed in.",
+    "continue": "Continue",
+    "resetNoSessionTitle": "Reset link needed",
+    "resetNoSession": "Open the link from the password reset email to choose a new password. Links are valid for a limited time.",
+    "requestNewLink": "Request a new link"
   }
 }

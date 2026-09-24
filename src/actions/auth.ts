@@ -2,23 +2,32 @@
 
 import { getLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
-import { type ActionResult, ok, validationError } from "@/lib/action-result";
+import {
+  type ActionResult,
+  fail,
+  ok,
+  validationError,
+} from "@/lib/action-result";
+import { getCurrentUser } from "@/lib/auth";
 import { authFailure } from "@/lib/auth-errors";
 import { AFTER_SIGN_IN_PATH, splitLocale } from "@/lib/auth-routes";
 import { safeRedirectPath } from "@/lib/safe-redirect";
 import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
 import {
+  forgotPasswordSchema,
   resendSchema,
+  resetPasswordSchema,
   signInSchema,
   signUpSchema,
 } from "@/lib/validation/auth";
 
-// Where Supabase sends the user from the confirmation email when our custom
-// template is not used (default template, PKCE code). Must match the
-// redirect URLs allowed in Supabase → Authentication → URL Configuration.
-function confirmRedirectUrl(locale: string) {
-  return `${env.NEXT_PUBLIC_SITE_URL}/api/auth/confirm?locale=${locale}`;
+// Where Supabase sends the user from an auth email when our custom template
+// is not used (default template, PKCE code). Must match the redirect URLs
+// allowed in Supabase → Authentication → URL Configuration.
+function confirmRedirectUrl(locale: string, next?: string) {
+  const url = `${env.NEXT_PUBLIC_SITE_URL}/api/auth/confirm?locale=${locale}`;
+  return next ? `${url}&next=${encodeURIComponent(next)}` : url;
 }
 
 // signIn/signUp end in a redirect on success, so they only ever return errors.
@@ -89,6 +98,57 @@ export async function resendConfirmation(
     options: { emailRedirectTo: confirmRedirectUrl(await getLocale()) },
   });
   if (error) return authFailure(error);
+
+  return ok();
+}
+
+// Like resendConfirmation: reports success whether or not an account exists
+// (Supabase also answers unknown addresses with success).
+export async function requestPasswordReset(
+  formData: FormData,
+): Promise<ActionResult> {
+  const parsed = forgotPasswordSchema.safeParse({
+    email: formData.get("email"),
+  });
+  if (!parsed.success) return validationError(parsed.error);
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    parsed.data.email,
+    { redirectTo: confirmRedirectUrl(await getLocale(), "/reset-password") },
+  );
+  if (error) return authFailure(error);
+
+  return ok();
+}
+
+// Sets a new password for the signed-in user. After a reset link the user
+// has a session from /api/auth/confirm, so no current password is asked for
+// (Supabase allows any session to change its password).
+export async function resetPassword(formData: FormData): Promise<ActionResult> {
+  const parsed = resetPasswordSchema.safeParse({
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+  if (!parsed.success) return validationError(parsed.error);
+
+  if (!(await getCurrentUser())) return fail("unauthorized");
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({
+    password: parsed.data.password,
+  });
+  if (error) return authFailure(error);
+
+  // Whoever knew the old password may still be signed in elsewhere.
+  const { error: signOutError } = await supabase.auth.signOut({
+    scope: "others",
+  });
+  if (signOutError) {
+    console.error(
+      `Signing out other sessions after a password reset failed: ${signOutError.message}`,
+    );
+  }
 
   return ok();
 }

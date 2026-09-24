@@ -20,7 +20,8 @@ import { createClient } from "@/lib/supabase/server";
 //   &next=/path                where to go after success (relative paths only)
 //
 // On success the user is signed in (session cookies are set) and redirected.
-// Invalid, expired or reused links go to /verify-email?error=link_invalid.
+// Invalid, expired or reused links go to ?error=link_invalid on
+// /forgot-password (password reset links) or /verify-email (all others).
 
 const otpTypes: EmailOtpType[] = [
   "signup",
@@ -45,6 +46,14 @@ export async function GET(request: NextRequest) {
   const type = params.get("type");
   const code = params.get("code");
 
+  // The default template's PKCE link has no type; its next tells us instead.
+  const isRecovery =
+    type === "recovery" || splitLocale(next).path.startsWith("/reset-password");
+  const failureUrl = `${localizePath(
+    isRecovery ? "/forgot-password" : "/verify-email",
+    locale,
+  )}?error=link_invalid`;
+
   const supabase = await createClient();
   let error: AuthError | null;
   if (tokenHash && isOtpType(type)) {
@@ -57,14 +66,14 @@ export async function GET(request: NextRequest) {
   } else {
     // Supabase reports failures of its own verify step in the URL fragment,
     // which never reaches the server, so we simply see no token here.
-    redirect(`${localizePath("/verify-email", locale)}?error=link_invalid`);
+    redirect(failureUrl);
   }
 
   if (error) {
     console.error(
       `Email link verification failed: ${error.code ?? "no code"} (${error.status ?? "no status"}): ${error.message}`,
     );
-    redirect(`${localizePath("/verify-email", locale)}?error=link_invalid`);
+    redirect(failureUrl);
   }
 
   redirect(localizePath(splitLocale(next).path, locale));

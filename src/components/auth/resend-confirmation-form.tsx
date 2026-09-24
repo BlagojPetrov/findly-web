@@ -2,11 +2,12 @@
 
 import { CircleCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState } from "react";
 import { resendConfirmation } from "@/actions/auth";
 import { FormError } from "@/components/forms/form-error";
 import { FormField } from "@/components/forms/form-field";
 import { SubmitButton } from "@/components/forms/submit-button";
+import { useCooldown } from "@/hooks/use-cooldown";
 import type { ActionResult } from "@/lib/action-result";
 
 // Matches Supabase's minimum interval between emails to the same address.
@@ -28,7 +29,7 @@ export function ResendConfirmationForm({ email }: { email?: string }) {
     null,
   );
 
-  const secondsLeft = useCooldown(state?.sentAt);
+  const secondsLeft = useCooldown(state?.sentAt, COOLDOWN_SECONDS);
   const failure = state && !state.result.ok ? state.result : undefined;
 
   return (
@@ -63,20 +64,4 @@ export function ResendConfirmationForm({ email }: { email?: string }) {
       </SubmitButton>
     </form>
   );
-}
-
-// Seconds remaining until another email may be requested.
-function useCooldown(sentAt: number | undefined) {
-  const [now, setNow] = useState(() => Date.now());
-
-  useEffect(() => {
-    if (!sentAt) return;
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, [sentAt]);
-
-  if (!sentAt) return 0;
-  // `now` may be slightly older than sentAt until the first tick; clamp.
-  const elapsed = Math.max(0, Math.floor((now - sentAt) / 1000));
-  return Math.max(0, COOLDOWN_SECONDS - elapsed);
 }

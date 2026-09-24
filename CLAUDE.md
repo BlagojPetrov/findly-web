@@ -23,7 +23,8 @@ status and the next step. Read it before any work.
 ## Current state
 
 - Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S5 and P2.S9 (SMTP,
-  Brevo) done; confirm-signup template pasted and verified. Next: P2.S6.
+  Brevo) done; P2.S6 implemented, waiting for the user to paste the reset-password
+  template. Next: P2.S7.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13).
 - The dev project has one **real user account** (the project owner). Test cleanup
@@ -60,12 +61,14 @@ status and the next step. Read it before any work.
 - Auth email links go to `/api/auth/confirm` (`token_hash` + `type`, or `code`;
   `locale`; safe `next`). Email templates live in `supabase/templates/` (source of
   truth, pasted into the dashboard; excluded from Prettier). Auth actions that
-  send email pass `emailRedirectTo` to that route.
+  send email pass `emailRedirectTo`/`redirectTo` to that route. Failed recovery links go
+  to `/forgot-password?error=link_invalid`, others to `/verify-email?error=link_invalid`.
 - Combine `buttonVariants()` with conflicting classes via `cn(buttonVariants(), "…")`,
   not `buttonVariants({ className })` (no class merging there).
 - Unit tests: Vitest, colocated as `src/**/*.test.ts`. Browser checks: headless Edge via
   `playwright-core` installed in the scratchpad (not the project) against `next start`
-  or the user's running dev server; create temporary users with SQL and delete them
+  (another port if the user's dev server has 3000) with browser locale `mk-MK`
+  (locale detection, F-13); create temporary users with SQL and delete them
   afterwards. Custom SMTP is on: a sign-up that succeeds **sends a real email**, so
   never sign up with `@findly.test` (it bounces) — use a disposable inbox
   (`…@mailinator.com`) and read the confirmation `token_hash` from
