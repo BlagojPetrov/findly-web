@@ -31,6 +31,10 @@ export function FormField({
     <div className="grid gap-1.5">
       <Label htmlFor={id}>{label}</Label>
       <Input
+        // Base UI reads defaultValue only on mount and warns when it changes.
+        // Forms refill values after a failed submit by passing a new
+        // defaultValue, so remount the input to start from that value.
+        key={JSON.stringify(inputProps.defaultValue ?? null)}
         id={id}
         name={name}
         aria-invalid={errorId ? true : undefined}
