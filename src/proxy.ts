@@ -1,14 +1,16 @@
 import createIntlMiddleware from "next-intl/middleware";
 import { type NextRequest, NextResponse } from "next/server";
 import { routing } from "@/i18n/routing";
-import { getAuthRedirect } from "@/lib/auth-routes";
+import { getAuthRedirect, isGuestOnlyUrl } from "@/lib/auth-routes";
 import { updateSession } from "@/lib/supabase/proxy";
 
 const handleI18nRouting = createIntlMiddleware(routing);
 
 export async function proxy(request: NextRequest) {
   const response = handleI18nRouting(request);
-  const { userId } = await updateSession(request, response);
+  const { userId } = await updateSession(request, response, {
+    verifyUser: isGuestOnlyUrl(request.url),
+  });
 
   // i18n redirects (e.g. /mk/profile → /profile) go out first; the auth
   // check runs on the follow-up request.

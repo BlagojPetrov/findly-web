@@ -53,17 +53,27 @@ export function isGuestOnlyPath(path: string) {
   return guestOnlyPaths.some((prefix) => matchesPrefix(path, prefix));
 }
 
-// Returns where the request should be redirected, or null to continue.
-export function getAuthRedirect(requestUrl: string, signedIn: boolean) {
-  const url = new URL(requestUrl);
+// Locale and locale-less path of a request URL. The path is decoded so
+// "/%70rofile" cannot skip the "/profile" rule.
+function requestPath(url: URL) {
   let pathname = url.pathname;
   try {
-    // Check the decoded path so "/%70rofile" cannot skip the "/profile" rule.
     pathname = decodeURIComponent(pathname);
   } catch {
     // Malformed encoding: check the raw path.
   }
-  const { locale, path } = splitLocale(pathname);
+  return splitLocale(pathname);
+}
+
+// True for /login and /register (any locale).
+export function isGuestOnlyUrl(requestUrl: string) {
+  return isGuestOnlyPath(requestPath(new URL(requestUrl)).path);
+}
+
+// Returns where the request should be redirected, or null to continue.
+export function getAuthRedirect(requestUrl: string, signedIn: boolean) {
+  const url = new URL(requestUrl);
+  const { locale, path } = requestPath(url);
 
   if (!signedIn && isProtectedPath(path)) {
     const target = new URL(localizePath(SIGN_IN_PATH, locale), url);

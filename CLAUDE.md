@@ -49,7 +49,9 @@ status and the next step. Read it before any work.
 - Auth: `getCurrentUser()`, `requireUser(next?)`, `requireAdmin(next?)` from
   `@/lib/auth` (server-only, cached per request) in every protected page, layout and
   action. The proxy only does optimistic redirects; its rules are in
-  `src/lib/auth-routes.ts` — add every new protected route there.
+  `src/lib/auth-routes.ts` — add every new protected route there. On guest-only
+  pages (`/login`, `/register`) the proxy also verifies the user with `getUser()`
+  and clears stale sessions (a JWT outlives a deleted account; F-16).
 - Forms: action takes `(formData)`; the client form wraps it in `useActionState` and
   keeps non-secret values for `defaultValue`. Use `FormField`, `FormError`,
   `SubmitButton` from `src/components/forms/`. Zod messages are `Validation` keys via
@@ -62,8 +64,12 @@ status and the next step. Read it before any work.
 - Combine `buttonVariants()` with conflicting classes via `cn(buttonVariants(), "…")`,
   not `buttonVariants({ className })` (no class merging there).
 - Unit tests: Vitest, colocated as `src/**/*.test.ts`. Browser checks: headless Edge via
-  `playwright-core` installed in the scratchpad (not the project) against `next start`;
-  create temporary users with SQL and delete them afterwards.
+  `playwright-core` installed in the scratchpad (not the project) against `next start`
+  or the user's running dev server; create temporary users with SQL and delete them
+  afterwards. Custom SMTP is on: a sign-up that succeeds **sends a real email**, so
+  never sign up with `@findly.test` (it bounces) — use a disposable inbox
+  (`…@mailinator.com`) and read the confirmation `token_hash` from
+  `auth.one_time_tokens` instead of the email.
 - Security: RLS on every table in the same migration that creates it (Supabase grants
   table privileges to anon/authenticated by default). `private.can_write()` in write
   policies, `private.is_admin()` for admin access. Policy helpers go in schema

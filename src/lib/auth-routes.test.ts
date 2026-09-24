@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   getAuthRedirect,
+  isGuestOnlyUrl,
   isGuestOnlyPath,
   isProtectedPath,
   localizePath,
@@ -105,5 +106,19 @@ describe("getAuthRedirect", () => {
     expect(redirectFor("/en/login?next=%2Fen%2Fprofile", true)).toBe(
       "/en/profile",
     );
+  });
+});
+
+describe("isGuestOnlyUrl", () => {
+  it.each([
+    ["/login", true],
+    ["/en/register", true],
+    ["/register?next=%2Fprofile", true],
+    ["/%6Cogin", true],
+    ["/", false],
+    ["/profile", false],
+    ["/en/verify-email", false],
+  ])("%s -> %s", (path, expected) => {
+    expect(isGuestOnlyUrl(`${base}${path}`)).toBe(expected);
   });
 });
