@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-24
 - **Current phase:** Phase 2 — Authentication (in progress)
-- **Next step:** finish the P2.S5 manual check (email template), then P2.S6 (§22)
+- **Next step:** P2.S6 (§22)
 
 ---
 
@@ -107,80 +107,80 @@ to these IDs. "Next step" always means the step named in
 
 ### Step status
 
-| Step   | Title                                          | Status         |
-| ------ | ---------------------------------------------- | -------------- |
-| P1.S1  | Scaffold Next.js project                       | `COMPLETED`    |
-| P1.S2  | Tooling (shadcn/ui, Prettier, scripts)         | `COMPLETED`    |
-| P1.S3  | Internationalization (next-intl, mk/en)        | `COMPLETED`    |
-| P1.S4  | Supabase clients and proxy session refresh     | `COMPLETED`    |
-| P1.S5  | Environment validation                         | `COMPLETED`    |
-| P1.S6  | Initial migration (extensions, categories)     | `COMPLETED`    |
-| P1.S7  | Base layout and home page                      | `COMPLETED`    |
-| P1.S8  | Link Supabase project, push migration, types   | `COMPLETED`    |
-| P1.S9  | Phase 1 audit and master plan                  | `COMPLETED`    |
-| P2.S1  | Test tooling and action conventions            | `COMPLETED`    |
-| P2.S2  | Profiles table, helper functions, RLS          | `COMPLETED`    |
-| P2.S3  | Auth helpers and route protection              | `COMPLETED`    |
-| P2.S4  | Register and login (email/password)            | `COMPLETED`    |
-| P2.S5  | Email verification                             | `NEEDS REVIEW` |
-| P2.S6  | Forgot / reset password                        | `NOT STARTED`  |
-| P2.S7  | Google OAuth                                   | `NOT STARTED`  |
-| P2.S8  | Profile page and avatar upload                 | `NOT STARTED`  |
-| P2.S9  | SMTP setup (manual) — done before P2.S5        | `COMPLETED`    |
-| P2.S10 | GitHub remote and first Vercel deployment      | `IN PROGRESS`  |
-| P3.S1  | Items and images schema                        | `NOT STARTED`  |
-| P3.S2  | Item images storage bucket                     | `NOT STARTED`  |
-| P3.S3  | Item validation schemas                        | `NOT STARTED`  |
-| P3.S4  | Image picker and upload component              | `NOT STARTED`  |
-| P3.S5  | Create item page                               | `NOT STARTED`  |
-| P3.S6  | Item detail page (basic)                       | `NOT STARTED`  |
-| P3.S7  | Edit, delete, mark resolved                    | `NOT STARTED`  |
-| P3.S8  | Dashboard ("My reports")                       | `NOT STARTED`  |
-| P4.S1  | Search normalization and indexes               | `NOT STARTED`  |
-| P4.S2  | `search_items` SQL function                    | `NOT STARTED`  |
-| P4.S3  | Search params schema and parsing               | `NOT STARTED`  |
-| P4.S4  | Items feed page with filters                   | `NOT STARTED`  |
-| P4.S5  | Item cards, pagination, empty/loading states   | `NOT STARTED`  |
-| P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `NOT STARTED`  |
-| P4.S7  | Home page latest items                         | `NOT STARTED`  |
-| P5.S1  | Leaflet base map component                     | `NOT STARTED`  |
-| P5.S2  | Location picker and geocoding                  | `NOT STARTED`  |
-| P5.S3  | Location in item forms, make location required | `NOT STARTED`  |
-| P5.S4  | Map on item detail page                        | `NOT STARTED`  |
-| P5.S5  | Radius filter                                  | `NOT STARTED`  |
-| P5.S6  | `/map` page                                    | `NOT STARTED`  |
-| P6.S1  | Matches schema                                 | `NOT STARTED`  |
-| P6.S2  | Scoring functions                              | `NOT STARTED`  |
-| P6.S3  | `compute_matches` and triggers                 | `NOT STARTED`  |
-| P6.S4  | Matches UI with explanation                    | `NOT STARTED`  |
-| P6.S5  | Dismiss / confirm matches                      | `NOT STARTED`  |
-| P6.S6  | Demo dataset and weight tuning                 | `NOT STARTED`  |
-| P7.S1  | Notifications schema                           | `NOT STARTED`  |
-| P7.S2  | Match notification trigger                     | `NOT STARTED`  |
-| P7.S3  | Notification bell with Realtime                | `NOT STARTED`  |
-| P7.S4  | Notifications page                             | `NOT STARTED`  |
-| P7.S5  | (Optional) Email for new matches               | `NOT STARTED`  |
-| P8.S1  | Conversations and messages schema              | `NOT STARTED`  |
-| P8.S2  | Start conversation from item                   | `NOT STARTED`  |
-| P8.S3  | Conversation list                              | `NOT STARTED`  |
-| P8.S4  | Chat view with Realtime                        | `NOT STARTED`  |
-| P8.S5  | Read state and unread badge                    | `NOT STARTED`  |
-| P8.S6  | Message notifications                          | `NOT STARTED`  |
-| P9.S1  | Favorites schema                               | `NOT STARTED`  |
-| P9.S2  | Favorite toggle                                | `NOT STARTED`  |
-| P9.S3  | Favorites page                                 | `NOT STARTED`  |
-| P10.S1 | Reports schema and admin policies              | `NOT STARTED`  |
-| P10.S2 | Report item UI                                 | `NOT STARTED`  |
-| P10.S3 | Admin area layout and dashboard                | `NOT STARTED`  |
-| P10.S4 | Reports queue and item moderation              | `NOT STARTED`  |
-| P10.S5 | User management (ban/unban)                    | `NOT STARTED`  |
-| P10.S6 | Category management                            | `NOT STARTED`  |
-| P11.S1 | Dark mode                                      | `NOT STARTED`  |
-| P11.S2 | Responsive, accessibility, error boundaries    | `NOT STARTED`  |
-| P11.S3 | Performance pass                               | `NOT STARTED`  |
-| P11.S4 | End-to-end tests and CI                        | `NOT STARTED`  |
-| P11.S5 | Production environment                         | `NOT STARTED`  |
-| P11.S6 | Demo data and defense preparation              | `NOT STARTED`  |
+| Step   | Title                                          | Status        |
+| ------ | ---------------------------------------------- | ------------- |
+| P1.S1  | Scaffold Next.js project                       | `COMPLETED`   |
+| P1.S2  | Tooling (shadcn/ui, Prettier, scripts)         | `COMPLETED`   |
+| P1.S3  | Internationalization (next-intl, mk/en)        | `COMPLETED`   |
+| P1.S4  | Supabase clients and proxy session refresh     | `COMPLETED`   |
+| P1.S5  | Environment validation                         | `COMPLETED`   |
+| P1.S6  | Initial migration (extensions, categories)     | `COMPLETED`   |
+| P1.S7  | Base layout and home page                      | `COMPLETED`   |
+| P1.S8  | Link Supabase project, push migration, types   | `COMPLETED`   |
+| P1.S9  | Phase 1 audit and master plan                  | `COMPLETED`   |
+| P2.S1  | Test tooling and action conventions            | `COMPLETED`   |
+| P2.S2  | Profiles table, helper functions, RLS          | `COMPLETED`   |
+| P2.S3  | Auth helpers and route protection              | `COMPLETED`   |
+| P2.S4  | Register and login (email/password)            | `COMPLETED`   |
+| P2.S5  | Email verification                             | `COMPLETED`   |
+| P2.S6  | Forgot / reset password                        | `NOT STARTED` |
+| P2.S7  | Google OAuth                                   | `NOT STARTED` |
+| P2.S8  | Profile page and avatar upload                 | `NOT STARTED` |
+| P2.S9  | SMTP setup (manual) — done before P2.S5        | `COMPLETED`   |
+| P2.S10 | GitHub remote and first Vercel deployment      | `IN PROGRESS` |
+| P3.S1  | Items and images schema                        | `NOT STARTED` |
+| P3.S2  | Item images storage bucket                     | `NOT STARTED` |
+| P3.S3  | Item validation schemas                        | `NOT STARTED` |
+| P3.S4  | Image picker and upload component              | `NOT STARTED` |
+| P3.S5  | Create item page                               | `NOT STARTED` |
+| P3.S6  | Item detail page (basic)                       | `NOT STARTED` |
+| P3.S7  | Edit, delete, mark resolved                    | `NOT STARTED` |
+| P3.S8  | Dashboard ("My reports")                       | `NOT STARTED` |
+| P4.S1  | Search normalization and indexes               | `NOT STARTED` |
+| P4.S2  | `search_items` SQL function                    | `NOT STARTED` |
+| P4.S3  | Search params schema and parsing               | `NOT STARTED` |
+| P4.S4  | Items feed page with filters                   | `NOT STARTED` |
+| P4.S5  | Item cards, pagination, empty/loading states   | `NOT STARTED` |
+| P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `NOT STARTED` |
+| P4.S7  | Home page latest items                         | `NOT STARTED` |
+| P5.S1  | Leaflet base map component                     | `NOT STARTED` |
+| P5.S2  | Location picker and geocoding                  | `NOT STARTED` |
+| P5.S3  | Location in item forms, make location required | `NOT STARTED` |
+| P5.S4  | Map on item detail page                        | `NOT STARTED` |
+| P5.S5  | Radius filter                                  | `NOT STARTED` |
+| P5.S6  | `/map` page                                    | `NOT STARTED` |
+| P6.S1  | Matches schema                                 | `NOT STARTED` |
+| P6.S2  | Scoring functions                              | `NOT STARTED` |
+| P6.S3  | `compute_matches` and triggers                 | `NOT STARTED` |
+| P6.S4  | Matches UI with explanation                    | `NOT STARTED` |
+| P6.S5  | Dismiss / confirm matches                      | `NOT STARTED` |
+| P6.S6  | Demo dataset and weight tuning                 | `NOT STARTED` |
+| P7.S1  | Notifications schema                           | `NOT STARTED` |
+| P7.S2  | Match notification trigger                     | `NOT STARTED` |
+| P7.S3  | Notification bell with Realtime                | `NOT STARTED` |
+| P7.S4  | Notifications page                             | `NOT STARTED` |
+| P7.S5  | (Optional) Email for new matches               | `NOT STARTED` |
+| P8.S1  | Conversations and messages schema              | `NOT STARTED` |
+| P8.S2  | Start conversation from item                   | `NOT STARTED` |
+| P8.S3  | Conversation list                              | `NOT STARTED` |
+| P8.S4  | Chat view with Realtime                        | `NOT STARTED` |
+| P8.S5  | Read state and unread badge                    | `NOT STARTED` |
+| P8.S6  | Message notifications                          | `NOT STARTED` |
+| P9.S1  | Favorites schema                               | `NOT STARTED` |
+| P9.S2  | Favorite toggle                                | `NOT STARTED` |
+| P9.S3  | Favorites page                                 | `NOT STARTED` |
+| P10.S1 | Reports schema and admin policies              | `NOT STARTED` |
+| P10.S2 | Report item UI                                 | `NOT STARTED` |
+| P10.S3 | Admin area layout and dashboard                | `NOT STARTED` |
+| P10.S4 | Reports queue and item moderation              | `NOT STARTED` |
+| P10.S5 | User management (ban/unban)                    | `NOT STARTED` |
+| P10.S6 | Category management                            | `NOT STARTED` |
+| P11.S1 | Dark mode                                      | `NOT STARTED` |
+| P11.S2 | Responsive, accessibility, error boundaries    | `NOT STARTED` |
+| P11.S3 | Performance pass                               | `NOT STARTED` |
+| P11.S4 | End-to-end tests and CI                        | `NOT STARTED` |
+| P11.S5 | Production environment                         | `NOT STARTED` |
+| P11.S6 | Demo data and defense preparation              | `NOT STARTED` |
 
 ---
 
@@ -722,17 +722,17 @@ password" always reports success, so emails cannot be enumerated).
 
 ### Hosted auth settings (Supabase dashboard)
 
-| Setting                 | Current (verified 2026-09-24)                                                  | Target                   | Step     |
-| ----------------------- | ------------------------------------------------------------------------------ | ------------------------ | -------- |
-| Email provider          | enabled                                                                        | enabled                  | —        |
-| Confirm email           | on (`mailer_autoconfirm=false`)                                                | on                       | —        |
-| Google provider         | off                                                                            | on                       | P2.S7    |
-| Anonymous sign-ins      | off                                                                            | off                      | —        |
-| Minimum password length | 6 (default)                                                                    | 8                        | P2.S4    |
-| Site URL                | `http://localhost:3000` (P2.S9)                                                | + prod URL in P11        | P2.S9    |
-| Redirect URLs           | `http://localhost:3000/**` (P2.S9)                                             | + Vercel URLs            | P2.S10   |
-| SMTP                    | custom, Brevo (P2.S9, verified by a real sign-up)                              | custom                   | P2.S9    |
-| Email templates         | Confirm signup: paste `supabase/templates/confirm-signup.html` (manual, P2.S5) | + reset password (P2.S6) | P2.S5/S6 |
+| Setting                 | Current (verified 2026-09-24)                                             | Target                   | Step     |
+| ----------------------- | ------------------------------------------------------------------------- | ------------------------ | -------- |
+| Email provider          | enabled                                                                   | enabled                  | —        |
+| Confirm email           | on (`mailer_autoconfirm=false`)                                           | on                       | —        |
+| Google provider         | off                                                                       | on                       | P2.S7    |
+| Anonymous sign-ins      | off                                                                       | off                      | —        |
+| Minimum password length | 6 (default)                                                               | 8                        | P2.S4    |
+| Site URL                | `http://localhost:3000` (P2.S9)                                           | + prod URL in P11        | P2.S9    |
+| Redirect URLs           | `http://localhost:3000/**` (P2.S9)                                        | + Vercel URLs            | P2.S10   |
+| SMTP                    | custom, Brevo (P2.S9, verified by a real sign-up)                         | custom                   | P2.S9    |
+| Email templates         | Confirm signup = `supabase/templates/confirm-signup.html` (pasted, P2.S5) | + reset password (P2.S6) | P2.S5/S6 |
 
 ---
 
@@ -1176,7 +1176,7 @@ reset their password and edit their profile; protected routes work.
 - **Deviations:** the static `/verify-email` page was added here (P2.S5 adds resend); no `email_taken` code, because Supabase does not reveal existing emails when confirmation is on — both cases show the same page; the user menu has only sign-out (profile link in P2.S8, dashboard link in P3.S8); `emailRedirectTo` is not set yet (P2.S5), so confirmation links currently land on the Site URL; a successful real sign-up was not tested automatically (the built-in mailer only sends to team members — test manually with your own address).
 - **Manual (open):** minimum password length 8 in the dashboard (F-07). The app already enforces 8.
 
-#### P2.S5 — Email verification — `NEEDS REVIEW`
+#### P2.S5 — Email verification — `COMPLETED`
 
 - **Depends on:** P2.S4.
 - **Affects:** `src/app/api/auth/confirm/route.ts`, `src/app/[locale]/(auth)/verify-email/page.tsx` (exists since P2.S4; add resend), `src/actions/auth.ts` (`resendConfirmation`, `emailRedirectTo` in `signUp`), login form (link to resend when `email_not_confirmed`), Supabase dashboard (templates, URL configuration).
@@ -1187,7 +1187,7 @@ reset their password and edit their profile; protected routes work.
 - **Verify:** new account → email link → signed in and redirected; expired/reused link shows an error page; resend works.
 - **Result:** `src/app/api/auth/confirm/route.ts` (token_hash via `verifyOtp`, or `code` via `exchangeCodeForSession`; `locale` + safe `next`; failures logged and sent to `/verify-email?error=link_invalid`), `signUp` passes `emailRedirectTo = SITE_URL/api/auth/confirm?locale=…`, action `resendConfirmation` + `resendSchema`, `src/components/auth/resend-confirmation-form.tsx` (neutral success, 60 s countdown), `/verify-email` error state + resend form, login form link "resend confirmation email" for `email_not_confirmed`, error code `resend_cooldown` (Supabase's per-address cooldown shares its code with the project quota; told apart by message), `supabase/templates/confirm-signup.html` (bilingual via `.Data.locale`). 77 unit tests.
 - **Verified:** P2.S9 in the database (real sign-up: email sent, confirmed, signed in). Route on a production build with SQL-created unconfirmed users and `auth.one_time_tokens` rows (no email needed): valid token → session cookie set, email confirmed, redirected to the user's locale; `next=//evil.com` ignored; reused token → `otp_expired` → error page; wrong/missing/bogus token and `code` without verifier (`pkce_code_verifier_not_found`) → error page, reasons logged. Supabase `resend` for an unknown address returns success and creates nothing. Browser (headless Edge): 20/20 — error state (mk/en), resend validation, neutral message, countdown 60 → 58 s, prefilled email, non-email query not displayed, login → resend link prefilled, confirmation link signs the user in, no overflow at 360 px, no browser errors. Test users deleted; the real account was kept.
-- **NEEDS REVIEW (manual):** paste the template into Supabase and register once with a real address to confirm that the email link signs you in, also when opened in a different browser. Then mark COMPLETED.
+- **Manual part done (2026-09-24):** the user pasted `supabase/templates/confirm-signup.html` into Supabase and registered with a real address; the email link worked. Database check: 1 user, email confirmed, signed in.
 
 #### P2.S6 — Forgot / reset password — `NOT STARTED`
 
@@ -1660,6 +1660,7 @@ started (no auth code or profile tables exist yet).
 | 2026-09-24 | P2.S4     | Login, register and verify-email pages, auth actions, form components, user menu; 3 bugs found in browser testing fixed.                               |
 | 2026-09-24 | P2.S9     | Custom SMTP (Brevo) configured by the user; verified with a real registration.                                                                         |
 | 2026-09-24 | P2.S5     | Confirmation route, resend with cooldown, invalid-link page, bilingual confirm template; template paste pending (NEEDS REVIEW).                        |
+| 2026-09-24 | P2.S5     | Confirm-signup template pasted by the user and verified with a real registration → COMPLETED.                                                          |
 | 2026-09-24 | P2.S5 fix | Stale session after account deletion locked users out of /login and /register (F-16); proxy verifies the user there. Full registration flow re-tested. |
 | 2026-09-24 | plan      | P2.S9 (SMTP) moved before P2.S5; email templates moved into P2.S5/P2.S6; Brevo chosen.                                                                 |
 | 2026-09-24 | P2.S4 fix | Diagnosed sign-up 429 (project email quota, F-15); `email_rate_limited` error code; operational auth errors logged.                                    |
@@ -1668,11 +1669,12 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-1. **Finish P2.S5 (manual):** paste `supabase/templates/confirm-signup.html` into
-   Supabase → Authentication → Emails → Templates → Confirm signup (subject in the
-   file's header comment), then register once with a real address and open the
-   link — ideally in a different browser. Mark P2.S5 COMPLETED.
-2. **P2.S6 — Forgot / reset password** (see §22, Phase 2).
+**P2.S6 — Forgot / reset password** (see §22, Phase 2).
+
+Why next: registration, confirmation and login work end to end; users who
+forget their password cannot recover their account yet. Includes a
+reset-password email template in `supabase/templates/` (manual paste, like
+P2.S5).
 
 Open manual items:
 

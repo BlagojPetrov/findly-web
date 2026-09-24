@@ -22,13 +22,13 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S4 and P2.S9 (SMTP,
-  Brevo) done; P2.S5 implemented, NEEDS REVIEW until the user pastes the confirm
-  template and tests a real email link. Next: P2.S6.
-- Open manual items: paste `supabase/templates/confirm-signup.html` into Supabase
-  (P2.S5); minimum password length 8 (F-07); decision on locale detection (F-13).
+- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S5 and P2.S9 (SMTP,
+  Brevo) done; confirm-signup template pasted and verified. Next: P2.S6.
+- Open manual items: minimum password length 8 (F-07); decision on locale
+  detection (F-13).
 - The dev project has one **real user account** (the project owner). Test cleanup
-  must delete only test users by their own email pattern (`…@findly.test`).
+  must delete only test users by their own email pattern (`…@findly.test`,
+  `findly-e2e-…@mailinator.com`).
 - Supabase dev project `lyvudeaxwibgpqsinqyz` (eu-central-1, Postgres 17), linked.
 - GitHub: `origin` = https://github.com/BlagojPetrov/findly-web, branch `main`.
   Not deployed to Vercel yet (P2.S10).
