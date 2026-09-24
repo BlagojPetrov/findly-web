@@ -22,12 +22,11 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S5 and P2.S9 (SMTP,
-  Brevo) done; P2.S6 and P2.S7 implemented, waiting for manual setup (reset-password
-  template; Google Cloud client + Supabase Google provider). Next: P2.S8.
+- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S7 and P2.S9 (SMTP,
+  Brevo) done; both email templates pasted, Google provider enabled. Next: P2.S8.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13).
-- The dev project has one **real user account** (the project owner). Test cleanup
+- The dev project has **real accounts of the project owner** (email and Google). Test cleanup
   must delete only test users by their own email pattern (`…@findly.test`,
   `findly-e2e-…@mailinator.com`).
 - Supabase dev project `lyvudeaxwibgpqsinqyz` (eu-central-1, Postgres 17), linked.
