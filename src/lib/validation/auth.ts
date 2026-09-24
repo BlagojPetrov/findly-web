@@ -27,6 +27,8 @@ export const signInSchema = z.object({
   password: z.string({ error: msg("required") }).min(1, msg("required")),
 });
 
+export const resendSchema = z.object({ email: emailSchema });
+
 export const signUpSchema = z
   .object({
     displayName: displayNameSchema,

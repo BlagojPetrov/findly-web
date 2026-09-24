@@ -1,0 +1,27 @@
+<!--
+  Supabase → Authentication → Emails → Templates → "Confirm signup".
+  Paste this file as the message body. Subject (paste into the Subject field):
+
+    {{ if and .Data.locale (eq .Data.locale "en") }}Confirm your Findly account{{ else }}Потврдете го вашиот профил на Findly{{ end }}
+
+  The language comes from user metadata "locale" (set by the sign-up form).
+  The link goes to /api/auth/confirm with token_hash, which works in any browser.
+  This file is the source of truth; keep the dashboard in sync with it.
+-->
+{{ if and .Data.locale (eq .Data.locale "en") }}
+<h2>Welcome to Findly</h2>
+<p>Hi {{ .Data.display_name }},</p>
+<p>Confirm your email address to activate your Findly account:</p>
+<p>
+  <a href="{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=email&locale=en">Confirm email address</a>
+</p>
+<p>If you did not create an account, you can ignore this email.</p>
+{{ else }}
+<h2>Добредојдовте во Findly</h2>
+<p>Здраво {{ .Data.display_name }},</p>
+<p>Потврдете ја вашата е-пошта за да го активирате профилот на Findly:</p>
+<p>
+  <a href="{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=email&locale=mk">Потврди е-пошта</a>
+</p>
+<p>Ако не сте креирале профил, слободно игнорирајте ја оваа порака.</p>
+{{ end }}

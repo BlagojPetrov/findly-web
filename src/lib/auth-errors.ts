@@ -3,6 +3,13 @@ import type { ActionResult, ErrorCode } from "@/lib/action-result";
 
 // Maps Supabase Auth errors to our translated error codes.
 export function authErrorCode(error: AuthError): ErrorCode {
+  // Per-address cooldown between emails ("For security purposes, you can only
+  // request this after 42 seconds."). Supabase uses the same code as for the
+  // project-wide quota, so the message tells them apart.
+  if (/only request this after \d+ seconds?/i.test(error.message)) {
+    return "resend_cooldown";
+  }
+
   switch (error.code) {
     case "invalid_credentials":
       return "invalid_credentials";

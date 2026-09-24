@@ -51,7 +51,8 @@
     "email_not_confirmed": "Your email is not confirmed yet. Open the link we sent you.",
     "weak_password": "The password is too weak. Choose a longer or more complex password.",
     "email_send_failed": "The confirmation email could not be sent. Please try again later.",
-    "email_rate_limited": "We cannot send emails right now because the sending limit has been reached. Please try again later."
+    "email_rate_limited": "We cannot send emails right now because the sending limit has been reached. Please try again later.",
+    "resend_cooldown": "Please wait a moment before requesting another email."
   },
   "Validation": {
     "required": "This field is required.",
@@ -84,6 +85,13 @@
     "verifyDescription": "If this account is new, we sent a confirmation link to {email}. Open it to activate your account.",
     "verifyDescriptionNoEmail": "If this account is new, we sent you a confirmation link. Open it to activate your account.",
     "verifySpamHint": "Can't find the message? Check your spam folder.",
-    "backToLogin": "Back to sign in"
+    "backToLogin": "Back to sign in",
+    "verifyLinkInvalidTitle": "This link is not valid",
+    "verifyLinkInvalid": "The confirmation link is invalid, has expired or was already used. Request a new one below.",
+    "resendPrompt": "Didn't get the email? Send a new link.",
+    "resendButton": "Send a new link",
+    "resendCooldown": "You can request a new link in {seconds}s",
+    "resendSent": "If there is an unconfirmed account with this email, we sent a new link.",
+    "resendConfirmationLink": "Resend confirmation email"
   }
 }

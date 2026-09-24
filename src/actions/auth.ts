@@ -2,14 +2,26 @@
 
 import { getLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
-import { type ActionResult, validationError } from "@/lib/action-result";
+import { type ActionResult, ok, validationError } from "@/lib/action-result";
 import { authFailure } from "@/lib/auth-errors";
 import { AFTER_SIGN_IN_PATH, splitLocale } from "@/lib/auth-routes";
 import { safeRedirectPath } from "@/lib/safe-redirect";
+import { env } from "@/lib/env";
 import { createClient } from "@/lib/supabase/server";
-import { signInSchema, signUpSchema } from "@/lib/validation/auth";
+import {
+  resendSchema,
+  signInSchema,
+  signUpSchema,
+} from "@/lib/validation/auth";
 
-// Success always ends in a redirect, so these actions only ever return errors.
+// Where Supabase sends the user from the confirmation email when our custom
+// template is not used (default template, PKCE code). Must match the
+// redirect URLs allowed in Supabase → Authentication → URL Configuration.
+function confirmRedirectUrl(locale: string) {
+  return `${env.NEXT_PUBLIC_SITE_URL}/api/auth/confirm?locale=${locale}`;
+}
+
+// signIn/signUp end in a redirect on success, so they only ever return errors.
 
 export async function signIn(formData: FormData): Promise<ActionResult> {
   const parsed = signInSchema.safeParse({
@@ -49,7 +61,10 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     email,
     password,
     // Read by the handle_new_user() trigger to create the profile.
-    options: { data: { display_name: displayName, locale } },
+    options: {
+      data: { display_name: displayName, locale },
+      emailRedirectTo: confirmRedirectUrl(locale),
+    },
   });
   if (error) return authFailure(error);
 
@@ -57,6 +72,25 @@ export async function signUp(formData: FormData): Promise<ActionResult> {
     href: { pathname: "/verify-email", query: { email } },
     locale,
   });
+}
+
+// Always reports success when the request was accepted, whether or not the
+// address has an unconfirmed account, so it cannot be used to probe emails.
+export async function resendConfirmation(
+  formData: FormData,
+): Promise<ActionResult> {
+  const parsed = resendSchema.safeParse({ email: formData.get("email") });
+  if (!parsed.success) return validationError(parsed.error);
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: parsed.data.email,
+    options: { emailRedirectTo: confirmRedirectUrl(await getLocale()) },
+  });
+  if (error) return authFailure(error);
+
+  return ok();
 }
 
 export async function signOut() {

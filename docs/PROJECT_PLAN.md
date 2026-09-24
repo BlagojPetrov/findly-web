@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-24
 - **Current phase:** Phase 2 — Authentication (in progress)
-- **Next step:** P2.S9 (§22) — moved before P2.S5
+- **Next step:** finish the P2.S5 manual check (email template), then P2.S6 (§22)
 
 ---
 
@@ -107,80 +107,80 @@ to these IDs. "Next step" always means the step named in
 
 ### Step status
 
-| Step   | Title                                          | Status        |
-| ------ | ---------------------------------------------- | ------------- |
-| P1.S1  | Scaffold Next.js project                       | `COMPLETED`   |
-| P1.S2  | Tooling (shadcn/ui, Prettier, scripts)         | `COMPLETED`   |
-| P1.S3  | Internationalization (next-intl, mk/en)        | `COMPLETED`   |
-| P1.S4  | Supabase clients and proxy session refresh     | `COMPLETED`   |
-| P1.S5  | Environment validation                         | `COMPLETED`   |
-| P1.S6  | Initial migration (extensions, categories)     | `COMPLETED`   |
-| P1.S7  | Base layout and home page                      | `COMPLETED`   |
-| P1.S8  | Link Supabase project, push migration, types   | `COMPLETED`   |
-| P1.S9  | Phase 1 audit and master plan                  | `COMPLETED`   |
-| P2.S1  | Test tooling and action conventions            | `COMPLETED`   |
-| P2.S2  | Profiles table, helper functions, RLS          | `COMPLETED`   |
-| P2.S3  | Auth helpers and route protection              | `COMPLETED`   |
-| P2.S4  | Register and login (email/password)            | `COMPLETED`   |
-| P2.S5  | Email verification                             | `NOT STARTED` |
-| P2.S6  | Forgot / reset password                        | `NOT STARTED` |
-| P2.S7  | Google OAuth                                   | `NOT STARTED` |
-| P2.S8  | Profile page and avatar upload                 | `NOT STARTED` |
-| P2.S9  | SMTP setup (manual) — done before P2.S5        | `IN PROGRESS` |
-| P2.S10 | GitHub remote and first Vercel deployment      | `IN PROGRESS` |
-| P3.S1  | Items and images schema                        | `NOT STARTED` |
-| P3.S2  | Item images storage bucket                     | `NOT STARTED` |
-| P3.S3  | Item validation schemas                        | `NOT STARTED` |
-| P3.S4  | Image picker and upload component              | `NOT STARTED` |
-| P3.S5  | Create item page                               | `NOT STARTED` |
-| P3.S6  | Item detail page (basic)                       | `NOT STARTED` |
-| P3.S7  | Edit, delete, mark resolved                    | `NOT STARTED` |
-| P3.S8  | Dashboard ("My reports")                       | `NOT STARTED` |
-| P4.S1  | Search normalization and indexes               | `NOT STARTED` |
-| P4.S2  | `search_items` SQL function                    | `NOT STARTED` |
-| P4.S3  | Search params schema and parsing               | `NOT STARTED` |
-| P4.S4  | Items feed page with filters                   | `NOT STARTED` |
-| P4.S5  | Item cards, pagination, empty/loading states   | `NOT STARTED` |
-| P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `NOT STARTED` |
-| P4.S7  | Home page latest items                         | `NOT STARTED` |
-| P5.S1  | Leaflet base map component                     | `NOT STARTED` |
-| P5.S2  | Location picker and geocoding                  | `NOT STARTED` |
-| P5.S3  | Location in item forms, make location required | `NOT STARTED` |
-| P5.S4  | Map on item detail page                        | `NOT STARTED` |
-| P5.S5  | Radius filter                                  | `NOT STARTED` |
-| P5.S6  | `/map` page                                    | `NOT STARTED` |
-| P6.S1  | Matches schema                                 | `NOT STARTED` |
-| P6.S2  | Scoring functions                              | `NOT STARTED` |
-| P6.S3  | `compute_matches` and triggers                 | `NOT STARTED` |
-| P6.S4  | Matches UI with explanation                    | `NOT STARTED` |
-| P6.S5  | Dismiss / confirm matches                      | `NOT STARTED` |
-| P6.S6  | Demo dataset and weight tuning                 | `NOT STARTED` |
-| P7.S1  | Notifications schema                           | `NOT STARTED` |
-| P7.S2  | Match notification trigger                     | `NOT STARTED` |
-| P7.S3  | Notification bell with Realtime                | `NOT STARTED` |
-| P7.S4  | Notifications page                             | `NOT STARTED` |
-| P7.S5  | (Optional) Email for new matches               | `NOT STARTED` |
-| P8.S1  | Conversations and messages schema              | `NOT STARTED` |
-| P8.S2  | Start conversation from item                   | `NOT STARTED` |
-| P8.S3  | Conversation list                              | `NOT STARTED` |
-| P8.S4  | Chat view with Realtime                        | `NOT STARTED` |
-| P8.S5  | Read state and unread badge                    | `NOT STARTED` |
-| P8.S6  | Message notifications                          | `NOT STARTED` |
-| P9.S1  | Favorites schema                               | `NOT STARTED` |
-| P9.S2  | Favorite toggle                                | `NOT STARTED` |
-| P9.S3  | Favorites page                                 | `NOT STARTED` |
-| P10.S1 | Reports schema and admin policies              | `NOT STARTED` |
-| P10.S2 | Report item UI                                 | `NOT STARTED` |
-| P10.S3 | Admin area layout and dashboard                | `NOT STARTED` |
-| P10.S4 | Reports queue and item moderation              | `NOT STARTED` |
-| P10.S5 | User management (ban/unban)                    | `NOT STARTED` |
-| P10.S6 | Category management                            | `NOT STARTED` |
-| P11.S1 | Dark mode                                      | `NOT STARTED` |
-| P11.S2 | Responsive, accessibility, error boundaries    | `NOT STARTED` |
-| P11.S3 | Performance pass                               | `NOT STARTED` |
-| P11.S4 | End-to-end tests and CI                        | `NOT STARTED` |
-| P11.S5 | Production environment                         | `NOT STARTED` |
-| P11.S6 | Demo data and defense preparation              | `NOT STARTED` |
+| Step   | Title                                          | Status         |
+| ------ | ---------------------------------------------- | -------------- |
+| P1.S1  | Scaffold Next.js project                       | `COMPLETED`    |
+| P1.S2  | Tooling (shadcn/ui, Prettier, scripts)         | `COMPLETED`    |
+| P1.S3  | Internationalization (next-intl, mk/en)        | `COMPLETED`    |
+| P1.S4  | Supabase clients and proxy session refresh     | `COMPLETED`    |
+| P1.S5  | Environment validation                         | `COMPLETED`    |
+| P1.S6  | Initial migration (extensions, categories)     | `COMPLETED`    |
+| P1.S7  | Base layout and home page                      | `COMPLETED`    |
+| P1.S8  | Link Supabase project, push migration, types   | `COMPLETED`    |
+| P1.S9  | Phase 1 audit and master plan                  | `COMPLETED`    |
+| P2.S1  | Test tooling and action conventions            | `COMPLETED`    |
+| P2.S2  | Profiles table, helper functions, RLS          | `COMPLETED`    |
+| P2.S3  | Auth helpers and route protection              | `COMPLETED`    |
+| P2.S4  | Register and login (email/password)            | `COMPLETED`    |
+| P2.S5  | Email verification                             | `NEEDS REVIEW` |
+| P2.S6  | Forgot / reset password                        | `NOT STARTED`  |
+| P2.S7  | Google OAuth                                   | `NOT STARTED`  |
+| P2.S8  | Profile page and avatar upload                 | `NOT STARTED`  |
+| P2.S9  | SMTP setup (manual) — done before P2.S5        | `COMPLETED`    |
+| P2.S10 | GitHub remote and first Vercel deployment      | `IN PROGRESS`  |
+| P3.S1  | Items and images schema                        | `NOT STARTED`  |
+| P3.S2  | Item images storage bucket                     | `NOT STARTED`  |
+| P3.S3  | Item validation schemas                        | `NOT STARTED`  |
+| P3.S4  | Image picker and upload component              | `NOT STARTED`  |
+| P3.S5  | Create item page                               | `NOT STARTED`  |
+| P3.S6  | Item detail page (basic)                       | `NOT STARTED`  |
+| P3.S7  | Edit, delete, mark resolved                    | `NOT STARTED`  |
+| P3.S8  | Dashboard ("My reports")                       | `NOT STARTED`  |
+| P4.S1  | Search normalization and indexes               | `NOT STARTED`  |
+| P4.S2  | `search_items` SQL function                    | `NOT STARTED`  |
+| P4.S3  | Search params schema and parsing               | `NOT STARTED`  |
+| P4.S4  | Items feed page with filters                   | `NOT STARTED`  |
+| P4.S5  | Item cards, pagination, empty/loading states   | `NOT STARTED`  |
+| P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `NOT STARTED`  |
+| P4.S7  | Home page latest items                         | `NOT STARTED`  |
+| P5.S1  | Leaflet base map component                     | `NOT STARTED`  |
+| P5.S2  | Location picker and geocoding                  | `NOT STARTED`  |
+| P5.S3  | Location in item forms, make location required | `NOT STARTED`  |
+| P5.S4  | Map on item detail page                        | `NOT STARTED`  |
+| P5.S5  | Radius filter                                  | `NOT STARTED`  |
+| P5.S6  | `/map` page                                    | `NOT STARTED`  |
+| P6.S1  | Matches schema                                 | `NOT STARTED`  |
+| P6.S2  | Scoring functions                              | `NOT STARTED`  |
+| P6.S3  | `compute_matches` and triggers                 | `NOT STARTED`  |
+| P6.S4  | Matches UI with explanation                    | `NOT STARTED`  |
+| P6.S5  | Dismiss / confirm matches                      | `NOT STARTED`  |
+| P6.S6  | Demo dataset and weight tuning                 | `NOT STARTED`  |
+| P7.S1  | Notifications schema                           | `NOT STARTED`  |
+| P7.S2  | Match notification trigger                     | `NOT STARTED`  |
+| P7.S3  | Notification bell with Realtime                | `NOT STARTED`  |
+| P7.S4  | Notifications page                             | `NOT STARTED`  |
+| P7.S5  | (Optional) Email for new matches               | `NOT STARTED`  |
+| P8.S1  | Conversations and messages schema              | `NOT STARTED`  |
+| P8.S2  | Start conversation from item                   | `NOT STARTED`  |
+| P8.S3  | Conversation list                              | `NOT STARTED`  |
+| P8.S4  | Chat view with Realtime                        | `NOT STARTED`  |
+| P8.S5  | Read state and unread badge                    | `NOT STARTED`  |
+| P8.S6  | Message notifications                          | `NOT STARTED`  |
+| P9.S1  | Favorites schema                               | `NOT STARTED`  |
+| P9.S2  | Favorite toggle                                | `NOT STARTED`  |
+| P9.S3  | Favorites page                                 | `NOT STARTED`  |
+| P10.S1 | Reports schema and admin policies              | `NOT STARTED`  |
+| P10.S2 | Report item UI                                 | `NOT STARTED`  |
+| P10.S3 | Admin area layout and dashboard                | `NOT STARTED`  |
+| P10.S4 | Reports queue and item moderation              | `NOT STARTED`  |
+| P10.S5 | User management (ban/unban)                    | `NOT STARTED`  |
+| P10.S6 | Category management                            | `NOT STARTED`  |
+| P11.S1 | Dark mode                                      | `NOT STARTED`  |
+| P11.S2 | Responsive, accessibility, error boundaries    | `NOT STARTED`  |
+| P11.S3 | Performance pass                               | `NOT STARTED`  |
+| P11.S4 | End-to-end tests and CI                        | `NOT STARTED`  |
+| P11.S5 | Production environment                         | `NOT STARTED`  |
+| P11.S6 | Demo data and defense preparation              | `NOT STARTED`  |
 
 ---
 
@@ -705,34 +705,34 @@ profiles 1─* reports *─1 items
 
 ### Flows
 
-| Flow                | Implementation                                                                                                                                | Step  |
-| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
-| Register            | Action `signUp` → `supabase.auth.signUp({ email, password, options: { data: { display_name, locale }, emailRedirectTo } })` → `/verify-email` | P2.S4 |
-| Profile creation    | `handle_new_user()` trigger copies `display_name` (or Google `full_name`) and `locale` from metadata                                          | P2.S2 |
-| Login               | Action `signIn` → `signInWithPassword`; unconfirmed email → error code `email_not_confirmed` with resend option                               | P2.S4 |
-| Email confirmation  | Template link → `/api/auth/confirm?token_hash=…&type=email&next=/dashboard` → `verifyOtp`                                                     | P2.S5 |
-| Resend confirmation | Action `resendConfirmation` → `auth.resend({ type: "signup" })`                                                                               | P2.S5 |
-| Forgot password     | Action → `resetPasswordForEmail(email, { redirectTo: /api/auth/confirm?next=/reset-password })`                                               | P2.S6 |
-| Reset password      | `/reset-password` (recovery session) → action `updateUser({ password })`                                                                      | P2.S6 |
-| Google              | `signInWithOAuth({ provider: "google", options: { redirectTo: /api/auth/callback?next=… } })` → `exchangeCodeForSession`                      | P2.S7 |
-| Logout              | Action `signOut` → redirect home                                                                                                              | P2.S4 |
+| Flow                | Implementation                                                                                                                                                                                                                                                                                                                     | Step  |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| Register            | Action `signUp` → `supabase.auth.signUp({ email, password, options: { data: { display_name, locale }, emailRedirectTo } })` → `/verify-email`                                                                                                                                                                                      | P2.S4 |
+| Profile creation    | `handle_new_user()` trigger copies `display_name` (or Google `full_name`) and `locale` from metadata                                                                                                                                                                                                                               | P2.S2 |
+| Login               | Action `signIn` → `signInWithPassword`; unconfirmed email → error code `email_not_confirmed` with resend option                                                                                                                                                                                                                    | P2.S4 |
+| Email confirmation  | Template (`supabase/templates/confirm-signup.html`) link → `/api/auth/confirm?token_hash=…&type=email&locale=…` → `verifyOtp` → signed in, redirected to `AFTER_SIGN_IN_PATH`. The default template (`?code=`, PKCE) is also accepted but only works in the browser that registered. Failures → `/verify-email?error=link_invalid` | P2.S5 |
+| Resend confirmation | `/verify-email` form → action `resendConfirmation` → `auth.resend({ type: "signup", options: { emailRedirectTo } })`; always a neutral success message (Supabase also returns success for unknown addresses); 60 s client cooldown; Supabase's per-address cooldown → `resend_cooldown`                                            | P2.S5 |
+| Forgot password     | Action → `resetPasswordForEmail(email, { redirectTo: /api/auth/confirm?next=/reset-password })`                                                                                                                                                                                                                                    | P2.S6 |
+| Reset password      | `/reset-password` (recovery session) → action `updateUser({ password })`                                                                                                                                                                                                                                                           | P2.S6 |
+| Google              | `signInWithOAuth({ provider: "google", options: { redirectTo: /api/auth/callback?next=… } })` → `exchangeCodeForSession`                                                                                                                                                                                                           | P2.S7 |
+| Logout              | Action `signOut` → redirect home                                                                                                                                                                                                                                                                                                   | P2.S4 |
 
 Messages from auth actions are generic where needed (for example, "forgot
 password" always reports success, so emails cannot be enumerated).
 
 ### Hosted auth settings (Supabase dashboard)
 
-| Setting                 | Current (verified 2026-09-24)   | Target                                   | Step      |
-| ----------------------- | ------------------------------- | ---------------------------------------- | --------- |
-| Email provider          | enabled                         | enabled                                  | —         |
-| Confirm email           | on (`mailer_autoconfirm=false`) | on                                       | —         |
-| Google provider         | off                             | on                                       | P2.S7     |
-| Anonymous sign-ins      | off                             | off                                      | —         |
-| Minimum password length | 6 (default)                     | 8                                        | P2.S4     |
-| Site URL                | default                         | `http://localhost:3000`, prod URL in P11 | P2.S5     |
-| Redirect URLs           | —                               | `http://localhost:3000/**`, Vercel URLs  | P2.S5/S10 |
-| SMTP                    | built-in                        | custom (Brevo or Resend)                 | P2.S9     |
-| Email templates         | default                         | token_hash links, mk + en text           | P2.S5/S9  |
+| Setting                 | Current (verified 2026-09-24)                                                  | Target                   | Step     |
+| ----------------------- | ------------------------------------------------------------------------------ | ------------------------ | -------- |
+| Email provider          | enabled                                                                        | enabled                  | —        |
+| Confirm email           | on (`mailer_autoconfirm=false`)                                                | on                       | —        |
+| Google provider         | off                                                                            | on                       | P2.S7    |
+| Anonymous sign-ins      | off                                                                            | off                      | —        |
+| Minimum password length | 6 (default)                                                                    | 8                        | P2.S4    |
+| Site URL                | `http://localhost:3000` (P2.S9)                                                | + prod URL in P11        | P2.S9    |
+| Redirect URLs           | `http://localhost:3000/**` (P2.S9)                                             | + Vercel URLs            | P2.S10   |
+| SMTP                    | custom, Brevo (P2.S9, verified by a real sign-up)                              | custom                   | P2.S9    |
+| Email templates         | Confirm signup: paste `supabase/templates/confirm-signup.html` (manual, P2.S5) | + reset password (P2.S6) | P2.S5/S6 |
 
 ---
 
@@ -1176,15 +1176,18 @@ reset their password and edit their profile; protected routes work.
 - **Deviations:** the static `/verify-email` page was added here (P2.S5 adds resend); no `email_taken` code, because Supabase does not reveal existing emails when confirmation is on — both cases show the same page; the user menu has only sign-out (profile link in P2.S8, dashboard link in P3.S8); `emailRedirectTo` is not set yet (P2.S5), so confirmation links currently land on the Site URL; a successful real sign-up was not tested automatically (the built-in mailer only sends to team members — test manually with your own address).
 - **Manual (open):** minimum password length 8 in the dashboard (F-07). The app already enforces 8.
 
-#### P2.S5 — Email verification — `NOT STARTED`
+#### P2.S5 — Email verification — `NEEDS REVIEW`
 
 - **Depends on:** P2.S4.
 - **Affects:** `src/app/api/auth/confirm/route.ts`, `src/app/[locale]/(auth)/verify-email/page.tsx` (exists since P2.S4; add resend), `src/actions/auth.ts` (`resendConfirmation`, `emailRedirectTo` in `signUp`), login form (link to resend when `email_not_confirmed`), Supabase dashboard (templates, URL configuration).
 - **Sub-steps:**
   1. Route handler: `verifyOtp({ type, token_hash })`, redirect to a safe `next` or to an error state.
   2. `/verify-email` page: "check your inbox" + resend button (cooldown 60 s).
-  3. Manual: "Confirm signup" template (bilingual mk/en) with link → `{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/dashboard` (URL configuration is already done in P2.S9).
-- **Verify:** new account → email link → signed in and redirected; expired/reused link shows an error page; resend works. (Until P2.S9 the built-in SMTP delivers only to the project team's addresses, so test with your own address.)
+  3. Manual: "Confirm signup" template (bilingual mk/en) — paste `supabase/templates/confirm-signup.html` (body + subject from its header comment). URL configuration was done in P2.S9.
+- **Verify:** new account → email link → signed in and redirected; expired/reused link shows an error page; resend works.
+- **Result:** `src/app/api/auth/confirm/route.ts` (token_hash via `verifyOtp`, or `code` via `exchangeCodeForSession`; `locale` + safe `next`; failures logged and sent to `/verify-email?error=link_invalid`), `signUp` passes `emailRedirectTo = SITE_URL/api/auth/confirm?locale=…`, action `resendConfirmation` + `resendSchema`, `src/components/auth/resend-confirmation-form.tsx` (neutral success, 60 s countdown), `/verify-email` error state + resend form, login form link "resend confirmation email" for `email_not_confirmed`, error code `resend_cooldown` (Supabase's per-address cooldown shares its code with the project quota; told apart by message), `supabase/templates/confirm-signup.html` (bilingual via `.Data.locale`). 77 unit tests.
+- **Verified:** P2.S9 in the database (real sign-up: email sent, confirmed, signed in). Route on a production build with SQL-created unconfirmed users and `auth.one_time_tokens` rows (no email needed): valid token → session cookie set, email confirmed, redirected to the user's locale; `next=//evil.com` ignored; reused token → `otp_expired` → error page; wrong/missing/bogus token and `code` without verifier (`pkce_code_verifier_not_found`) → error page, reasons logged. Supabase `resend` for an unknown address returns success and creates nothing. Browser (headless Edge): 20/20 — error state (mk/en), resend validation, neutral message, countdown 60 → 58 s, prefilled email, non-email query not displayed, login → resend link prefilled, confirmation link signs the user in, no overflow at 360 px, no browser errors. Test users deleted; the real account was kept.
+- **NEEDS REVIEW (manual):** paste the template into Supabase and register once with a real address to confirm that the email link signs you in, also when opened in a different browser. Then mark COMPLETED.
 
 #### P2.S6 — Forgot / reset password — `NOT STARTED`
 
@@ -1210,7 +1213,7 @@ reset their password and edit their profile; protected routes work.
 - **Sub-steps:** edit display name and preferred language; avatar upload (resize to 256 px WebP, path `{uid}/avatar.webp`, upsert); change password for email users; show sign-in method; add "Profile" to the user menu and show the avatar there.
 - **Verify:** changes persist; another user cannot overwrite your avatar (storage policy test); invalid names rejected.
 
-#### P2.S9 — SMTP setup (manual) — `IN PROGRESS`
+#### P2.S9 — SMTP setup (manual) — `COMPLETED`
 
 > **Order changed (2026-09-24):** done right after P2.S4 and before P2.S5, because
 > the built-in mailer's quota blocked registration (F-15). Email **templates**
@@ -1234,6 +1237,7 @@ reset their password and edit their profile; protected routes work.
   member; the email arrives (check spam once); `auth.users.confirmation_sent_at` is
   set; the link confirms the address (`email_confirmed_at` set). No code changes
   in this step.
+- **Result (2026-09-24):** configured by the user (Brevo). Verified in the database: a real registration had `confirmation_sent_at` and `email_confirmed_at` set and the user signed in.
 
 #### P2.S10 — GitHub remote and first Vercel deployment — `IN PROGRESS`
 
@@ -1629,8 +1633,8 @@ started (no auth code or profile tables exist yet).
 | F-05 | The Supabase URL was configured with `/rest/v1/`, which broke all queries.                                                                                                                                                                                                                                                                                                                  | Fixed in `.env.local`; `env.ts` now rejects URLs with a path.                                                                                                                                                                                                                            | Fixed         |
 | F-06 | Default branch is `main` (an earlier instruction said `master`). No GitHub remote yet.                                                                                                                                                                                                                                                                                                      | Use `main`; remote `origin` = github.com/BlagojPetrov/findly-web, pushed 2026-09-24.                                                                                                                                                                                                     | Fixed         |
 | F-07 | Hosted minimum password length is 6.                                                                                                                                                                                                                                                                                                                                                        | Raise to 8 in P2.S4.                                                                                                                                                                                                                                                                     | Open (P2.S4)  |
-| F-08 | Built-in Supabase email only delivers to project team members.                                                                                                                                                                                                                                                                                                                              | Custom SMTP in P2.S9; test with own address before that.                                                                                                                                                                                                                                 | Open (P2.S9)  |
-| F-15 | Registration failed on the first attempt with `429 over_email_send_rate_limit` ("email rate limit exceeded"). Verified: one submit = one server action = one `signUp` call; no user created. Cause: the project-wide email quota of the built-in Supabase mailer (a few emails per hour for the whole project), not our code. Our code showed it as "too many attempts" and did not log it. | Separate error code `email_rate_limited` with an accurate message; `authFailure()` now logs operational auth errors (rate limits, email failures, unknown) without the email address. Real fix: custom SMTP (P2.S9) and the email rate limit in Supabase → Authentication → Rate Limits. | Open (P2.S9)  |
+| F-08 | Built-in Supabase email only delivers to project team members.                                                                                                                                                                                                                                                                                                                              | Custom SMTP (Brevo) configured in P2.S9.                                                                                                                                                                                                                                                 | Fixed         |
+| F-15 | Registration failed on the first attempt with `429 over_email_send_rate_limit` ("email rate limit exceeded"). Verified: one submit = one server action = one `signUp` call; no user created. Cause: the project-wide email quota of the built-in Supabase mailer (a few emails per hour for the whole project), not our code. Our code showed it as "too many attempts" and did not log it. | Separate error code `email_rate_limited` with an accurate message; `authFailure()` now logs operational auth errors (rate limits, email failures, unknown) without the email address. Real fix: custom SMTP (P2.S9) and the email rate limit in Supabase → Authentication → Rate Limits. | Fixed         |
 | F-09 | `supabase login` fails in non-interactive shells.                                                                                                                                                                                                                                                                                                                                           | Run it in a normal terminal (documented in §8 and `CLAUDE.md`).                                                                                                                                                                                                                          | Documented    |
 | F-11 | `supabase migration new` names files with the **UTC** time, but the init migration was named with the local date (`20260924000000`). Until 2026-09-24 00:00 UTC new files would sort before it.                                                                                                                                                                                             | New migrations must sort after the latest existing file; the profiles migration was renamed to `20260924000100`. Check the name after every `db:new`.                                                                                                                                    | Documented    |
 | F-13 | next-intl locale detection is on: a visitor whose browser prefers English (`Accept-Language`) or who last used English (`NEXT_LOCALE` cookie) is redirected from `/…` to `/en/…`. `/` is therefore not always Macedonian.                                                                                                                                                                   | **Decision needed.** Keep (standard, convenient) or set `localeDetection: false` in `src/i18n/routing.ts` so `/` is always Macedonian and English only via the switcher. Recommendation: disable, for a Macedonian-first site with predictable URLs.                                     | Open          |
@@ -1642,32 +1646,32 @@ started (no auth code or profile tables exist yet).
 
 ## 24. Changelog
 
-| Date       | Step      | Change                                                                                                                    |
-| ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------- |
-| 2026-09-24 | P1.S1–S8  | Project scaffold, i18n, Supabase clients, env validation, init migration, home page, project linked.                      |
-| 2026-09-24 | —         | Fixed Supabase URL misconfiguration; URL validation; generated types committed.                                           |
-| 2026-09-24 | P1.S9     | Phase 1 audit, master plan created, `CLAUDE.md` project guide, font variable fix.                                         |
-| 2026-09-24 | P2.S10    | GitHub repository created and `main` pushed (Vercel part still open).                                                     |
-| 2026-09-24 | P2.S1     | Vitest, `ActionResult` helpers, `safeRedirectPath`, translation parity tests, `Errors` messages.                          |
-| 2026-09-24 | P2.S2     | `profiles`, sign-up trigger, `private.is_admin/can_write`, `current_profile()`, column-level privileges, SQL test runner. |
-| 2026-09-24 | P2.S3     | `getCurrentUser`/`requireUser`/`requireAdmin` (server-only DAL), route rules in `auth-routes.ts`, proxy auth redirects.   |
-| 2026-09-24 | P2.S4     | Login, register and verify-email pages, auth actions, form components, user menu; 3 bugs found in browser testing fixed.  |
-| 2026-09-24 | plan      | P2.S9 (SMTP) moved before P2.S5; email templates moved into P2.S5/P2.S6; Brevo chosen.                                    |
-| 2026-09-24 | P2.S4 fix | Diagnosed sign-up 429 (project email quota, F-15); `email_rate_limited` error code; operational auth errors logged.       |
+| Date       | Step      | Change                                                                                                                          |
+| ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-24 | P1.S1–S8  | Project scaffold, i18n, Supabase clients, env validation, init migration, home page, project linked.                            |
+| 2026-09-24 | —         | Fixed Supabase URL misconfiguration; URL validation; generated types committed.                                                 |
+| 2026-09-24 | P1.S9     | Phase 1 audit, master plan created, `CLAUDE.md` project guide, font variable fix.                                               |
+| 2026-09-24 | P2.S10    | GitHub repository created and `main` pushed (Vercel part still open).                                                           |
+| 2026-09-24 | P2.S1     | Vitest, `ActionResult` helpers, `safeRedirectPath`, translation parity tests, `Errors` messages.                                |
+| 2026-09-24 | P2.S2     | `profiles`, sign-up trigger, `private.is_admin/can_write`, `current_profile()`, column-level privileges, SQL test runner.       |
+| 2026-09-24 | P2.S3     | `getCurrentUser`/`requireUser`/`requireAdmin` (server-only DAL), route rules in `auth-routes.ts`, proxy auth redirects.         |
+| 2026-09-24 | P2.S4     | Login, register and verify-email pages, auth actions, form components, user menu; 3 bugs found in browser testing fixed.        |
+| 2026-09-24 | P2.S9     | Custom SMTP (Brevo) configured by the user; verified with a real registration.                                                  |
+| 2026-09-24 | P2.S5     | Confirmation route, resend with cooldown, invalid-link page, bilingual confirm template; template paste pending (NEEDS REVIEW). |
+| 2026-09-24 | plan      | P2.S9 (SMTP) moved before P2.S5; email templates moved into P2.S5/P2.S6; Brevo chosen.                                          |
+| 2026-09-24 | P2.S4 fix | Diagnosed sign-up 429 (project email quota, F-15); `email_rate_limited` error code; operational auth errors logged.             |
 
 ---
 
 ## 25. Next Recommended Step
 
-**P2.S9 — SMTP setup** (see §22, Phase 2), moved before P2.S5.
+1. **Finish P2.S5 (manual):** paste `supabase/templates/confirm-signup.html` into
+   Supabase → Authentication → Emails → Templates → Confirm signup (subject in the
+   file's header comment), then register once with a real address and open the
+   link — ideally in a different browser. Mark P2.S5 COMPLETED.
+2. **P2.S6 — Forgot / reset password** (see §22, Phase 2).
 
-Why next: the built-in Supabase mailer's quota blocks registration (F-15). P2.S5
-starts only after SMTP is configured and a real registration email has been
-received and confirmed.
-
-Then: **P2.S5 — Email verification.**
-
-Open items from P2.S4 (manual):
+Open manual items:
 
 - Set the minimum password length to 8 in the Supabase dashboard (F-07).
 - Decide on locale detection (F-13).

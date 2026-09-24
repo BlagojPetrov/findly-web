@@ -6,6 +6,7 @@ import { signIn } from "@/actions/auth";
 import { FormError } from "@/components/forms/form-error";
 import { FormField } from "@/components/forms/form-field";
 import { SubmitButton } from "@/components/forms/submit-button";
+import { Link } from "@/i18n/navigation";
 import type { ActionResult } from "@/lib/action-result";
 
 type State = { result: ActionResult; email: string } | null;
@@ -26,6 +27,14 @@ export function LoginForm({ next }: { next?: string }) {
     <form action={formAction} className="grid gap-4" noValidate>
       {next && <input type="hidden" name="next" value={next} />}
       <FormError failure={failure} />
+      {failure?.error === "email_not_confirmed" && (
+        <Link
+          href={{ pathname: "/verify-email", query: { email: state?.email } }}
+          className="text-sm font-medium text-primary hover:underline"
+        >
+          {t("resendConfirmationLink")}
+        </Link>
+      )}
       <FormField
         name="email"
         type="email"

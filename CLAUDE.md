@@ -22,9 +22,13 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S4 done. Next: P2.S9 (SMTP, moved before P2.S5), then P2.S5.
-- Open manual items: minimum password length 8 in the Supabase dashboard (F-07);
-  decision on next-intl locale detection (F-13).
+- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S4 and P2.S9 (SMTP,
+  Brevo) done; P2.S5 implemented, NEEDS REVIEW until the user pastes the confirm
+  template and tests a real email link. Next: P2.S6.
+- Open manual items: paste `supabase/templates/confirm-signup.html` into Supabase
+  (P2.S5); minimum password length 8 (F-07); decision on locale detection (F-13).
+- The dev project has one **real user account** (the project owner). Test cleanup
+  must delete only test users by their own email pattern (`…@findly.test`).
 - Supabase dev project `lyvudeaxwibgpqsinqyz` (eu-central-1, Postgres 17), linked.
 - GitHub: `origin` = https://github.com/BlagojPetrov/findly-web, branch `main`.
   Not deployed to Vercel yet (P2.S10).
@@ -51,6 +55,10 @@ status and the next step. Read it before any work.
   `SubmitButton` from `src/components/forms/`. Zod messages are `Validation` keys via
   `msg()` (`@/lib/validation/messages`), with `min(1, msg("required"))` first. Auth
   errors go through `authFailure()`.
+- Auth email links go to `/api/auth/confirm` (`token_hash` + `type`, or `code`;
+  `locale`; safe `next`). Email templates live in `supabase/templates/` (source of
+  truth, pasted into the dashboard; excluded from Prettier). Auth actions that
+  send email pass `emailRedirectTo` to that route.
 - Combine `buttonVariants()` with conflicting classes via `cn(buttonVariants(), "…")`,
   not `buttonVariants({ className })` (no class merging there).
 - Unit tests: Vitest, colocated as `src/**/*.test.ts`. Browser checks: headless Edge via

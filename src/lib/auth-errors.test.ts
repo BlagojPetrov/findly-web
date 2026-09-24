@@ -16,6 +16,15 @@ describe("authErrorCode", () => {
     expect(authErrorCode(new AuthError("x", status, code))).toBe(expected);
   });
 
+  it("tells the per-address cooldown apart from the project email quota", () => {
+    const cooldown = new AuthError(
+      "For security purposes, you can only request this after 42 seconds.",
+      429,
+      "over_email_send_rate_limit",
+    );
+    expect(authErrorCode(cooldown)).toBe("resend_cooldown");
+  });
+
   it("recognizes email sending failures without a code", () => {
     const error = new AuthError("Error sending confirmation email", 500);
     expect(authErrorCode(error)).toBe("email_send_failed");
