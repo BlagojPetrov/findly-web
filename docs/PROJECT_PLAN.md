@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-24
 - **Current phase:** Phase 2 — Authentication (in progress)
-- **Next step:** P2.S6 manual template paste, then P2.S7 (§22)
+- **Next step:** manual parts of P2.S6 and P2.S7, then P2.S8 (§22)
 
 ---
 
@@ -124,7 +124,7 @@ to these IDs. "Next step" always means the step named in
 | P2.S4  | Register and login (email/password)            | `COMPLETED`    |
 | P2.S5  | Email verification                             | `COMPLETED`    |
 | P2.S6  | Forgot / reset password                        | `NEEDS REVIEW` |
-| P2.S7  | Google OAuth                                   | `NOT STARTED`  |
+| P2.S7  | Google OAuth                                   | `NEEDS REVIEW` |
 | P2.S8  | Profile page and avatar upload                 | `NOT STARTED`  |
 | P2.S9  | SMTP setup (manual) — done before P2.S5        | `COMPLETED`    |
 | P2.S10 | GitHub remote and first Vercel deployment      | `IN PROGRESS`  |
@@ -714,7 +714,7 @@ profiles 1─* reports *─1 items
 | Resend confirmation | `/verify-email` form → action `resendConfirmation` → `auth.resend({ type: "signup", options: { emailRedirectTo } })`; always a neutral success message (Supabase also returns success for unknown addresses); 60 s client cooldown; Supabase's per-address cooldown → `resend_cooldown`                                            | P2.S5 |
 | Forgot password     | `/forgot-password` → action `requestPasswordReset` → `resetPasswordForEmail(email, { redirectTo: /api/auth/confirm?locale=…&next=/reset-password })`; template link `?token_hash=…&type=recovery&next=/reset-password`; always neutral; failed links → `/forgot-password?error=link_invalid`                                       | P2.S6 |
 | Reset password      | `/reset-password` (any session; guests get a link to request a new email) → action `resetPassword` → `updateUser({ password })` + sign out other sessions                                                                                                                                                                          | P2.S6 |
-| Google              | `signInWithOAuth({ provider: "google", options: { redirectTo: /api/auth/callback?next=… } })` → `exchangeCodeForSession`                                                                                                                                                                                                           | P2.S7 |
+| Google              | Action `signInWithGoogle` → `signInWithOAuth({ provider: "google", options: { redirectTo: /api/auth/callback?locale=…&next=… } })` → Google → callback `exchangeCodeForSession`; failures → `/login?error=oauth_cancelled` or `oauth_failed`                                                                                       | P2.S7 |
 | Logout              | Action `signOut` → redirect home                                                                                                                                                                                                                                                                                                   | P2.S4 |
 
 Messages from auth actions are generic where needed (for example, "forgot
@@ -726,7 +726,7 @@ password" always reports success, so emails cannot be enumerated).
 | ----------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------- | -------- |
 | Email provider          | enabled                                                                                                  | enabled                         | —        |
 | Confirm email           | on (`mailer_autoconfirm=false`)                                                                          | on                              | —        |
-| Google provider         | off                                                                                                      | on                              | P2.S7    |
+| Google provider         | off (code ready, P2.S7)                                                                                  | on                              | P2.S7    |
 | Anonymous sign-ins      | off                                                                                                      | off                             | —        |
 | Minimum password length | 6 (default)                                                                                              | 8                               | P2.S4    |
 | Site URL                | `http://localhost:3000` (P2.S9)                                                                          | + prod URL in P11               | P2.S9    |
@@ -1200,7 +1200,7 @@ reset their password and edit their profile; protected routes work.
 - **Verified:** production build, headless Edge, a temporary confirmed `findly-e2e-…@mailinator.com` user (real reset email sent; token read from `auth.one_time_tokens`), deleted afterwards: 28/28 browser checks + route redirects via curl — login link, required/invalid email, identical message for an unknown and a known address, cooldown, link → `/en/reset-password` signed in with the email shown, too short / mismatch / same-as-old password on the right fields, success → continue signed in, another device's refresh token revoked, reused link → `/en/forgot-password?error=link_invalid`, bogus PKCE code with `next=/reset-password` → `/forgot-password?error`, signup link failures still → `/verify-email`, old password rejected and new one works, guest `/reset-password` shows no form, no overflow at 360 px, no browser errors. Only the real account remains.
 - **Manual (open):** paste `supabase/templates/reset-password.html` into Supabase → Authentication → Emails → Templates → "Reset password" (body + subject from its header comment), then request a reset for your own account and use the link. Until then Supabase's default template is used; its link also works, but only in the browser that requested it.
 
-#### P2.S7 — Google OAuth — `NOT STARTED`
+#### P2.S7 — Google OAuth — `NEEDS REVIEW`
 
 - **Depends on:** P2.S4.
 - **Affects:** `src/app/api/auth/callback/route.ts`, `src/components/auth/google-button.tsx`, Google Cloud Console, Supabase dashboard.
@@ -1209,6 +1209,9 @@ reset their password and edit their profile; protected routes work.
   2. Button calls `signInWithOAuth` with `redirectTo` = `/api/auth/callback?next=…`.
   3. Callback exchanges the code, redirects safely.
 - **Verify:** Google sign-in creates a profile with the Google name; a second sign-in reuses it; cancelling on Google returns to login with a message.
+- **Result:** action `signInWithGoogle` (server-side `signInWithOAuth`, PKCE verifier stored in a cookie, `redirectTo` = `/api/auth/callback?locale=…&next=…` with a safe `next`, then redirect to Google), route `src/app/api/auth/callback/route.ts` (`exchangeCodeForSession`; `error=access_denied` → `/login?error=oauth_cancelled`, any other failure → `oauth_failed`, logged; `next` kept), `src/components/auth/{google-button,auth-divider}.tsx`, "Continue with Google" + "or" divider on `/login` (keeps `next`) and `/register`, login page alert for the two error codes. Profile creation needs no change: `handle_new_user()` already falls back to `full_name`/`name`.
+- **Verified without Google (provider still off):** production build, headless Edge, 20 checks + curl — button on both pages, request goes to Supabase `/auth/v1/authorize?provider=google` with an S256 code challenge and `redirect_to` = our callback with locale and `next`, verifier cookie set (Supabase then answers "provider is not enabled", as expected); callback: cancel → cancelled message, other errors / bogus code / no params → failed message, `next` kept, `//evil.com` dropped, mk and en; unknown `?error=` values ignored; no overflow at 360 px; no browser errors.
+- **Manual (open):** sub-step 1 (Google Cloud project, OAuth consent screen, Web client with redirect URI `https://lyvudeaxwibgpqsinqyz.supabase.co/auth/v1/callback`, client ID/secret into Supabase → Authentication → Sign In / Providers → Google). Then check the Verify list with your Google account.
 
 #### P2.S8 — Profile page and avatar — `NOT STARTED`
 
@@ -1641,6 +1644,7 @@ started (no auth code or profile tables exist yet).
 | F-15 | Registration failed on the first attempt with `429 over_email_send_rate_limit` ("email rate limit exceeded"). Verified: one submit = one server action = one `signUp` call; no user created. Cause: the project-wide email quota of the built-in Supabase mailer (a few emails per hour for the whole project), not our code. Our code showed it as "too many attempts" and did not log it. | Separate error code `email_rate_limited` with an accurate message; `authFailure()` now logs operational auth errors (rate limits, email failures, unknown) without the email address. Real fix: custom SMTP (P2.S9) and the email rate limit in Supabase → Authentication → Rate Limits.                                                                                                                                                                    | Fixed         |
 | F-16 | "Register does nothing": after the account was deleted while the browser kept its session, the header (profile lookup) showed guest links but the proxy (JWT claims only — a JWT stays valid up to an hour) still treated the visitor as signed in and redirected `/register` and `/login` to `/`. Reproduced in the browser (RSC request `307 /register → /`).                             | On `/login` and `/register` only, the proxy now also calls `getUser()` when claims exist and, on a definitive 401/403, clears the session (`signOut({ scope: "local" })`) and treats the visitor as a guest; network errors never sign anyone out. Other pages keep the fast claims check; protected pages still reach `/login` via `requireUser()`.                                                                                                        | Fixed         |
 | F-17 | Base UI logs "changing the default value state of an uncontrolled FieldControl" when a form keeps entered values after a failed submit (`defaultValue` changes). Submitting and the kept values work; it is a dev-console warning.                                                                                                                                                          | Root cause: Base UI `FieldControl` (`useControlled`) reads `defaultValue` only on mount and warns when it changes; our forms refill values after a failed submit by passing a new `defaultValue` (`undefined` → entered value). `FormField` now keys the input on its `defaultValue`, so a new value remounts the input instead of changing it. Reproduced on the dev server before the fix (forgot-password, login) and gone after; kept values unchanged. | Fixed         |
+| F-18 | Google sign-in cannot pass our metadata, so a new Google user's profile gets `preferred_locale = 'mk'` whatever language they used, and their auth emails (templates read `.Data.locale`) are Macedonian.                                                                                                                                                                                   | Acceptable for now; the profile page (P2.S8) lets users change the language. Revisit if emails should follow `profiles.preferred_locale`.                                                                                                                                                                                                                                                                                                                   | Open (P2.S8)  |
 | F-09 | `supabase login` fails in non-interactive shells.                                                                                                                                                                                                                                                                                                                                           | Run it in a normal terminal (documented in §8 and `CLAUDE.md`).                                                                                                                                                                                                                                                                                                                                                                                             | Documented    |
 | F-11 | `supabase migration new` names files with the **UTC** time, but the init migration was named with the local date (`20260924000000`). Until 2026-09-24 00:00 UTC new files would sort before it.                                                                                                                                                                                             | New migrations must sort after the latest existing file; the profiles migration was renamed to `20260924000100`. Check the name after every `db:new`.                                                                                                                                                                                                                                                                                                       | Documented    |
 | F-13 | next-intl locale detection is on: a visitor whose browser prefers English (`Accept-Language`) or who last used English (`NEXT_LOCALE` cookie) is redirected from `/…` to `/en/…`. `/` is therefore not always Macedonian.                                                                                                                                                                   | **Decision needed.** Keep (standard, convenient) or set `localeDetection: false` in `src/i18n/routing.ts` so `/` is always Macedonian and English only via the switcher. Recommendation: disable, for a Macedonian-first site with predictable URLs.                                                                                                                                                                                                        | Open          |
@@ -1665,6 +1669,7 @@ started (no auth code or profile tables exist yet).
 | 2026-09-24 | P2.S9     | Custom SMTP (Brevo) configured by the user; verified with a real registration.                                                                         |
 | 2026-09-24 | P2.S5     | Confirmation route, resend with cooldown, invalid-link page, bilingual confirm template; template paste pending (NEEDS REVIEW).                        |
 | 2026-09-24 | P2.S5     | Confirm-signup template pasted by the user and verified with a real registration → COMPLETED.                                                          |
+| 2026-09-24 | P2.S7     | Google sign-in button, OAuth callback with cancel/failure messages; Google Cloud + Supabase provider setup pending (NEEDS REVIEW).                     |
 | 2026-09-24 | F-17 fix  | Base UI "default value state of an uncontrolled FieldControl" warning: `FormField` remounts the input when `defaultValue` changes.                     |
 | 2026-09-24 | P2.S6     | Forgot/reset password pages and actions, recovery link routing, other sessions signed out, bilingual template; template paste pending (NEEDS REVIEW).  |
 | 2026-09-24 | P2.S5 fix | Stale session after account deletion locked users out of /login and /register (F-16); proxy verifies the user there. Full registration flow re-tested. |
@@ -1675,13 +1680,20 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**Manual first: finish P2.S6.** Paste `supabase/templates/reset-password.html`
-into Supabase → Authentication → Emails → Templates → "Reset password" (body +
-subject from the header comment), then use "Forgot password?" with your own
-account and open the link. Report back and P2.S6 is marked `COMPLETED`.
+**Manual first (both steps are `NEEDS REVIEW`):**
 
-**Then P2.S7 — Google OAuth** (see §22, Phase 2). Needs a Google Cloud project
-with an OAuth web client (manual sub-step 1).
+1. **P2.S6:** paste `supabase/templates/reset-password.html` into Supabase →
+   Authentication → Emails → Templates → "Reset password" (body + subject from
+   the header comment), then use "Forgot password?" with your own account.
+2. **P2.S7:** Google Cloud project → OAuth consent screen → Web client with the
+   redirect URI `https://lyvudeaxwibgpqsinqyz.supabase.co/auth/v1/callback`;
+   paste the client ID and secret into Supabase → Authentication → Sign In /
+   Providers → Google and enable it. Then sign in with Google, sign in again,
+   and try cancelling on Google's page.
+
+Report back and both steps are marked `COMPLETED`.
+
+**Then P2.S8 — Profile page and avatar** (see §22, Phase 2).
 
 Open manual items:
 

@@ -23,8 +23,8 @@ status and the next step. Read it before any work.
 ## Current state
 
 - Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S5 and P2.S9 (SMTP,
-  Brevo) done; P2.S6 implemented, waiting for the user to paste the reset-password
-  template. Next: P2.S7.
+  Brevo) done; P2.S6 and P2.S7 implemented, waiting for manual setup (reset-password
+  template; Google Cloud client + Supabase Google provider). Next: P2.S8.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13).
 - The dev project has one **real user account** (the project owner). Test cleanup
@@ -68,7 +68,8 @@ status and the next step. Read it before any work.
 - Unit tests: Vitest, colocated as `src/**/*.test.ts`. Browser checks: headless Edge via
   `playwright-core` installed in the scratchpad (not the project) against `next start`
   (another port if the user's dev server has 3000) with browser locale `mk-MK`
-  (locale detection, F-13); create temporary users with SQL and delete them
+  (locale detection, F-13); stop that server by its node PID afterwards (stopping the
+  background task leaves `next start` running and serving the old build); create temporary users with SQL and delete them
   afterwards. Custom SMTP is on: a sign-up that succeeds **sends a real email**, so
   never sign up with `@findly.test` (it bounces) — use a disposable inbox
   (`…@mailinator.com`) and read the confirmation `token_hash` from

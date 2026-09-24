@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import type { Locale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AuthCard } from "@/components/auth/auth-card";
+import { AuthDivider } from "@/components/auth/auth-divider";
+import { GoogleButton } from "@/components/auth/google-button";
 import { RegisterForm } from "@/components/auth/register-form";
 import { Link } from "@/i18n/navigation";
 
@@ -39,7 +41,11 @@ export default async function RegisterPage({
         </p>
       }
     >
-      <RegisterForm />
+      <div className="grid gap-5">
+        <GoogleButton />
+        <AuthDivider label={t("or")} />
+        <RegisterForm />
+      </div>
     </AuthCard>
   );
 }

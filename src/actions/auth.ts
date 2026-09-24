@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect as redirectToUrl } from "next/navigation";
 import { getLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import {
@@ -30,6 +31,12 @@ function confirmRedirectUrl(locale: string, next?: string) {
   return next ? `${url}&next=${encodeURIComponent(next)}` : url;
 }
 
+// Where Google (via Supabase) sends the user back after sign-in. Also must be
+// allowed in Supabase → Authentication → URL Configuration.
+function oauthCallbackUrl(locale: string, next: string) {
+  return `${env.NEXT_PUBLIC_SITE_URL}/api/auth/callback?locale=${locale}&next=${encodeURIComponent(next)}`;
+}
+
 // signIn/signUp end in a redirect on success, so they only ever return errors.
 
 export async function signIn(formData: FormData): Promise<ActionResult> {
@@ -48,6 +55,26 @@ export async function signIn(formData: FormData): Promise<ActionResult> {
     AFTER_SIGN_IN_PATH,
   );
   return redirect({ href: splitLocale(next).path, locale: await getLocale() });
+}
+
+// Starts Google sign-in: Supabase returns the Google consent URL and stores
+// the PKCE code verifier in a cookie; /api/auth/callback finishes the flow.
+// New users get a profile from the handle_new_user() trigger (Google name).
+export async function signInWithGoogle(
+  formData: FormData,
+): Promise<ActionResult> {
+  const next = safeRedirectPath(
+    formData.get("next")?.toString(),
+    AFTER_SIGN_IN_PATH,
+  );
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: oauthCallbackUrl(await getLocale(), next) },
+  });
+  if (error) return authFailure(error);
+
+  return redirectToUrl(data.url);
 }
 
 export async function signUp(formData: FormData): Promise<ActionResult> {

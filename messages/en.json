@@ -111,6 +111,10 @@
     "continue": "Continue",
     "resetNoSessionTitle": "Reset link needed",
     "resetNoSession": "Open the link from the password reset email to choose a new password. Links are valid for a limited time.",
-    "requestNewLink": "Request a new link"
+    "requestNewLink": "Request a new link",
+    "continueWithGoogle": "Continue with Google",
+    "or": "or",
+    "oauthCancelled": "Google sign-in was cancelled. You can try again or sign in with your email.",
+    "oauthFailed": "Google sign-in failed. Please try again or sign in with your email."
   }
 }
