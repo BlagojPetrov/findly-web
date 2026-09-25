@@ -29,6 +29,7 @@ export async function SiteHeader() {
             <UserMenu
               displayName={user.profile.display_name}
               email={user.email}
+              avatarPath={user.profile.avatar_path}
             />
           ) : (
             <>

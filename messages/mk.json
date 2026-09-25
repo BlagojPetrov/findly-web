@@ -8,7 +8,8 @@
     "language": "Јазик",
     "signIn": "Најава",
     "register": "Регистрација",
-    "accountMenu": "Кориснички профил"
+    "accountMenu": "Кориснички профил",
+    "profile": "Профил"
   },
   "Home": {
     "title": "Најди го изгубеното, врати го најденото",
@@ -62,7 +63,8 @@
     "passwordsDontMatch": "Лозинките не се совпаѓаат.",
     "displayNameTooShort": "Името мора да има најмалку 2 знаци.",
     "displayNameTooLong": "Името може да има најмногу 50 знаци.",
-    "samePassword": "Новата лозинка мора да се разликува од тековната."
+    "samePassword": "Новата лозинка мора да се разликува од тековната.",
+    "localeInvalid": "Изберете јазик."
   },
   "Auth": {
     "loginTitle": "Најава",
@@ -116,5 +118,43 @@
     "or": "или",
     "oauthCancelled": "Најавата со Google е откажана. Обидете се повторно или најавете се со е-пошта.",
     "oauthFailed": "Најавата со Google не успеа. Обидете се повторно или најавете се со е-пошта."
+  },
+  "Profile": {
+    "title": "Профил",
+    "description": "Уредете го вашето име, слика, јазик и лозинка.",
+    "avatarTitle": "Профилна слика",
+    "avatarHint": "JPG, PNG или WebP, до 10 MB. Сликата се сечи во квадрат.",
+    "avatarUpload": "Прикачи слика",
+    "avatarChange": "Промени слика",
+    "avatarRemove": "Отстрани",
+    "avatarUpdated": "Профилната слика е променета.",
+    "avatarRemoved": "Профилната слика е отстранета.",
+    "avatarInvalidType": "Изберете слика во формат JPG, PNG или WebP.",
+    "avatarTooLarge": "Сликата може да има најмногу 10 MB.",
+    "avatarProcessingFailed": "Сликата не може да се прочита. Обидете се со друга.",
+    "avatarUploadFailed": "Сликата не може да се прикачи. Обидете се повторно.",
+    "detailsTitle": "Податоци за профилот",
+    "displayName": "Име",
+    "displayNameHint": "Ова име ќе го гледаат другите корисници.",
+    "preferredLocale": "Јазик на е-поштата",
+    "preferredLocaleHint": "Пораките од Findly ќе ви ги испраќаме на овој јазик.",
+    "locales": {
+      "mk": "Македонски",
+      "en": "English"
+    },
+    "save": "Зачувај промени",
+    "saved": "Промените се зачувани.",
+    "accountTitle": "Сметка",
+    "email": "Е-пошта",
+    "signInMethods": "Начини на најава",
+    "providers": {
+      "email": "Е-пошта и лозинка",
+      "google": "Google"
+    },
+    "passwordTitle": "Промена на лозинка",
+    "passwordDescription": "По промената ќе бидете одјавени на другите уреди.",
+    "passwordButton": "Промени лозинка",
+    "passwordChanged": "Лозинката е променета.",
+    "passwordGoogleOnly": "Се најавувате со Google, па тука нема лозинка за промена."
   }
 }

@@ -8,7 +8,8 @@
     "language": "Language",
     "signIn": "Sign in",
     "register": "Register",
-    "accountMenu": "Account"
+    "accountMenu": "Account",
+    "profile": "Profile"
   },
   "Home": {
     "title": "Find what was lost, return what was found",
@@ -62,7 +63,8 @@
     "passwordsDontMatch": "The passwords do not match.",
     "displayNameTooShort": "The name must be at least 2 characters.",
     "displayNameTooLong": "The name can be at most 50 characters.",
-    "samePassword": "The new password must be different from the current one."
+    "samePassword": "The new password must be different from the current one.",
+    "localeInvalid": "Choose a language."
   },
   "Auth": {
     "loginTitle": "Sign in",
@@ -116,5 +118,43 @@
     "or": "or",
     "oauthCancelled": "Google sign-in was cancelled. You can try again or sign in with your email.",
     "oauthFailed": "Google sign-in failed. Please try again or sign in with your email."
+  },
+  "Profile": {
+    "title": "Profile",
+    "description": "Edit your name, picture, language and password.",
+    "avatarTitle": "Profile picture",
+    "avatarHint": "JPG, PNG or WebP, up to 10 MB. The picture is cropped to a square.",
+    "avatarUpload": "Upload picture",
+    "avatarChange": "Change picture",
+    "avatarRemove": "Remove",
+    "avatarUpdated": "Profile picture updated.",
+    "avatarRemoved": "Profile picture removed.",
+    "avatarInvalidType": "Choose a JPG, PNG or WebP image.",
+    "avatarTooLarge": "The image can be at most 10 MB.",
+    "avatarProcessingFailed": "The image could not be read. Try a different one.",
+    "avatarUploadFailed": "The picture could not be uploaded. Please try again.",
+    "detailsTitle": "Profile details",
+    "displayName": "Name",
+    "displayNameHint": "Other users will see this name.",
+    "preferredLocale": "Email language",
+    "preferredLocaleHint": "Emails from Findly will be sent to you in this language.",
+    "locales": {
+      "mk": "Македонски",
+      "en": "English"
+    },
+    "save": "Save changes",
+    "saved": "Changes saved.",
+    "accountTitle": "Account",
+    "email": "Email",
+    "signInMethods": "Sign-in methods",
+    "providers": {
+      "email": "Email and password",
+      "google": "Google"
+    },
+    "passwordTitle": "Change password",
+    "passwordDescription": "After the change you will be signed out on your other devices.",
+    "passwordButton": "Change password",
+    "passwordChanged": "Your password has been changed.",
+    "passwordGoogleOnly": "You sign in with Google, so there is no password to change here."
   }
 }

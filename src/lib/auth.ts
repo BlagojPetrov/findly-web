@@ -10,6 +10,8 @@ import type { Tables } from "@/types/database";
 export type CurrentUser = {
   id: string;
   email: string | null;
+  // Sign-in methods linked to the account, e.g. ["email"] or ["google"].
+  providers: string[];
   profile: Tables<"profiles">;
 };
 
@@ -30,7 +32,13 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
   // A valid token without a profile means the account was deleted.
   if (!profile) return null;
 
-  return { id: claims.sub, email: claims.email ?? null, profile };
+  const providers = claims.app_metadata?.providers;
+  return {
+    id: claims.sub,
+    email: claims.email ?? null,
+    providers: Array.isArray(providers) ? providers : [],
+    profile,
+  };
 });
 
 // For protected pages and actions: returns the user or redirects to the

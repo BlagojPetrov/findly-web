@@ -6,9 +6,9 @@
 > progress of the Findly web project. Every step starts by reading it and ends by
 > updating it.
 
-- **Last updated:** 2026-09-24
+- **Last updated:** 2026-09-25
 - **Current phase:** Phase 2 — Authentication (in progress)
-- **Next step:** P2.S8 (§22)
+- **Next step:** P2.S10 (§22)
 
 ---
 
@@ -125,7 +125,7 @@ to these IDs. "Next step" always means the step named in
 | P2.S5  | Email verification                             | `COMPLETED`   |
 | P2.S6  | Forgot / reset password                        | `COMPLETED`   |
 | P2.S7  | Google OAuth                                   | `COMPLETED`   |
-| P2.S8  | Profile page and avatar upload                 | `NOT STARTED` |
+| P2.S8  | Profile page and avatar upload                 | `COMPLETED`   |
 | P2.S9  | SMTP setup (manual) — done before P2.S5        | `COMPLETED`   |
 | P2.S10 | GitHub remote and first Vercel deployment      | `IN PROGRESS` |
 | P3.S1  | Items and images schema                        | `NOT STARTED` |
@@ -468,10 +468,10 @@ Validated at startup by `src/lib/env.ts`. `.env.local` is gitignored;
 
 ### Storage
 
-| Bucket        | Public read | Write rule                                                        | Phase |
-| ------------- | ----------- | ----------------------------------------------------------------- | ----- |
-| `avatars`     | yes         | Path `{user_id}/...`; only the owner can insert/update/delete.    | 2     |
-| `item-images` | yes         | Path `{user_id}/{item_id}/...`; only the owner; max 5 MB, images. | 3     |
+| Bucket        | Public read | Write rule                                                                                                 | Phase |
+| ------------- | ----------- | ---------------------------------------------------------------------------------------------------------- | ----- |
+| `avatars` ✓   | yes         | `{user_id}/{uuid}.webp` (or `.jpg`); owner inserts, sees and deletes, no updates; 1 MB, WebP/JPEG (P2.S8). | 2     |
+| `item-images` | yes         | Path `{user_id}/{item_id}/...`; only the owner; max 5 MB, images.                                          | 3     |
 
 Public buckets are acceptable because items are public. Images of hidden items
 remain reachable by direct URL (known limitation, documented for the thesis).
@@ -536,7 +536,7 @@ Column privileges: `anon`/`authenticated` may **select only** `id, display_name,
 | -------------------------- | ----------- | -------------------------------------------- |
 | `id`                       | uuid PK     | FK → `auth.users.id` on delete cascade       |
 | `display_name`             | text        | 2–50 chars; from sign-up form or Google name |
-| `avatar_path`              | text null   | Storage path in `avatars` (not a URL)        |
+| `avatar_path`              | text null   | Storage path in `avatars` (not a URL), P2.S8 |
 | `preferred_locale`         | text        | `mk` \| `en`, default `mk` (for emails)      |
 | `role`                     | user_role   | default `user`; not updatable by users       |
 | `is_banned`                | boolean     | default false; not updatable by users        |
@@ -716,6 +716,9 @@ profiles 1─* reports *─1 items
 | Reset password      | `/reset-password` (any session; guests get a link to request a new email) → action `resetPassword` → `updateUser({ password })` + sign out other sessions                                                                                                                                                                          | P2.S6 |
 | Google              | Action `signInWithGoogle` → `signInWithOAuth({ provider: "google", options: { redirectTo: /api/auth/callback?locale=…&next=… } })` → Google → callback `exchangeCodeForSession`; failures → `/login?error=oauth_cancelled` or `oauth_failed`                                                                                       | P2.S7 |
 | Logout              | Action `signOut` → redirect home                                                                                                                                                                                                                                                                                                   | P2.S4 |
+| Edit profile        | `/profile` → action `updateProfile` (name, language); a changed language is also written to `user_metadata.locale`, which the auth email templates read                                                                                                                                                                            | P2.S8 |
+| Avatar              | The browser resizes to 256×256 WebP (`src/lib/images.ts`) and uploads to `avatars/{uid}/{uuid}.webp` with the browser client; action `updateAvatar(path)` checks the path and that the file exists, saves it and deletes the old file; `removeAvatar` clears it                                                                    | P2.S8 |
+| Change password     | `/profile` (accounts with an `email` identity) → the same `resetPassword` action as P2.S6; no current password (Supabase lets any session change it, so asking would add no security)                                                                                                                                              | P2.S8 |
 
 Messages from auth actions are generic where needed (for example, "forgot
 password" always reports success, so emails cannot be enumerated).
@@ -1213,12 +1216,15 @@ reset their password and edit their profile; protected routes work.
 - **Verified without Google (provider still off):** production build, headless Edge, 20 checks + curl — button on both pages, request goes to Supabase `/auth/v1/authorize?provider=google` with an S256 code challenge and `redirect_to` = our callback with locale and `next`, verifier cookie set (Supabase then answers "provider is not enabled", as expected); callback: cancel → cancelled message, other errors / bogus code / no params → failed message, `next` kept, `//evil.com` dropped, mk and en; unknown `?error=` values ignored; no overflow at 360 px; no browser errors.
 - **Manual part done (2026-09-24):** the user created the Google Cloud OAuth client and enabled the Google provider in Supabase; sign-in, repeated sign-in and cancelling confirmed working. Database check: provider enabled; one `google` identity, whose user has a profile.
 
-#### P2.S8 — Profile page and avatar — `NOT STARTED`
+#### P2.S8 — Profile page and avatar — `COMPLETED`
 
 - **Depends on:** P2.S4.
 - **Affects:** migration `*_avatars_bucket.sql` (bucket + storage policies), `(app)/layout.tsx`, `(app)/profile/page.tsx`, `src/actions/profile.ts`, `src/lib/validation/profile.ts`, `src/components/profile/*`, `src/lib/images.ts` (resize helper, reused in P3.S4).
 - **Sub-steps:** edit display name and preferred language; avatar upload (resize to 256 px WebP, path `{uid}/avatar.webp`, upsert); change password for email users; show sign-in method; add "Profile" to the user menu and show the avatar there.
 - **Verify:** changes persist; another user cannot overwrite your avatar (storage policy test); invalid names rejected.
+- **Result:** migration `20260925204513_avatars_bucket.sql` (public bucket `avatars`, 1 MB, `image/webp`/`image/jpeg`; storage policies: insert into the own top-level folder with `private.can_write()`, select and delete in the own folder, no update policy), `supabase/tests/avatars.sql` (bucket settings, own/other/root/subfolder uploads, no listing/overwrite/delete of other users' files, no in-place updates, avatar_path check, banned and anonymous users). `src/lib/avatars.ts` (paths, public URL, initials), `src/lib/images.ts` (file check, `centerSquare`, `fitWithin`, `resizeImage` → WebP with JPEG fallback; reused in P3.S4), `src/lib/validation/profile.ts`, `src/actions/profile.ts` (`updateProfile`, `updateAvatar`, `removeAvatar`), `(app)/layout.tsx` (noindex) and `(app)/profile/page.tsx` (picture, details, account with sign-in methods, password), `src/components/profile/{user-avatar,avatar-form,profile-form,change-password-form}.tsx`, shadcn `avatar`, `DropdownMenuLinkItem`; the user menu shows the picture and a "Profile" link; `CurrentUser.providers` (from the JWT's `app_metadata`). Vitest gets placeholder env values so modules importing `@/lib/env` can be tested. 129 unit tests.
+- **Deviations:** a new file name `{uid}/{uuid}.webp` per upload instead of an upserted `{uid}/avatar.webp`: a fixed name would be served stale from browser/CDN caches, and without an update policy nobody (not even the owner) can overwrite a file. JPEG fallback for browsers that cannot encode WebP. The email language is also synced to `user_metadata.locale`, which fixes F-18. Change password reuses `resetPassword` and does not ask for the current password (see the P2.S6 design note); Supabase's "Secure password change" stays off because it would require an email nonce for sessions older than 24 h.
+- **Verified:** migration dry run, `db:test` 2/2, advisors (only the known F-12 warnings and F-19). Production build, headless Edge (`mk-MK`), two SQL-created `@findly.test` users (email-only and simulated Google-only), deleted afterwards with no files left: 66/66 — guest redirect, menu link, account info, too-short/blank name (value kept), name + language saved (trimmed, header updated without reload, UI language unchanged, `user_metadata.locale` synced), wrong type / over 10 MB / undecodable file rejected, a 1600×900 PNG (1.4 MB) stored as a 256×256 WebP of ~1 KB and shown in the header and on the page, replacing deletes the old file, remove clears the path and the file; storage API as the other user: upload into / upsert / update / delete / list the first user's folder all fail, pointing the own profile at another user's file fails, the bucket rejects PNG and files over 1 MB; `/en/profile` in English; password too short / mismatch / same as old rejected, success clears the form, old password rejected, new one works, the other session is revoked, this browser stays signed in; the Google-only account sees no password form; no overflow at 360 px; no browser errors.
 
 #### P2.S9 — SMTP setup (manual) — `COMPLETED`
 
@@ -1644,12 +1650,13 @@ started (no auth code or profile tables exist yet).
 | F-15 | Registration failed on the first attempt with `429 over_email_send_rate_limit` ("email rate limit exceeded"). Verified: one submit = one server action = one `signUp` call; no user created. Cause: the project-wide email quota of the built-in Supabase mailer (a few emails per hour for the whole project), not our code. Our code showed it as "too many attempts" and did not log it. | Separate error code `email_rate_limited` with an accurate message; `authFailure()` now logs operational auth errors (rate limits, email failures, unknown) without the email address. Real fix: custom SMTP (P2.S9) and the email rate limit in Supabase → Authentication → Rate Limits.                                                                                                                                                                    | Fixed         |
 | F-16 | "Register does nothing": after the account was deleted while the browser kept its session, the header (profile lookup) showed guest links but the proxy (JWT claims only — a JWT stays valid up to an hour) still treated the visitor as signed in and redirected `/register` and `/login` to `/`. Reproduced in the browser (RSC request `307 /register → /`).                             | On `/login` and `/register` only, the proxy now also calls `getUser()` when claims exist and, on a definitive 401/403, clears the session (`signOut({ scope: "local" })`) and treats the visitor as a guest; network errors never sign anyone out. Other pages keep the fast claims check; protected pages still reach `/login` via `requireUser()`.                                                                                                        | Fixed         |
 | F-17 | Base UI logs "changing the default value state of an uncontrolled FieldControl" when a form keeps entered values after a failed submit (`defaultValue` changes). Submitting and the kept values work; it is a dev-console warning.                                                                                                                                                          | Root cause: Base UI `FieldControl` (`useControlled`) reads `defaultValue` only on mount and warns when it changes; our forms refill values after a failed submit by passing a new `defaultValue` (`undefined` → entered value). `FormField` now keys the input on its `defaultValue`, so a new value remounts the input instead of changing it. Reproduced on the dev server before the fix (forgot-password, login) and gone after; kept values unchanged. | Fixed         |
-| F-18 | Google sign-in cannot pass our metadata, so a new Google user's profile gets `preferred_locale = 'mk'` whatever language they used, and their auth emails (templates read `.Data.locale`) are Macedonian.                                                                                                                                                                                   | Acceptable for now; the profile page (P2.S8) lets users change the language. Revisit if emails should follow `profiles.preferred_locale`.                                                                                                                                                                                                                                                                                                                   | Open (P2.S8)  |
+| F-18 | Google sign-in cannot pass our metadata, so a new Google user's profile gets `preferred_locale = 'mk'` whatever language they used, and their auth emails (templates read `.Data.locale`) are Macedonian.                                                                                                                                                                                   | The profile page (P2.S8) lets users choose the email language; `updateProfile` writes it to both `profiles.preferred_locale` and `user_metadata.locale` (read by the templates). New Google users still start with `mk` until they change it.                                                                                                                                                                                                               | Fixed (P2.S8) |
 | F-09 | `supabase login` fails in non-interactive shells.                                                                                                                                                                                                                                                                                                                                           | Run it in a normal terminal (documented in §8 and `CLAUDE.md`).                                                                                                                                                                                                                                                                                                                                                                                             | Documented    |
 | F-11 | `supabase migration new` names files with the **UTC** time, but the init migration was named with the local date (`20260924000000`). Until 2026-09-24 00:00 UTC new files would sort before it.                                                                                                                                                                                             | New migrations must sort after the latest existing file; the profiles migration was renamed to `20260924000100`. Check the name after every `db:new`.                                                                                                                                                                                                                                                                                                       | Documented    |
 | F-13 | next-intl locale detection is on: a visitor whose browser prefers English (`Accept-Language`) or who last used English (`NEXT_LOCALE` cookie) is redirected from `/…` to `/en/…`. `/` is therefore not always Macedonian.                                                                                                                                                                   | **Decision needed.** Keep (standard, convenient) or set `localeDetection: false` in `src/i18n/routing.ts` so `/` is always Macedonian and English only via the switcher. Recommendation: disable, for a Macedonian-first site with predictable URLs.                                                                                                                                                                                                        | Open          |
 | F-14 | Next.js renders a hidden route announcer with `role="alert"`.                                                                                                                                                                                                                                                                                                                               | Browser tests must look for alerts inside the form (`form [role=alert]`).                                                                                                                                                                                                                                                                                                                                                                                   | Documented    |
 | F-12 | Advisors warn that `current_profile()` (a `security definer` function in `public`) is callable by `anon`/`authenticated`.                                                                                                                                                                                                                                                                   | Intentional: it returns only the caller's own row (nothing for anon). Accepted warning.                                                                                                                                                                                                                                                                                                                                                                     | Accepted      |
+| F-19 | Advisors warn "Leaked password protection disabled" (HaveIBeenPwned check of new passwords). Noticed during P2.S8.                                                                                                                                                                                                                                                                          | Optional: enable it in Supabase → Authentication (password security) if the plan allows it; rejected passwords already show `weak_password`.                                                                                                                                                                                                                                                                                                                | Open          |
 | F-10 | No automated tests yet.                                                                                                                                                                                                                                                                                                                                                                     | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                                                                                                                                                                                                                                                                                                                                | Fixed         |
 
 ---
@@ -1658,6 +1665,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                 |
 | ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-09-25 | P2.S8     | Profile page: name, email language (also for auth emails, F-18), avatar upload to the new `avatars` bucket, change password, profile link in the menu. |
 | 2026-09-24 | P1.S1–S8  | Project scaffold, i18n, Supabase clients, env validation, init migration, home page, project linked.                                                   |
 | 2026-09-24 | —         | Fixed Supabase URL misconfiguration; URL validation; generated types committed.                                                                        |
 | 2026-09-24 | P1.S9     | Phase 1 audit, master plan created, `CLAUDE.md` project guide, font variable fix.                                                                      |
@@ -1681,14 +1689,15 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P2.S8 — Profile page and avatar** (see §22, Phase 2).
+**P2.S10 — GitHub remote and first Vercel deployment** (remaining part; see §22, Phase 2).
 
-Why next: every sign-in method works now; users cannot yet change their name,
-language or avatar (Google users also get Macedonian by default, F-18), and the
-user menu has no profile link. Includes the first storage bucket (avatars) with
-storage policies.
+Why next: it is the last open step of Phase 2. The profile page works locally;
+the Phase 2 definition of done also needs registration, login and profile
+editing on the deployed site. Needs the user: a Vercel account and importing
+the GitHub repository, then adding the Vercel URL to the Supabase redirect URLs.
 
 Open manual items:
 
 - Set the minimum password length to 8 in the Supabase dashboard (F-07).
 - Decide on locale detection (F-13).
+- Optional: leaked password protection (F-19).

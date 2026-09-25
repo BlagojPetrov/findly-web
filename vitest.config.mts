@@ -8,5 +8,10 @@ export default defineConfig({
   test: {
     include: ["src/**/*.test.ts"],
     environment: "node",
+    // Placeholder values so modules that import @/lib/env can be tested.
+    env: {
+      NEXT_PUBLIC_SUPABASE_URL: "https://test-project.supabase.co",
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_test",
+    },
   },
 });

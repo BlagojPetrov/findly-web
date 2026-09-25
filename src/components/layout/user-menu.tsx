@@ -1,31 +1,28 @@
 "use client";
 
-import { LogOut } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { signOut } from "@/actions/auth";
+import { UserAvatar } from "@/components/profile/user-avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLinkItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("");
-}
+import { Link } from "@/i18n/navigation";
 
 export function UserMenu({
   displayName,
   email,
+  avatarPath,
 }: {
   displayName: string;
   email: string | null;
+  avatarPath: string | null;
 }) {
   const t = useTranslations();
   const [pending, startTransition] = useTransition();
@@ -34,9 +31,9 @@ export function UserMenu({
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label={t("Header.accountMenu")}
-        className="flex size-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
-        {initials(displayName)}
+        <UserAvatar name={displayName} avatarPath={avatarPath} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         <div className="px-1.5 py-1">
@@ -45,6 +42,11 @@ export function UserMenu({
             <p className="truncate text-xs text-muted-foreground">{email}</p>
           )}
         </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuLinkItem render={<Link href="/profile" />}>
+          <UserRound aria-hidden />
+          {t("Header.profile")}
+        </DropdownMenuLinkItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={pending}

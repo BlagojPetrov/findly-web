@@ -22,10 +22,10 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S7 and P2.S9 (SMTP,
-  Brevo) done; both email templates pasted, Google provider enabled. Next: P2.S8.
+- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S9 done (profile page
+  and avatars in P2.S8). Next: P2.S10 (Vercel deployment, needs the user).
 - Open manual items: minimum password length 8 (F-07); decision on locale
-  detection (F-13).
+  detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
   must delete only test users by their own email pattern (`…@findly.test`,
   `findly-e2e-…@mailinator.com`).
@@ -62,9 +62,11 @@ status and the next step. Read it before any work.
   truth, pasted into the dashboard; excluded from Prettier). Auth actions that
   send email pass `emailRedirectTo`/`redirectTo` to that route. Failed recovery links go
   to `/forgot-password?error=link_invalid`, others to `/verify-email?error=link_invalid`.
+- Menu links: `DropdownMenuLinkItem render={<Link href="…" />}`.
 - Combine `buttonVariants()` with conflicting classes via `cn(buttonVariants(), "…")`,
   not `buttonVariants({ className })` (no class merging there).
-- Unit tests: Vitest, colocated as `src/**/*.test.ts`. Browser checks: headless Edge via
+- Unit tests: Vitest, colocated as `src/**/*.test.ts`; `vitest.config.mts` sets placeholder
+  env values so `@/lib/env` can be imported. Browser checks: headless Edge via
   `playwright-core` installed in the scratchpad (not the project) against `next start`
   (another port if the user's dev server has 3000) with browser locale `mk-MK`
   (locale detection, F-13); stop that server by its node PID afterwards (stopping the
@@ -78,10 +80,18 @@ status and the next step. Read it before any work.
   policies, `private.is_admin()` for admin access. Policy helpers go in schema
   `private` (not exposed by the API); `public` functions are only those the app calls
   via `rpc()`. `security definer` functions use `search_path = ''`.
+- Storage: public buckets, files under `{uid}/…`; policies on `storage.objects` in the
+  bucket's migration (own folder, `private.can_write()` on insert, no update policy — upload
+  a new name instead of overwriting). The browser resizes (`@/lib/images`) and uploads
+  with the browser client, then an action validates the path, checks `exists()`, saves it
+  and removes the old file. Avatars: `@/lib/avatars` (`avatarUrl`, `isOwnAvatarPath`),
+  shown with `UserAvatar`. SQL tests that delete from `storage.objects` must first
+  `set_config('storage.allow_delete_query', 'true', true)`.
 - `profiles` has column-level privileges: select explicit public columns
   (`id, display_name, avatar_path, created_at`), never `select("*")`. The signed-in
   user's own full row (role, is_banned, preferred_locale) comes from
-  `rpc("current_profile")`.
+  `rpc("current_profile")`. `preferred_locale` is mirrored to `user_metadata.locale`
+  (the auth email templates read that) by `updateProfile`.
 - SQL tests: `supabase/tests/<name>.sql` using helpers from `_helpers.sql`
   (`pg_temp.create_user`, `login_as`, `login_as_anon`, `logout`) and `assert`.
   The runner wraps each file in `begin … rollback`.
