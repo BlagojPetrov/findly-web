@@ -121,9 +121,8 @@
   },
   "Profile": {
     "title": "Profile",
-    "description": "Edit your name, picture, language and password.",
-    "avatarTitle": "Profile picture",
-    "avatarHint": "JPG, PNG or WebP, up to 10 MB. The picture is cropped to a square.",
+    "description": "Manage your account and personal information.",
+    "avatarHint": "JPG, PNG or WebP, up to 10 MB.",
     "avatarUpload": "Upload picture",
     "avatarChange": "Change picture",
     "avatarRemove": "Remove",
@@ -133,11 +132,10 @@
     "avatarTooLarge": "The image can be at most 10 MB.",
     "avatarProcessingFailed": "The image could not be read. Try a different one.",
     "avatarUploadFailed": "The picture could not be uploaded. Please try again.",
-    "detailsTitle": "Profile details",
+    "personalTitle": "Personal information",
     "displayName": "Name",
-    "displayNameHint": "Other users will see this name.",
-    "preferredLocale": "Email language",
-    "preferredLocaleHint": "Emails from Findly will be sent to you in this language.",
+    "language": "Language",
+    "languageHint": "Used for the emails we send you.",
     "locales": {
       "mk": "Македонски",
       "en": "English"
@@ -146,15 +144,18 @@
     "saved": "Changes saved.",
     "accountTitle": "Account",
     "email": "Email",
-    "signInMethods": "Sign-in methods",
+    "signInMethod": "Sign-in method",
     "providers": {
       "email": "Email and password",
       "google": "Google"
     },
-    "passwordTitle": "Change password",
-    "passwordDescription": "After the change you will be signed out on your other devices.",
+    "securityTitle": "Security",
+    "password": "Password",
     "passwordButton": "Change password",
+    "passwordDescription": "You will be signed out on your other devices after the change.",
     "passwordChanged": "Your password has been changed.",
-    "passwordGoogleOnly": "You sign in with Google, so there is no password to change here."
+    "cancel": "Cancel",
+    "googleOnlyTitle": "Google sign-in",
+    "passwordGoogleOnly": "Your account has no password — you sign in with Google."
   }
 }

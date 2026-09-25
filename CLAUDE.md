@@ -63,6 +63,8 @@ status and the next step. Read it before any work.
   send email pass `emailRedirectTo`/`redirectTo` to that route. Failed recovery links go
   to `/forgot-password?error=link_invalid`, others to `/verify-email?error=link_invalid`.
 - Menu links: `DropdownMenuLinkItem render={<Link href="…" />}`.
+- Settings-style pages: `SettingsCard` + `SettingsCardBody`/`SettingsCardFooter`
+  (`src/components/profile/settings-card.tsx`); a form wraps body and footer.
 - Combine `buttonVariants()` with conflicting classes via `cn(buttonVariants(), "…")`,
   not `buttonVariants({ className })` (no class merging there).
 - Unit tests: Vitest, colocated as `src/**/*.test.ts`; `vitest.config.mts` sets placeholder

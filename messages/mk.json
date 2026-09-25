@@ -121,9 +121,8 @@
   },
   "Profile": {
     "title": "Профил",
-    "description": "Уредете го вашето име, слика, јазик и лозинка.",
-    "avatarTitle": "Профилна слика",
-    "avatarHint": "JPG, PNG или WebP, до 10 MB. Сликата се сечи во квадрат.",
+    "description": "Управувајте со вашата сметка и личните податоци.",
+    "avatarHint": "JPG, PNG или WebP, до 10 MB.",
     "avatarUpload": "Прикачи слика",
     "avatarChange": "Промени слика",
     "avatarRemove": "Отстрани",
@@ -133,11 +132,10 @@
     "avatarTooLarge": "Сликата може да има најмногу 10 MB.",
     "avatarProcessingFailed": "Сликата не може да се прочита. Обидете се со друга.",
     "avatarUploadFailed": "Сликата не може да се прикачи. Обидете се повторно.",
-    "detailsTitle": "Податоци за профилот",
+    "personalTitle": "Лични податоци",
     "displayName": "Име",
-    "displayNameHint": "Ова име ќе го гледаат другите корисници.",
-    "preferredLocale": "Јазик на е-поштата",
-    "preferredLocaleHint": "Пораките од Findly ќе ви ги испраќаме на овој јазик.",
+    "language": "Јазик",
+    "languageHint": "За пораките што ви ги праќаме по е-пошта.",
     "locales": {
       "mk": "Македонски",
       "en": "English"
@@ -146,15 +144,18 @@
     "saved": "Промените се зачувани.",
     "accountTitle": "Сметка",
     "email": "Е-пошта",
-    "signInMethods": "Начини на најава",
+    "signInMethod": "Начин на најава",
     "providers": {
       "email": "Е-пошта и лозинка",
       "google": "Google"
     },
-    "passwordTitle": "Промена на лозинка",
-    "passwordDescription": "По промената ќе бидете одјавени на другите уреди.",
+    "securityTitle": "Безбедност",
+    "password": "Лозинка",
     "passwordButton": "Промени лозинка",
+    "passwordDescription": "По промената ќе бидете одјавени на другите уреди.",
     "passwordChanged": "Лозинката е променета.",
-    "passwordGoogleOnly": "Се најавувате со Google, па тука нема лозинка за промена."
+    "cancel": "Откажи",
+    "googleOnlyTitle": "Најава со Google",
+    "passwordGoogleOnly": "Сметката нема лозинка — се најавувате преку Google."
   }
 }
