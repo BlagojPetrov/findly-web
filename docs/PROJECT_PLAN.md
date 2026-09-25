@@ -725,17 +725,17 @@ password" always reports success, so emails cannot be enumerated).
 
 ### Hosted auth settings (Supabase dashboard)
 
-| Setting                 | Current (verified 2026-09-24)                                                                               | Target            | Step     |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------- | -------- |
-| Email provider          | enabled                                                                                                     | enabled           | —        |
-| Confirm email           | on (`mailer_autoconfirm=false`)                                                                             | on                | —        |
-| Google provider         | on (P2.S7, verified 2026-09-24)                                                                             | on                | P2.S7    |
-| Anonymous sign-ins      | off                                                                                                         | off               | —        |
-| Minimum password length | 6 (default)                                                                                                 | 8                 | P2.S4    |
-| Site URL                | `http://localhost:3000` (P2.S9)                                                                             | + prod URL in P11 | P2.S9    |
-| Redirect URLs           | `http://localhost:3000/**` (P2.S9)                                                                          | + Vercel URLs     | P2.S10   |
-| SMTP                    | custom, Brevo (P2.S9, verified by a real sign-up)                                                           | custom            | P2.S9    |
-| Email templates         | Confirm signup = `confirm-signup.html` (P2.S5), Reset password = `reset-password.html` (P2.S6), both pasted | same              | P2.S5/S6 |
+| Setting                 | Current (verified 2026-09-24)                                                                                                                                                    | Target                                                                                                   | Step         |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------ |
+| Email provider          | enabled                                                                                                                                                                          | enabled                                                                                                  | —            |
+| Confirm email           | on (`mailer_autoconfirm=false`)                                                                                                                                                  | on                                                                                                       | —            |
+| Google provider         | on (P2.S7, verified 2026-09-24)                                                                                                                                                  | on                                                                                                       | P2.S7        |
+| Anonymous sign-ins      | off                                                                                                                                                                              | off                                                                                                      | —            |
+| Minimum password length | 6 (default)                                                                                                                                                                      | 8                                                                                                        | P2.S4        |
+| Site URL                | `http://localhost:3000` (P2.S9)                                                                                                                                                  | only a fallback since the templates use `RedirectTo`; production URL in P11                              | P2.S9        |
+| Redirect URLs           | `http://localhost:3000/**` (P2.S9)                                                                                                                                               | + `https://<vercel-domain>/**` (every email and OAuth `redirectTo` must match, or the email link breaks) | P2.S10       |
+| SMTP                    | custom, Brevo (P2.S9, verified by a real sign-up)                                                                                                                                | custom                                                                                                   | P2.S9        |
+| Email templates         | Confirm signup = `confirm-signup.html`, Reset password = `reset-password.html`; since P2.S10 they link to `{{ .RedirectTo }}` instead of `{{ .SiteURL }}` — **re-paste pending** | same                                                                                                     | P2.S5/S6/S10 |
 
 ---
 
@@ -1040,7 +1040,14 @@ script with a clear message; no pgTAP/Docker needed. They never commit data.
 
 - **Migrations to production:** manual — `supabase link --project-ref <prod>` →
   `supabase db push` → relink dev. Never automatic from CI.
-- **Vercel env vars:** the three `NEXT_PUBLIC_*` variables per environment.
+- **Vercel env vars:** the three `NEXT_PUBLIC_*` variables per environment. If
+  `NEXT_PUBLIC_SITE_URL` is missing, `src/lib/env.ts` uses Vercel's
+  `NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL` (trailing slashes are removed).
+- **One Supabase project for local and Vercel:** auth email templates link to
+  `{{ .RedirectTo }}` (the URL the app sends), so each email returns to the site
+  that sent it; both sites must be in the Supabase redirect URLs.
+- **Region:** functions run in `fra1` (`vercel.json`), next to Supabase
+  (eu-central-1).
 - **Free tier limits to keep in mind:** Supabase — 500 MB database, 1 GB storage,
   5 GB egress, 50k monthly active users, **projects pause after 7 days without
   activity** (open the dashboard or app before demos). Vercel Hobby — for
@@ -1257,7 +1264,12 @@ reset their password and edit their profile; protected routes work.
 
 - **Depends on:** P2.S4 (can be done earlier).
 - **Done (2026-09-24):** repository https://github.com/BlagojPetrov/findly-web created; `origin` added; `main` pushed and tracking `origin/main` (verified: same commit locally and remotely).
-- **Sub-steps (remaining):** import into Vercel; set env vars (`NEXT_PUBLIC_SITE_URL` = Vercel URL); add the Vercel URL to Supabase redirect URLs.
+- **Done (2026-09-25, code):** auth email templates link to `{{ .RedirectTo }}&token_hash=…&type=…` instead of `{{ .SiteURL }}/api/auth/confirm?…` — with one Supabase project for local and Vercel, a fixed Site URL would send every email to one of the two sites (the app already sends `<site>/api/auth/confirm?locale=…[&next=/reset-password]` as the redirect URL); `resolveSiteUrl()` in `src/lib/env.ts` (`NEXT_PUBLIC_SITE_URL` → Vercel production domain → localhost, trailing slash removed, path rejected; 4 unit tests; a build with only the Vercel variable was checked to inline that domain in server and client code); `vercel.json` (region `fra1`); README deployment section; `.env.example` note. P2.S8 commits pushed.
+- **Sub-steps (remaining, manual):**
+  1. Vercel: import `BlagojPetrov/findly-web` (preset Next.js); env vars `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL` = production URL; deploy.
+  2. Supabase → URL Configuration → Redirect URLs: add `https://<vercel-domain>/**` (keep `http://localhost:3000/**`).
+  3. Supabase → Email templates: paste the updated `confirm-signup.html` and `reset-password.html` bodies (subjects unchanged).
+  4. Real registration and password reset on the deployed site with your own address; Google sign-in there.
 - **Verify:** the deployed site loads in both languages; registration/login works on the deployed URL.
 
 **Definition of done — Phase 2:** register → confirm email → sign in → edit
@@ -1664,39 +1676,38 @@ started (no auth code or profile tables exist yet).
 
 ## 24. Changelog
 
-| Date       | Step      | Change                                                                                                                                                 |
-| ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-09-25 | P2.S8 UI  | Profile page redesigned as a settings page (header card, personal information, account, security); functionality unchanged.                            |
-| 2026-09-25 | P2.S8     | Profile page: name, email language (also for auth emails, F-18), avatar upload to the new `avatars` bucket, change password, profile link in the menu. |
-| 2026-09-24 | P1.S1–S8  | Project scaffold, i18n, Supabase clients, env validation, init migration, home page, project linked.                                                   |
-| 2026-09-24 | —         | Fixed Supabase URL misconfiguration; URL validation; generated types committed.                                                                        |
-| 2026-09-24 | P1.S9     | Phase 1 audit, master plan created, `CLAUDE.md` project guide, font variable fix.                                                                      |
-| 2026-09-24 | P2.S10    | GitHub repository created and `main` pushed (Vercel part still open).                                                                                  |
-| 2026-09-24 | P2.S1     | Vitest, `ActionResult` helpers, `safeRedirectPath`, translation parity tests, `Errors` messages.                                                       |
-| 2026-09-24 | P2.S2     | `profiles`, sign-up trigger, `private.is_admin/can_write`, `current_profile()`, column-level privileges, SQL test runner.                              |
-| 2026-09-24 | P2.S3     | `getCurrentUser`/`requireUser`/`requireAdmin` (server-only DAL), route rules in `auth-routes.ts`, proxy auth redirects.                                |
-| 2026-09-24 | P2.S4     | Login, register and verify-email pages, auth actions, form components, user menu; 3 bugs found in browser testing fixed.                               |
-| 2026-09-24 | P2.S9     | Custom SMTP (Brevo) configured by the user; verified with a real registration.                                                                         |
-| 2026-09-24 | P2.S5     | Confirmation route, resend with cooldown, invalid-link page, bilingual confirm template; template paste pending (NEEDS REVIEW).                        |
-| 2026-09-24 | P2.S5     | Confirm-signup template pasted by the user and verified with a real registration → COMPLETED.                                                          |
-| 2026-09-24 | P2.S6/S7  | Manual parts done by the user (reset-password template, Google OAuth client + provider) and verified → COMPLETED.                                      |
-| 2026-09-24 | P2.S7     | Google sign-in button, OAuth callback with cancel/failure messages; Google Cloud + Supabase provider setup pending (NEEDS REVIEW).                     |
-| 2026-09-24 | F-17 fix  | Base UI "default value state of an uncontrolled FieldControl" warning: `FormField` remounts the input when `defaultValue` changes.                     |
-| 2026-09-24 | P2.S6     | Forgot/reset password pages and actions, recovery link routing, other sessions signed out, bilingual template; template paste pending (NEEDS REVIEW).  |
-| 2026-09-24 | P2.S5 fix | Stale session after account deletion locked users out of /login and /register (F-16); proxy verifies the user there. Full registration flow re-tested. |
-| 2026-09-24 | plan      | P2.S9 (SMTP) moved before P2.S5; email templates moved into P2.S5/P2.S6; Brevo chosen.                                                                 |
-| 2026-09-24 | P2.S4 fix | Diagnosed sign-up 429 (project email quota, F-15); `email_rate_limited` error code; operational auth errors logged.                                    |
+| Date       | Step      | Change                                                                                                                                                                                               |
+| ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-25 | P2.S10    | Deployment prep: templates link to `RedirectTo` (works for local + Vercel), site URL fallback to the Vercel domain, `fra1` region, README; Vercel import + template re-paste pending (NEEDS REVIEW). |
+| 2026-09-25 | P2.S8 UI  | Profile page redesigned as a settings page (header card, personal information, account, security); functionality unchanged.                                                                          |
+| 2026-09-25 | P2.S8     | Profile page: name, email language (also for auth emails, F-18), avatar upload to the new `avatars` bucket, change password, profile link in the menu.                                               |
+| 2026-09-24 | P1.S1–S8  | Project scaffold, i18n, Supabase clients, env validation, init migration, home page, project linked.                                                                                                 |
+| 2026-09-24 | —         | Fixed Supabase URL misconfiguration; URL validation; generated types committed.                                                                                                                      |
+| 2026-09-24 | P1.S9     | Phase 1 audit, master plan created, `CLAUDE.md` project guide, font variable fix.                                                                                                                    |
+| 2026-09-24 | P2.S10    | GitHub repository created and `main` pushed (Vercel part still open).                                                                                                                                |
+| 2026-09-24 | P2.S1     | Vitest, `ActionResult` helpers, `safeRedirectPath`, translation parity tests, `Errors` messages.                                                                                                     |
+| 2026-09-24 | P2.S2     | `profiles`, sign-up trigger, `private.is_admin/can_write`, `current_profile()`, column-level privileges, SQL test runner.                                                                            |
+| 2026-09-24 | P2.S3     | `getCurrentUser`/`requireUser`/`requireAdmin` (server-only DAL), route rules in `auth-routes.ts`, proxy auth redirects.                                                                              |
+| 2026-09-24 | P2.S4     | Login, register and verify-email pages, auth actions, form components, user menu; 3 bugs found in browser testing fixed.                                                                             |
+| 2026-09-24 | P2.S9     | Custom SMTP (Brevo) configured by the user; verified with a real registration.                                                                                                                       |
+| 2026-09-24 | P2.S5     | Confirmation route, resend with cooldown, invalid-link page, bilingual confirm template; template paste pending (NEEDS REVIEW).                                                                      |
+| 2026-09-24 | P2.S5     | Confirm-signup template pasted by the user and verified with a real registration → COMPLETED.                                                                                                        |
+| 2026-09-24 | P2.S6/S7  | Manual parts done by the user (reset-password template, Google OAuth client + provider) and verified → COMPLETED.                                                                                    |
+| 2026-09-24 | P2.S7     | Google sign-in button, OAuth callback with cancel/failure messages; Google Cloud + Supabase provider setup pending (NEEDS REVIEW).                                                                   |
+| 2026-09-24 | F-17 fix  | Base UI "default value state of an uncontrolled FieldControl" warning: `FormField` remounts the input when `defaultValue` changes.                                                                   |
+| 2026-09-24 | P2.S6     | Forgot/reset password pages and actions, recovery link routing, other sessions signed out, bilingual template; template paste pending (NEEDS REVIEW).                                                |
+| 2026-09-24 | P2.S5 fix | Stale session after account deletion locked users out of /login and /register (F-16); proxy verifies the user there. Full registration flow re-tested.                                               |
+| 2026-09-24 | plan      | P2.S9 (SMTP) moved before P2.S5; email templates moved into P2.S5/P2.S6; Brevo chosen.                                                                                                               |
+| 2026-09-24 | P2.S4 fix | Diagnosed sign-up 429 (project email quota, F-15); `email_rate_limited` error code; operational auth errors logged.                                                                                  |
 
 ---
 
 ## 25. Next Recommended Step
 
-**P2.S10 — GitHub remote and first Vercel deployment** (remaining part; see §22, Phase 2).
-
-Why next: it is the last open step of Phase 2. The profile page works locally;
-the Phase 2 definition of done also needs registration, login and profile
-editing on the deployed site. Needs the user: a Vercel account and importing
-the GitHub repository, then adding the Vercel URL to the Supabase redirect URLs.
+**P2.S10 — manual part** (see §22, Phase 2): Vercel import and env vars,
+Supabase redirect URL for the Vercel domain, re-paste both email templates,
+then a real registration, password reset and Google sign-in on the deployed
+site. After that P2.S10 and Phase 2 can be closed; next is P3.S1 (items schema).
 
 Open manual items:
 

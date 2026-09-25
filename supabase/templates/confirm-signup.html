@@ -6,6 +6,11 @@
 
   The language comes from user metadata "locale" (set by the sign-up form).
   The link goes to /api/auth/confirm with token_hash, which works in any browser.
+  The link is the redirect URL the app sent with the request
+  (<site>/api/auth/confirm?locale=…[&next=…], see src/actions/auth.ts) plus the
+  token, so every email links back to the site that sent it (local dev or
+  Vercel). That URL must be in Supabase → Authentication → URL Configuration →
+  Redirect URLs; otherwise Supabase falls back to the Site URL and the link breaks.
   This file is the source of truth; keep the dashboard in sync with it.
 -->
 {{ if and .Data.locale (eq .Data.locale "en") }}
@@ -13,7 +18,7 @@
 <p>Hi {{ .Data.display_name }},</p>
 <p>Confirm your email address to activate your Findly account:</p>
 <p>
-  <a href="{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=email&locale=en">Confirm email address</a>
+  <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email">Confirm email address</a>
 </p>
 <p>If you did not create an account, you can ignore this email.</p>
 {{ else }}
@@ -21,7 +26,7 @@
 <p>Здраво {{ .Data.display_name }},</p>
 <p>Потврдете ја вашата е-пошта за да го активирате профилот на Findly:</p>
 <p>
-  <a href="{{ .SiteURL }}/api/auth/confirm?token_hash={{ .TokenHash }}&type=email&locale=mk">Потврди е-пошта</a>
+  <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email">Потврди е-пошта</a>
 </p>
 <p>Ако не сте креирале профил, слободно игнорирајте ја оваа порака.</p>
 {{ end }}

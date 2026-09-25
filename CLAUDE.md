@@ -23,7 +23,8 @@ status and the next step. Read it before any work.
 ## Current state
 
 - Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S9 done (profile page
-  and avatars in P2.S8). Next: P2.S10 (Vercel deployment, needs the user).
+  and avatars in P2.S8). P2.S10: code prepared and pushed; Vercel import, redirect URL
+  and template re-paste pending (user).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -31,7 +32,7 @@ status and the next step. Read it before any work.
   `findly-e2e-…@mailinator.com`).
 - Supabase dev project `lyvudeaxwibgpqsinqyz` (eu-central-1, Postgres 17), linked.
 - GitHub: `origin` = https://github.com/BlagojPetrov/findly-web, branch `main`.
-  Not deployed to Vercel yet (P2.S10).
+  Vercel: not imported yet (P2.S10); `vercel.json` pins functions to `fra1`.
 
 ## Stack and conventions
 
@@ -59,7 +60,9 @@ status and the next step. Read it before any work.
   errors go through `authFailure()`.
 - Auth email links go to `/api/auth/confirm` (`token_hash` + `type`, or `code`;
   `locale`; safe `next`). Email templates live in `supabase/templates/` (source of
-  truth, pasted into the dashboard; excluded from Prettier). Auth actions that
+  truth, pasted into the dashboard; excluded from Prettier). Their links are
+  `{{ .RedirectTo }}&token_hash=…`, so every auth call that sends email must pass a
+  full `<SITE_URL>/api/auth/confirm?locale=…` redirect that is in the Supabase allow list. Auth actions that
   send email pass `emailRedirectTo`/`redirectTo` to that route. Failed recovery links go
   to `/forgot-password?error=link_invalid`, others to `/verify-email?error=link_invalid`.
 - Menu links: `DropdownMenuLinkItem render={<Link href="…" />}`.

@@ -43,6 +43,21 @@ supabase/migrations/   SQL migrations (schema, RLS policies, functions)
    ```
 4. Start the dev server: `npm run dev` → http://localhost:3000
 
+## Deployment (Vercel)
+
+1. Import the GitHub repository in Vercel (framework preset: Next.js, defaults).
+2. Environment variables: `NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, and `NEXT_PUBLIC_SITE_URL` = the
+   production URL (e.g. `https://findly-web.vercel.app`, no trailing slash).
+3. Supabase → Authentication → URL Configuration → Redirect URLs: add
+   `https://<production-domain>/**` (auth emails and Google sign-in return there).
+4. Functions run in `fra1` (Frankfurt, next to the Supabase project), set in
+   `vercel.json`.
+
+Pushing to `main` deploys to production. The Supabase email templates in
+`supabase/templates/` link to the URL the app sends with each request, so the
+local and the deployed site both work with the same Supabase project.
+
 ## Scripts
 
 | Script              | Description                                          |
