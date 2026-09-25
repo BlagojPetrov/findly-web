@@ -6,9 +6,9 @@
 > progress of the Findly web project. Every step starts by reading it and ends by
 > updating it.
 
-- **Last updated:** 2026-09-25
-- **Current phase:** Phase 2 — Authentication (in progress)
-- **Next step:** P2.S10 (§22)
+- **Last updated:** 2026-09-26
+- **Current phase:** Phase 3 — Items CRUD and image upload (not started)
+- **Next step:** P3.S1 (§22)
 
 ---
 
@@ -94,7 +94,7 @@ to these IDs. "Next step" always means the step named in
 | Phase | Name                                  | Status        |
 | ----- | ------------------------------------- | ------------- |
 | 1     | Project setup and architecture        | `COMPLETED`   |
-| 2     | Authentication                        | `IN PROGRESS` |
+| 2     | Authentication                        | `COMPLETED`   |
 | 3     | Items CRUD and image upload           | `NOT STARTED` |
 | 4     | Feed, search and advanced filters     | `NOT STARTED` |
 | 5     | Map and location                      | `NOT STARTED` |
@@ -127,7 +127,7 @@ to these IDs. "Next step" always means the step named in
 | P2.S7  | Google OAuth                                   | `COMPLETED`   |
 | P2.S8  | Profile page and avatar upload                 | `COMPLETED`   |
 | P2.S9  | SMTP setup (manual) — done before P2.S5        | `COMPLETED`   |
-| P2.S10 | GitHub remote and first Vercel deployment      | `IN PROGRESS` |
+| P2.S10 | GitHub remote and first Vercel deployment      | `COMPLETED`   |
 | P3.S1  | Items and images schema                        | `NOT STARTED` |
 | P3.S2  | Item images storage bucket                     | `NOT STARTED` |
 | P3.S3  | Item validation schemas                        | `NOT STARTED` |
@@ -725,17 +725,17 @@ password" always reports success, so emails cannot be enumerated).
 
 ### Hosted auth settings (Supabase dashboard)
 
-| Setting                 | Current (verified 2026-09-24)                                                                                                                                                    | Target                                                                                                   | Step         |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | ------------ |
-| Email provider          | enabled                                                                                                                                                                          | enabled                                                                                                  | —            |
-| Confirm email           | on (`mailer_autoconfirm=false`)                                                                                                                                                  | on                                                                                                       | —            |
-| Google provider         | on (P2.S7, verified 2026-09-24)                                                                                                                                                  | on                                                                                                       | P2.S7        |
-| Anonymous sign-ins      | off                                                                                                                                                                              | off                                                                                                      | —            |
-| Minimum password length | 6 (default)                                                                                                                                                                      | 8                                                                                                        | P2.S4        |
-| Site URL                | `http://localhost:3000` (P2.S9)                                                                                                                                                  | only a fallback since the templates use `RedirectTo`; production URL in P11                              | P2.S9        |
-| Redirect URLs           | `http://localhost:3000/**` (P2.S9)                                                                                                                                               | + `https://<vercel-domain>/**` (every email and OAuth `redirectTo` must match, or the email link breaks) | P2.S10       |
-| SMTP                    | custom, Brevo (P2.S9, verified by a real sign-up)                                                                                                                                | custom                                                                                                   | P2.S9        |
-| Email templates         | Confirm signup = `confirm-signup.html`, Reset password = `reset-password.html`; since P2.S10 they link to `{{ .RedirectTo }}` instead of `{{ .SiteURL }}` — **re-paste pending** | same                                                                                                     | P2.S5/S6/S10 |
+| Setting                 | Current (verified 2026-09-24)                                                                                                         | Target                                                                      | Step         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------ |
+| Email provider          | enabled                                                                                                                               | enabled                                                                     | —            |
+| Confirm email           | on (`mailer_autoconfirm=false`)                                                                                                       | on                                                                          | —            |
+| Google provider         | on (P2.S7, verified 2026-09-24)                                                                                                       | on                                                                          | P2.S7        |
+| Anonymous sign-ins      | off                                                                                                                                   | off                                                                         | —            |
+| Minimum password length | 6 (default)                                                                                                                           | 8                                                                           | P2.S4        |
+| Site URL                | `http://localhost:3000` (P2.S9)                                                                                                       | only a fallback since the templates use `RedirectTo`; production URL in P11 | P2.S9        |
+| Redirect URLs           | `http://localhost:3000/**`, `https://findly-web-nine.vercel.app/**` (P2.S10, user-confirmed)                                          | same                                                                        | P2.S10       |
+| SMTP                    | custom, Brevo (P2.S9, verified by a real sign-up)                                                                                     | custom                                                                      | P2.S9        |
+| Email templates         | `confirm-signup.html`, `reset-password.html`, linking to `{{ .RedirectTo }}` (re-pasted in P2.S10, verified by real emails on Vercel) | same                                                                        | P2.S5/S6/S10 |
 
 ---
 
@@ -1033,10 +1033,10 @@ script with a clear message; no pgTAP/Docker needed. They never commit data.
   OAuth can be configured for the real domain, and to catch build problems early.
 - **Environments:**
 
-  | Environment | Supabase project                  | Site URL                       |
-  | ----------- | --------------------------------- | ------------------------------ |
-  | Local       | dev (`lyvudeaxwibgpqsinqyz`)      | `http://localhost:3000`        |
-  | Vercel      | dev until P11.S5, then production | `https://<project>.vercel.app` |
+  | Environment | Supabase project                  | Site URL                             |
+  | ----------- | --------------------------------- | ------------------------------------ |
+  | Local       | dev (`lyvudeaxwibgpqsinqyz`)      | `http://localhost:3000`              |
+  | Vercel      | dev until P11.S5, then production | `https://findly-web-nine.vercel.app` |
 
 - **Migrations to production:** manual — `supabase link --project-ref <prod>` →
   `supabase db push` → relink dev. Never automatic from CI.
@@ -1120,7 +1120,7 @@ clean · ✅ plan and `CLAUDE.md` in the repository.
 
 ---
 
-### Phase 2 — Authentication — `NOT STARTED`
+### Phase 2 — Authentication — `COMPLETED`
 
 **Goal:** users can register, verify their email, sign in with email or Google,
 reset their password and edit their profile; protected routes work.
@@ -1260,13 +1260,14 @@ reset their password and edit their profile; protected routes work.
   in this step.
 - **Result (2026-09-24):** configured by the user (Brevo). Verified in the database: a real registration had `confirmation_sent_at` and `email_confirmed_at` set and the user signed in.
 
-#### P2.S10 — GitHub remote and first Vercel deployment — `IN PROGRESS`
+#### P2.S10 — GitHub remote and first Vercel deployment — `COMPLETED`
 
 - **Depends on:** P2.S4 (can be done earlier).
 - **Done (2026-09-24):** repository https://github.com/BlagojPetrov/findly-web created; `origin` added; `main` pushed and tracking `origin/main` (verified: same commit locally and remotely).
 - **Done (2026-09-25, code):** auth email templates link to `{{ .RedirectTo }}&token_hash=…&type=…` instead of `{{ .SiteURL }}/api/auth/confirm?…` — with one Supabase project for local and Vercel, a fixed Site URL would send every email to one of the two sites (the app already sends `<site>/api/auth/confirm?locale=…[&next=/reset-password]` as the redirect URL); `resolveSiteUrl()` in `src/lib/env.ts` (`NEXT_PUBLIC_SITE_URL` → Vercel production domain → localhost, trailing slash removed, path rejected; 4 unit tests; a build with only the Vercel variable was checked to inline that domain in server and client code); `vercel.json` (region `fra1`); README deployment section; `.env.example` note. P2.S8 commits pushed.
 - **Deployed (2026-09-26):** https://findly-web-nine.vercel.app (imported by the user). Verified: `/` and `/en` render (`lang`, titles, categories from Supabase), functions in `fra1` (`X-Vercel-Id`), guest `/profile` and `/en/profile` → login with `next`, unknown page 404, `/api/auth/confirm` with a bogus token → `/en/verify-email?error=link_invalid`, OAuth cancel → `/login?error=oauth_cancelled`, "Continue with Google" reaches Google with `redirect_to` = the Vercel callback (so `NEXT_PUBLIC_SITE_URL` is right); the P2.S8 browser suite against production 70/70 (login, profile, avatar upload/replace/remove from the Vercel origin, storage policies, password change) with SQL-created `@findly.test` users, deleted afterwards. Not verifiable without dashboard access: the redirect URL entry and the re-pasted templates — covered by the real registration/reset below.
-- **Sub-steps (remaining, manual; 1 done):**
+- **Manual part done (2026-09-26):** redirect URL added and both templates re-pasted by the user; on the deployed site a real registration (email link opened the Vercel domain and signed in), a password reset and Google sign-in work (user-confirmed; database shows the new email account confirmed and signed in and a new Google account signed in). Production URL: https://findly-web-nine.vercel.app.
+- **Sub-steps (all done):**
   1. Vercel: import `BlagojPetrov/findly-web` (preset Next.js); env vars `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL` = production URL; deploy.
   2. Supabase → URL Configuration → Redirect URLs: add `https://<vercel-domain>/**` (keep `http://localhost:3000/**`).
   3. Supabase → Email templates: paste the updated `confirm-signup.html` and `reset-password.html` bodies (subjects unchanged).
@@ -1671,6 +1672,7 @@ started (no auth code or profile tables exist yet).
 | F-14 | Next.js renders a hidden route announcer with `role="alert"`.                                                                                                                                                                                                                                                                                                                               | Browser tests must look for alerts inside the form (`form [role=alert]`).                                                                                                                                                                                                                                                                                                                                                                                   | Documented    |
 | F-12 | Advisors warn that `current_profile()` (a `security definer` function in `public`) is callable by `anon`/`authenticated`.                                                                                                                                                                                                                                                                   | Intentional: it returns only the caller's own row (nothing for anon). Accepted warning.                                                                                                                                                                                                                                                                                                                                                                     | Accepted      |
 | F-19 | Advisors warn "Leaked password protection disabled" (HaveIBeenPwned check of new passwords). Noticed during P2.S8.                                                                                                                                                                                                                                                                          | Optional: enable it in Supabase → Authentication (password security) if the plan allows it; rejected passwords already show `weak_password`.                                                                                                                                                                                                                                                                                                                | Open          |
+| F-20 | Deleting an auth user (dashboard or SQL) removes the profile but not the user's files in Storage: the owner's old avatar stayed in `avatars` as an orphan after the account was recreated (2026-09-26).                                                                                                                                                                                     | Clean up files when account deletion is implemented (admin user management, P10.S5, or a self-service delete); the orphan was left in place (user data).                                                                                                                                                                                                                                                                                                    | Open          |
 | F-10 | No automated tests yet.                                                                                                                                                                                                                                                                                                                                                                     | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                                                                                                                                                                                                                                                                                                                                | Fixed         |
 
 ---
@@ -1679,6 +1681,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-26 | P2.S10    | Deployed to https://findly-web-nine.vercel.app; production checks and profile suite 70/70; real registration, reset and Google sign-in confirmed → COMPLETED. Phase 2 completed.                     |
 | 2026-09-25 | P2.S10    | Deployment prep: templates link to `RedirectTo` (works for local + Vercel), site URL fallback to the Vercel domain, `fra1` region, README; Vercel import + template re-paste pending (NEEDS REVIEW). |
 | 2026-09-25 | P2.S8 UI  | Profile page redesigned as a settings page (header card, personal information, account, security); functionality unchanged.                                                                          |
 | 2026-09-25 | P2.S8     | Profile page: name, email language (also for auth emails, F-18), avatar upload to the new `avatars` bucket, change password, profile link in the menu.                                               |
@@ -1705,10 +1708,12 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P2.S10 — manual part** (see §22, Phase 2): Vercel import and env vars,
-Supabase redirect URL for the Vercel domain, re-paste both email templates,
-then a real registration, password reset and Google sign-in on the deployed
-site. After that P2.S10 and Phase 2 can be closed; next is P3.S1 (items schema).
+**P3.S1 — Items and images schema** (see §22, Phase 3).
+
+Why next: Phase 2 is complete (auth, profile, deployment). Phase 3 starts with
+the `items` and `item_images` tables, their enums, triggers (updated_at,
+resolved_at, no future dates, daily insert limit), RLS with column grants,
+indexes and the `create_item(...)` function, with SQL tests.
 
 Open manual items:
 

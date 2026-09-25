@@ -22,9 +22,7 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phase 1 completed. Phase 2 (Authentication) in progress: P2.S1–S9 done (profile page
-  and avatars in P2.S8). P2.S10: code prepared and pushed; Vercel import, redirect URL
-  and template re-paste pending (user).
+- Phases 1 and 2 completed (auth, profile, first deployment). Next: P3.S1 (items schema).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -32,7 +30,8 @@ status and the next step. Read it before any work.
   `findly-e2e-…@mailinator.com`).
 - Supabase dev project `lyvudeaxwibgpqsinqyz` (eu-central-1, Postgres 17), linked.
 - GitHub: `origin` = https://github.com/BlagojPetrov/findly-web, branch `main`.
-  Vercel: not imported yet (P2.S10); `vercel.json` pins functions to `fra1`.
+  Vercel: https://findly-web-nine.vercel.app — every push to `main` deploys to
+  production (uses the same dev Supabase project); `vercel.json` pins functions to `fra1`.
 
 ## Stack and conventions
 
