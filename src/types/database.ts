@@ -44,6 +44,101 @@ export type Database = {
         }
         Relationships: []
       }
+      item_images: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          position: number
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          position: number
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          position?: number
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_images_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      items: {
+        Row: {
+          category_id: number
+          created_at: string
+          description: string
+          id: string
+          location: unknown
+          location_name: string | null
+          occurred_on: string
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["item_status"]
+          title: string
+          type: Database["public"]["Enums"]["item_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category_id: number
+          created_at?: string
+          description: string
+          id?: string
+          location?: unknown
+          location_name?: string | null
+          occurred_on: string
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["item_status"]
+          title: string
+          type: Database["public"]["Enums"]["item_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          category_id?: number
+          created_at?: string
+          description?: string
+          id?: string
+          location?: unknown
+          location_name?: string | null
+          occurred_on?: string
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["item_status"]
+          title?: string
+          type?: Database["public"]["Enums"]["item_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_path: string | null
@@ -82,6 +177,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_item: {
+        Args: {
+          category_id: number
+          description: string
+          image_paths?: string[]
+          item_id?: string
+          location_name?: string
+          occurred_on: string
+          title: string
+          type: Database["public"]["Enums"]["item_type"]
+        }
+        Returns: string
+      }
       current_profile: {
         Args: never
         Returns: {
@@ -103,6 +211,8 @@ export type Database = {
       }
     }
     Enums: {
+      item_status: "active" | "resolved" | "hidden"
+      item_type: "lost" | "found"
       user_role: "user" | "admin"
     }
     CompositeTypes: {
@@ -231,6 +341,8 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      item_status: ["active", "resolved", "hidden"],
+      item_type: ["lost", "found"],
       user_role: ["user", "admin"],
     },
   },

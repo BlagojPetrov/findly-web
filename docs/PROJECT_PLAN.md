@@ -7,8 +7,8 @@
 > updating it.
 
 - **Last updated:** 2026-09-26
-- **Current phase:** Phase 3 — Items CRUD and image upload (not started)
-- **Next step:** P3.S1 (§22)
+- **Current phase:** Phase 3 — Items CRUD and image upload (in progress)
+- **Next step:** P3.S2 (§22)
 
 ---
 
@@ -95,7 +95,7 @@ to these IDs. "Next step" always means the step named in
 | ----- | ------------------------------------- | ------------- |
 | 1     | Project setup and architecture        | `COMPLETED`   |
 | 2     | Authentication                        | `COMPLETED`   |
-| 3     | Items CRUD and image upload           | `NOT STARTED` |
+| 3     | Items CRUD and image upload           | `IN PROGRESS` |
 | 4     | Feed, search and advanced filters     | `NOT STARTED` |
 | 5     | Map and location                      | `NOT STARTED` |
 | 6     | Automatic matching                    | `NOT STARTED` |
@@ -128,7 +128,7 @@ to these IDs. "Next step" always means the step named in
 | P2.S8  | Profile page and avatar upload                 | `COMPLETED`   |
 | P2.S9  | SMTP setup (manual) — done before P2.S5        | `COMPLETED`   |
 | P2.S10 | GitHub remote and first Vercel deployment      | `COMPLETED`   |
-| P3.S1  | Items and images schema                        | `NOT STARTED` |
+| P3.S1  | Items and images schema                        | `COMPLETED`   |
 | P3.S2  | Item images storage bucket                     | `NOT STARTED` |
 | P3.S3  | Item validation schemas                        | `NOT STARTED` |
 | P3.S4  | Image picker and upload component              | `NOT STARTED` |
@@ -495,6 +495,8 @@ Legend: **PK** primary key, **FK** foreign key, ✓ implemented.
 | `private.is_admin()`       | `true` if the current user's profile has role `admin`. `security definer`, `stable`. ✓ | 2     |
 | `private.can_write()`      | `true` if signed in and not banned. Used in every insert/update policy. ✓              | 2     |
 | `current_profile()`        | The signed-in user's full profile row (API-callable). ✓                                | 2     |
+| `create_item(...)`         | Creates an item and its image rows in one transaction (`security invoker`). ✓          | 3     |
+| `private.items_*()`        | Item triggers: `resolved_at`, no future `occurred_on`, 20 items / 24 h. ✓              | 3     |
 | `handle_new_user()`        | Trigger on `auth.users` insert → creates the `profiles` row.                           | 2     |
 | `normalize_text(text)`     | lowercase + unaccent + Cyrillic→Latin transliteration, `immutable`.                    | 4     |
 | `search_items(...)`        | Filtered, paginated search (see §12).                                                  | 4     |
@@ -542,12 +544,12 @@ Column privileges: `anon`/`authenticated` may **select only** `id, display_name,
 | `is_banned`                | boolean     | default false; not updatable by users        |
 | `created_at`, `updated_at` | timestamptz |                                              |
 
-### `items` (P3.S1, extended in P4.S1 and P5.S3)
+### `items` ✓ (P3.S1, extended in P4.S1 and P5.S3)
 
 | Column                     | Type                  | Notes                                                                        |
 | -------------------------- | --------------------- | ---------------------------------------------------------------------------- |
-| `id`                       | uuid PK               |                                                                              |
-| `user_id`                  | uuid                  | FK → profiles on delete cascade                                              |
+| `id`                       | uuid PK               | generated in the browser before image upload (default `gen_random_uuid()`)   |
+| `user_id`                  | uuid                  | FK → profiles on delete cascade; default `auth.uid()`                        |
 | `type`                     | item_type             |                                                                              |
 | `status`                   | item_status           | default `active`                                                             |
 | `title`                    | text                  | 3–100 chars                                                                  |
@@ -562,10 +564,27 @@ Column privileges: `anon`/`authenticated` may **select only** `id, display_name,
 | `created_at`, `updated_at` | timestamptz           |                                                                              |
 
 Indexes: `(status, type, created_at desc)`, `(user_id, created_at desc)`,
-`(category_id)`, GiST on `location`, GIN on `search_vector`, GIN trigram on
-`search_text`.
+`(category_id)`, GiST on `location` (P3.S1); GIN on `search_vector`, GIN trigram on
+`search_text` (P4.S1).
 
-### `item_images` (P3.S1)
+Implemented in P3.S1 (`20260926180914_items.sql`):
+
+- Privileges: everyone selects; `authenticated` inserts `id, user_id, type, title,
+description, category_id, occurred_on, location_name, location` (not `status` —
+  items always start `active`) and updates the same columns minus `id`/`user_id`
+  plus `status`. `resolved_at` and timestamps are trigger-managed only.
+- Triggers (functions in `private`): `set_updated_at`; `items_set_resolved_at`
+  (set on → `resolved`, cleared otherwise); `items_check_occurred_on` rejects dates
+  after **today in `Europe/Skopje`** (SQLSTATE `23514`, message
+  `occurred_on_in_future`); `items_check_daily_limit` rejects the 21st item in
+  24 hours (SQLSTATE `FL429`, message `daily_item_limit`; approximate under
+  concurrent inserts).
+- `create_item(type, title, description, category_id, occurred_on,
+location_name?, image_paths?, item_id?)` — `security invoker`, `authenticated`
+  only; trims text, blank `location_name` → null, rejects > 5 images, inserts the
+  item and its images (position = array index) in one transaction, returns the id.
+
+### `item_images` ✓ (P3.S1)
 
 | Column         | Type        | Notes                                     |
 | -------------- | ----------- | ----------------------------------------- |
@@ -574,6 +593,12 @@ Indexes: `(status, type, created_at desc)`, `(user_id, created_at desc)`,
 | `storage_path` | text        | unique; `{user_id}/{item_id}/{uuid}.webp` |
 | `position`     | smallint    | 0–4; unique per item; 0 = cover image     |
 | `created_at`   | timestamptz |                                           |
+
+`storage_path` is checked against `^uuid/uuid/uuid\.(webp|jpg)$` with the second
+segment equal to `item_id`; the insert policy requires the first segment to be the
+caller's id. `(item_id, position)` is unique **deferrable**, so positions can be
+swapped in one statement. Users insert `item_id, storage_path, position` and update
+only `position`.
 
 ### `matches` (P6.S1)
 
@@ -765,8 +790,8 @@ password" always reports success, so emails cannot be enumerated).
 | ------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------ | ------------------------ |
 | categories ✓  | everyone                                                                                                            | admin (P10.S6)                                  | admin (P10.S6)                                               | admin (P10.S6)           |
 | profiles      | everyone, public columns only (`id, display_name, avatar_path, created_at`); own full row via `current_profile()` ✓ | trigger only                                    | own row, allowed columns; admin: `role`, `is_banned` via RPC | none (cascade from auth) |
-| items         | `status in (active, resolved)` or own or admin                                                                      | own `user_id` and `can_write()`                 | own and `can_write()` (status `hidden` only by admin)        | own or admin             |
-| item_images   | if parent item visible                                                                                              | parent item owned                               | parent item owned                                            | parent item owned        |
+| items ✓       | `status in (active, resolved)` or own or admin                                                                      | own `user_id` and `can_write()`                 | own, not hidden, `can_write()`; admin any (hide/restore)     | own or admin             |
+| item_images ✓ | if parent item visible                                                                                              | parent owned, not hidden, own folder, can_write | `position` only; parent owned, not hidden, `can_write()`     | parent owned or admin    |
 | matches       | owner of either item                                                                                                | definer functions only                          | owner of either item, only `status`                          | none                     |
 | notifications | own                                                                                                                 | definer functions only                          | own, only `read_at`                                          | own                      |
 | conversations | participant                                                                                                         | requester = self, not item owner, `can_write()` | none (trigger updates `last_message_at`)                     | none                     |
@@ -1281,12 +1306,12 @@ pass · all checks pass · plan updated.
 
 ---
 
-### Phase 3 — Items CRUD and image upload — `NOT STARTED`
+### Phase 3 — Items CRUD and image upload — `IN PROGRESS`
 
 **Goal:** signed-in users can create, edit, resolve and delete lost/found reports
 with up to 5 images; everyone can view an item page.
 
-#### P3.S1 — Items and images schema
+#### P3.S1 — Items and images schema — `COMPLETED`
 
 - **Depends on:** Phase 2.
 - **Affects:** migration `*_items.sql`, types, `supabase/tests/items.sql`.
@@ -1305,6 +1330,7 @@ with up to 5 images; everyone can view an item page.
 - **Depends on:** P3.S1.
 - **Affects:** `src/lib/validation/items.ts`, tests, `messages/*.json` (`Validation`).
 - **Verify:** unit tests: lengths, future date rejected, unknown category rejected, max 5 images, lat/lng ranges.
+- **Note (from P3.S1):** "today" is the date in `Europe/Skopje`, as in the database trigger. Map `FL429` (`daily_item_limit`) to `rate_limited`.
 
 #### P3.S4 — Image picker and upload
 
@@ -1570,7 +1596,7 @@ weights and results documented.
 
 #### P10.S1 — Reports schema and admin policies
 
-- **Affects:** migration `*_moderation.sql` (enums, `reports`, admin policies on items/reports/categories/profiles, `admin_set_banned()`, `admin_stats()`, moderation notification trigger).
+- **Affects:** migration `*_moderation.sql` (enums, `reports`, admin policies on reports/categories/profiles — item admin policies already exist since P3.S1, `admin_set_banned()`, `admin_stats()`, moderation notification trigger).
 - **Verify:** SQL tests: non-admins cannot read others' reports or call admin RPCs; banned user cannot insert anything.
 
 #### P10.S2 — Report item UI
@@ -1681,6 +1707,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-26 | P3.S1     | `items`, `item_images`, enums, triggers (resolved_at, no future date in Skopje time, 20 items/24 h), RLS + column grants incl. admin hide, `create_item()` RPC; SQL tests. Phase 3 started.          |
 | 2026-09-26 | P2.S10    | Deployed to https://findly-web-nine.vercel.app; production checks and profile suite 70/70; real registration, reset and Google sign-in confirmed → COMPLETED. Phase 2 completed.                     |
 | 2026-09-25 | P2.S10    | Deployment prep: templates link to `RedirectTo` (works for local + Vercel), site URL fallback to the Vercel domain, `fra1` region, README; Vercel import + template re-paste pending (NEEDS REVIEW). |
 | 2026-09-25 | P2.S8 UI  | Profile page redesigned as a settings page (header card, personal information, account, security); functionality unchanged.                                                                          |
@@ -1708,12 +1735,12 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P3.S1 — Items and images schema** (see §22, Phase 3).
+**P3.S2 — Item images storage bucket** (see §22, Phase 3).
 
-Why next: Phase 2 is complete (auth, profile, deployment). Phase 3 starts with
-the `items` and `item_images` tables, their enums, triggers (updated_at,
-resolved_at, no future dates, daily insert limit), RLS with column grants,
-indexes and the `create_item(...)` function, with SQL tests.
+Why next: the `items`/`item_images` tables and `create_item()` exist (P3.S1).
+Images need the public `item-images` bucket (5 MB, WebP/JPEG/PNG) with policies
+on `storage.objects` limited to the owner's folder `{uid}/{item_id}/…`, before
+the image picker (P3.S4) can upload anything.
 
 Open manual items:
 
