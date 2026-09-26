@@ -23,7 +23,7 @@ status and the next step. Read it before any work.
 ## Current state
 
 - Phases 1 and 2 completed (auth, profile, first deployment). Phase 3 in progress:
-  P3.S1–S2 (items schema, image bucket) done. Next: P3.S3 (validation).
+  P3.S1–S3 (items schema, image bucket, validation) done. Next: P3.S4 (image picker).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -100,7 +100,9 @@ status and the next step. Read it before any work.
 - Items: create through `rpc("create_item")` (item + images in one transaction). Trigger
   errors the app maps: `23514` `occurred_on_in_future` (today = `Europe/Skopje` date),
   `FL429` `daily_item_limit` (20 items / 24 h). Owners cannot hide or edit hidden items;
-  admins hide/restore. Trigger functions go in schema `private`.
+  admins hide/restore. Trigger functions go in schema `private`. Forms validate with
+  `itemSchema({ categoryIds, userId })` (`@/lib/validation/items`); calendar dates use
+  `todayInAppTimeZone()` (`@/lib/dates`, Europe/Skopje).
 - SQL tests: `supabase/tests/<name>.sql` using helpers from `_helpers.sql`
   (`pg_temp.create_user`, `login_as`, `login_as_anon`, `logout`) and `assert`.
   The runner wraps each file in `begin … rollback`.

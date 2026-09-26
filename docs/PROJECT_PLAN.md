@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-26
 - **Current phase:** Phase 3 — Items CRUD and image upload (in progress)
-- **Next step:** P3.S3 (§22)
+- **Next step:** P3.S4 (§22)
 
 ---
 
@@ -130,7 +130,7 @@ to these IDs. "Next step" always means the step named in
 | P2.S10 | GitHub remote and first Vercel deployment      | `COMPLETED`   |
 | P3.S1  | Items and images schema                        | `COMPLETED`   |
 | P3.S2  | Item images storage bucket                     | `COMPLETED`   |
-| P3.S3  | Item validation schemas                        | `NOT STARTED` |
+| P3.S3  | Item validation schemas                        | `COMPLETED`   |
 | P3.S4  | Image picker and upload component              | `NOT STARTED` |
 | P3.S5  | Create item page                               | `NOT STARTED` |
 | P3.S6  | Item detail page (basic)                       | `NOT STARTED` |
@@ -1326,12 +1326,13 @@ with up to 5 images; everyone can view an item page.
 - **Changed during implementation:** PNG dropped (the picker always re-encodes to WebP/JPEG and `item_images.storage_path` only accepts `.webp`/`.jpg`); no update policy, as for avatars; admins may see and delete item images for moderation clean-up (P10.S4).
 - **Verify:** upload to your own folder works; upload into another user's folder fails.
 
-#### P3.S3 — Item validation schemas
+#### P3.S3 — Item validation schemas — `COMPLETED`
 
 - **Depends on:** P3.S1.
 - **Affects:** `src/lib/validation/items.ts`, tests, `messages/*.json` (`Validation`).
 - **Verify:** unit tests: lengths, future date rejected, unknown category rejected, max 5 images, lat/lng ranges.
-- **Note (from P3.S1):** "today" is the date in `Europe/Skopje`, as in the database trigger. Map `FL429` (`daily_item_limit`) to `rate_limited`.
+- **Note (from P3.S1):** "today" is the date in `Europe/Skopje`, as in the database trigger. Map `FL429` (`daily_item_limit`) to `rate_limited` (in the action, P3.S5).
+- **Implemented:** `itemSchema({ categoryIds, userId })` — a factory, because "known category" and "own image folder" depend on data the action loads (category ids) and on the signed-in user. Fields: `itemId` (uuid from the browser), `type`, `title`, `description`, `categoryId` (string → number), `occurredOn` (ISO date ≤ `todayInAppTimeZone()` from `src/lib/dates.ts`), `locationName` (blank → null), optional `lat`/`lng` (both or neither, ranges; required from P5.S3), `imagePaths` (≤ 5, unique, `isOwnItemImagePath`). `ITEM_LIMITS` holds the lengths for form attributes. Object-level checks (coordinate pair, image paths) run only once the fields are valid (Zod behavior).
 
 #### P3.S4 — Image picker and upload
 
@@ -1708,6 +1709,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-26 | P3.S3     | `itemSchema()` (Zod) mirroring the DB rules, `isOwnItemImagePath`, `todayInAppTimeZone()` (Europe/Skopje), 13 `Validation` messages in mk/en; 49 new unit tests.                                     |
 | 2026-09-26 | P3.S2     | Public `item-images` bucket (5 MB, WebP/JPEG) with owner/admin storage policies; SQL tests and a real Storage API check (own folder, other folder, overwrite, PNG, 6 MB).                            |
 | 2026-09-26 | P3.S1     | `items`, `item_images`, enums, triggers (resolved_at, no future date in Skopje time, 20 items/24 h), RLS + column grants incl. admin hide, `create_item()` RPC; SQL tests. Phase 3 started.          |
 | 2026-09-26 | P2.S10    | Deployed to https://findly-web-nine.vercel.app; production checks and profile suite 70/70; real registration, reset and Google sign-in confirmed → COMPLETED. Phase 2 completed.                     |
@@ -1737,12 +1739,12 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P3.S3 — Item validation schemas** (see §22, Phase 3).
+**P3.S4 — Image picker and upload** (see §22, Phase 3).
 
-Why next: the schema (P3.S1) and the image bucket (P3.S2) exist. The create/edit
-forms need a Zod schema that mirrors the database rules (lengths, no future date in
-`Europe/Skopje`, known category, at most 5 image paths in the user's own
-`{uid}/{item_id}/…` folder) with unit tests, before the image picker and create page.
+Why next: the bucket (P3.S2) and the validation of image paths (P3.S3) exist. The
+create form (P3.S5) needs the picker: select/drag up to 5 images, preview,
+reorder (cover first), remove, compress to WebP ≤ 1600 px and upload to
+`{uid}/{itemId}/{uuid}.webp` with progress, using a browser-generated item id.
 
 Open manual items:
 

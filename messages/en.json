@@ -64,7 +64,20 @@
     "displayNameTooShort": "The name must be at least 2 characters.",
     "displayNameTooLong": "The name can be at most 50 characters.",
     "samePassword": "The new password must be different from the current one.",
-    "localeInvalid": "Choose a language."
+    "localeInvalid": "Choose a language.",
+    "invalidValue": "Invalid value. Refresh the page and try again.",
+    "itemTypeInvalid": "Choose whether the item was lost or found.",
+    "titleTooShort": "The title must be at least 3 characters.",
+    "titleTooLong": "The title can be at most 100 characters.",
+    "descriptionTooShort": "The description must be at least 10 characters.",
+    "descriptionTooLong": "The description can be at most 2000 characters.",
+    "categoryInvalid": "Choose a category.",
+    "dateInvalid": "Enter a valid date.",
+    "dateInFuture": "The date cannot be in the future.",
+    "locationNameTooLong": "The location can be at most 200 characters.",
+    "locationInvalid": "Choose a valid location.",
+    "tooManyImages": "You can add at most 5 images.",
+    "imageInvalid": "One of the images is invalid. Remove it and upload it again."
   },
   "Auth": {
     "loginTitle": "Sign in",
