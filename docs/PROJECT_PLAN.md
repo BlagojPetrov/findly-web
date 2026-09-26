@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-26
 - **Current phase:** Phase 3 — Items CRUD and image upload (in progress)
-- **Next step:** P3.S5 (§22)
+- **Next step:** P3.S6 (§22)
 
 ---
 
@@ -132,7 +132,7 @@ to these IDs. "Next step" always means the step named in
 | P3.S2  | Item images storage bucket                     | `COMPLETED`   |
 | P3.S3  | Item validation schemas                        | `COMPLETED`   |
 | P3.S4  | Image picker and upload component              | `COMPLETED`   |
-| P3.S5  | Create item page                               | `NOT STARTED` |
+| P3.S5  | Create item page                               | `COMPLETED`   |
 | P3.S6  | Item detail page (basic)                       | `NOT STARTED` |
 | P3.S7  | Edit, delete, mark resolved                    | `NOT STARTED` |
 | P3.S8  | Dashboard ("My reports")                       | `NOT STARTED` |
@@ -1343,12 +1343,14 @@ with up to 5 images; everyone can view an item page.
 - **Implemented:** `src/lib/item-images.ts` (bucket constants, `newItemImagePath`, `itemImageUrl`, `moveImage`, `takeWithinLimit`, `uploadItemImage`) instead of changes to `images.ts` (reused unchanged). `uploadItemImage` posts to the Storage REST endpoint with `XMLHttpRequest` and the user's access token, because supabase-js has no upload progress; policies apply as usual. `<ImagePicker userId itemId name defaultPaths onPendingChange />` processes one photo at a time (memory on phones), shows a progress bar, retries failed uploads, reorders with arrow buttons (no drag reordering: HTML drag and drop does not work on touch screens), deletes files it uploaded when they are removed, and submits `imagePaths` hidden inputs in order. Messages in the `ImagePicker` namespace.
 - **Verified** in headless Edge (temporary page, not committed): a 5.55 MB JPEG was stored as a 231 KB WebP (1600 px, `max-age=31536000`); progress bar and pending state seen; PDF and 6th file rejected with messages; undecodable file reported; reorder changes the submitted order and the cover; removing deletes the file from Storage; mobile and desktop layouts checked; no console errors. Test user and files removed.
 
-#### P3.S5 — Create item page
+#### P3.S5 — Create item page — `COMPLETED`
 
 - **Depends on:** P3.S3, P3.S4.
 - **Affects:** `(app)/items/new/page.tsx`, `src/components/items/item-form.tsx`, `src/actions/items.ts` (`createItem`), `messages/*.json` (`Items`).
 - **Sub-steps:** type toggle (lost/found, preselected by `?type=`), title, description, category select, date, location name (text; map in P5), images; submit → `create_item` RPC → redirect to the item page.
 - **Verify:** item created with images in both languages; validation errors shown per field; a guest is redirected to login.
+- **Implemented:** `(app)/items/new/page.tsx` (new item id per visit from the server, `?type=lost|found` preselects, otherwise the user chooses; the date picker's `max` is today in Skopje), `ItemForm` (type cards, title, description, category tiles, date with a label that follows the type, optional location name, `ImagePicker`; submit disabled while photos upload; values kept after errors; success → toast and `router.push('/items/<id>')`), `createItem` in `src/actions/items.ts` (`itemSchema` with category ids from `getCategories()`, checks that every photo exists in the item's folder, `create_item` RPC), `itemWriteFailure()` in `src/lib/item-errors.ts` (`FL429` → `rate_limited`, future date / too many images / deleted category → field errors, `42501` → `forbidden`), `src/lib/queries/categories.ts` (`getCategories`, `categoryName`), `FormTextareaField` + shadcn `Textarea`, `Items` messages, and a "Report an item" link in the user menu (not in the original step; the page had no entry point before P3.S8).
+- **Verified** (production build, headless Edge, temporary user, deleted afterwards with its items and files): 27/27 — guest redirect with `next`, `?type=found` preselected, menu link, empty submit shows four field errors and no generic alert, too-short title and future date rejected with values kept, `aria-invalid`, submit disabled while photos upload, a photo path that was never uploaded is rejected and the photos stay in the form, success redirects to `/items/<id>` with a toast (item + 2 image rows in order), English form without photos, no overflow at 360 px, no console errors. The item page itself is P3.S6 (until then the redirect shows the 404 page).
 
 #### P3.S6 — Item detail page (basic)
 
@@ -1703,7 +1705,7 @@ started (no auth code or profile tables exist yet).
 | F-12 | Advisors warn that `current_profile()` (a `security definer` function in `public`) is callable by `anon`/`authenticated`.                                                                                                                                                                                                                                                                   | Intentional: it returns only the caller's own row (nothing for anon). Accepted warning.                                                                                                                                                                                                                                                                                                                                                                     | Accepted      |
 | F-19 | Advisors warn "Leaked password protection disabled" (HaveIBeenPwned check of new passwords). Noticed during P2.S8.                                                                                                                                                                                                                                                                          | Optional: enable it in Supabase → Authentication (password security) if the plan allows it; rejected passwords already show `weak_password`.                                                                                                                                                                                                                                                                                                                | Open          |
 | F-20 | Deleting an auth user (dashboard or SQL) removes the profile but not the user's files in Storage: the owner's old avatar stayed in `avatars` as an orphan after the account was recreated (2026-09-26).                                                                                                                                                                                     | Clean up files when account deletion is implemented (admin user management, P10.S5, or a self-service delete); the orphan was left in place (user data).                                                                                                                                                                                                                                                                                                    | Open          |
-| F-21 | Photos are uploaded before the item is saved (the item id is generated in the browser). If the user abandons the form, or the create action fails, the uploaded files stay in `item-images` without an `item_images` row. Removing a photo in the picker deletes its file; abandoned forms cannot. Noticed in P3.S4.                                                                        | Acceptable for now (files are small). Options: the create action removes the uploaded files on failure (P3.S5); a periodic clean-up of files older than a day without an `item_images` row (scheduled SQL job or admin action, P10/P11).                                                                                                                                                                                                                    | Open          |
+| F-21 | Photos are uploaded before the item is saved (the item id is generated in the browser). If the user abandons the form, or the create action fails, the uploaded files stay in `item-images` without an `item_images` row. Removing a photo in the picker deletes its file; abandoned forms cannot. Noticed in P3.S4.                                                                        | Acceptable for now (files are small). The create action does **not** delete them on failure, because the form keeps the photos for the next attempt (P3.S5). Option: a periodic clean-up of files older than a day without an `item_images` row (scheduled SQL job or admin action, P10/P11).                                                                                                                                                               | Open          |
 | F-10 | No automated tests yet.                                                                                                                                                                                                                                                                                                                                                                     | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                                                                                                                                                                                                                                                                                                                                | Fixed         |
 
 ---
@@ -1712,6 +1714,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-27 | P3.S5     | Create item page: `ItemForm`, `createItem` (checks uploaded photos exist, `create_item`), `itemWriteFailure`, `getCategories`, `FormTextareaField`, user-menu link; browser check 27/27.             |
 | 2026-09-26 | P3.S4     | `ImagePicker` (WebP ≤ 1600 px, upload with progress via XHR, reorder, remove, retry, limits) and `src/lib/item-images.ts`; verified in the browser (5.55 MB → 231 KB).                               |
 | 2026-09-26 | P3.S3     | `itemSchema()` (Zod) mirroring the DB rules, `isOwnItemImagePath`, `todayInAppTimeZone()` (Europe/Skopje), 13 `Validation` messages in mk/en; 49 new unit tests.                                     |
 | 2026-09-26 | P3.S2     | Public `item-images` bucket (5 MB, WebP/JPEG) with owner/admin storage policies; SQL tests and a real Storage API check (own folder, other folder, overwrite, PNG, 6 MB).                            |
@@ -1743,14 +1746,12 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P3.S5 — Create item page** (see §22, Phase 3).
+**P3.S6 — Item detail page (basic)** (see §22, Phase 3).
 
-Why next: the schema, bucket, validation (`itemSchema`) and `ImagePicker` exist.
-P3.S5 puts them together: `(app)/items/new` with the item form (type toggle
-preselected by `?type=`, title, description, category, date, location name,
-photos), the `createItem` action calling `create_item`, error mapping
-(`FL429` → `rate_limited`, `occurred_on_in_future`), removing uploaded files on
-failure (F-21), and a redirect to the item page (built in P3.S6).
+Why next: items can be created (P3.S5) and the form already redirects to
+`/items/<id>`, which is still a 404. P3.S6 adds the public item page (query in
+`src/lib/queries/items.ts`, image gallery, lost/found badge and color tokens),
+404 for hidden items (for others) and invalid UUIDs, and owner controls.
 
 Open manual items:
 

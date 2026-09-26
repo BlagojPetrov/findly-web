@@ -9,7 +9,8 @@
     "signIn": "Sign in",
     "register": "Register",
     "accountMenu": "Account",
-    "profile": "Profile"
+    "profile": "Profile",
+    "reportItem": "Report an item"
   },
   "Home": {
     "title": "Find what was lost, return what was found",
@@ -189,5 +190,38 @@
     "tooLarge": "{name}: the image can be at most 10 MB.",
     "processingFailed": "{name}: the image could not be read. Try a different one.",
     "tooMany": "You can add at most {max} photos."
+  },
+  "Items": {
+    "newTitle": "Report an item",
+    "newDescription": "Describe the item you lost or found. The more details you give, the easier it is to match with other reports.",
+    "typeLegend": "What happened?",
+    "types": {
+      "lost": {
+        "label": "I lost something",
+        "hint": "I am looking for an item I lost."
+      },
+      "found": {
+        "label": "I found something",
+        "hint": "I want to return it to its owner."
+      }
+    },
+    "detailsTitle": "Details",
+    "title": "Title",
+    "titlePlaceholder": "e.g. Black leather wallet",
+    "description": "Description",
+    "descriptionHint": "Color, brand, distinctive marks. Do not include personal data (e.g. a document number).",
+    "category": "Category",
+    "occurredOn": {
+      "lost": "When did you lose it?",
+      "found": "When did you find it?",
+      "any": "Date"
+    },
+    "locationName": "Location (optional)",
+    "locationNameHint": "Place or address, e.g. City Park, Skopje.",
+    "photosTitle": "Photos",
+    "photosDescription": "Optional. Photos make the item easier to recognize.",
+    "waitForPhotos": "Wait until the photos are uploaded.",
+    "submit": "Publish report",
+    "created": "Your report is published."
   }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, UserRound } from "lucide-react";
+import { FilePlus2, LogOut, UserRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { signOut } from "@/actions/auth";
@@ -43,6 +43,10 @@ export function UserMenu({
           )}
         </div>
         <DropdownMenuSeparator />
+        <DropdownMenuLinkItem render={<Link href="/items/new" />}>
+          <FilePlus2 aria-hidden />
+          {t("Header.reportItem")}
+        </DropdownMenuLinkItem>
         <DropdownMenuLinkItem render={<Link href="/profile" />}>
           <UserRound aria-hidden />
           {t("Header.profile")}
