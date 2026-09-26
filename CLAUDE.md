@@ -23,7 +23,8 @@ status and the next step. Read it before any work.
 ## Current state
 
 - Phases 1 and 2 completed (auth, profile, first deployment). Phase 3 in progress:
-  P3.S1–S3 (items schema, image bucket, validation) done. Next: P3.S4 (image picker).
+  P3.S1–S4 (items schema, image bucket, validation, image picker) done. Next: P3.S5
+  (create item page).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -102,7 +103,9 @@ status and the next step. Read it before any work.
   `FL429` `daily_item_limit` (20 items / 24 h). Owners cannot hide or edit hidden items;
   admins hide/restore. Trigger functions go in schema `private`. Forms validate with
   `itemSchema({ categoryIds, userId })` (`@/lib/validation/items`); calendar dates use
-  `todayInAppTimeZone()` (`@/lib/dates`, Europe/Skopje).
+  `todayInAppTimeZone()` (`@/lib/dates`, Europe/Skopje). Photos: `ImagePicker`
+  (`src/components/items/image-picker.tsx`) uploads before submit and posts `imagePaths`
+  hidden inputs; block submit while `onPendingChange(true)`. Helpers in `@/lib/item-images`.
 - SQL tests: `supabase/tests/<name>.sql` using helpers from `_helpers.sql`
   (`pg_temp.create_user`, `login_as`, `login_as_anon`, `logout`) and `assert`.
   The runner wraps each file in `begin … rollback`.

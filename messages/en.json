@@ -170,5 +170,24 @@
     "cancel": "Cancel",
     "googleOnlyTitle": "Google sign-in",
     "passwordGoogleOnly": "Your account has no password — you sign in with Google."
+  },
+  "ImagePicker": {
+    "add": "Add photos",
+    "count": "{count}/{max}",
+    "hint": "Up to {max} photos (JPG, PNG or WebP, up to 10 MB). The first one is the cover. You can also drag them here.",
+    "listLabel": "Item photos",
+    "photoAlt": "Photo {number}",
+    "cover": "Cover",
+    "remove": "Remove photo {number}",
+    "moveEarlier": "Move photo {number} earlier",
+    "moveLater": "Move photo {number} later",
+    "processing": "Processing…",
+    "uploading": "Uploading photo {number}",
+    "uploadFailed": "Upload failed.",
+    "retry": "Try again",
+    "invalidType": "{name}: choose a JPG, PNG or WebP image.",
+    "tooLarge": "{name}: the image can be at most 10 MB.",
+    "processingFailed": "{name}: the image could not be read. Try a different one.",
+    "tooMany": "You can add at most {max} photos."
   }
 }

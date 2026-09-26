@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-26
 - **Current phase:** Phase 3 — Items CRUD and image upload (in progress)
-- **Next step:** P3.S4 (§22)
+- **Next step:** P3.S5 (§22)
 
 ---
 
@@ -131,7 +131,7 @@ to these IDs. "Next step" always means the step named in
 | P3.S1  | Items and images schema                        | `COMPLETED`   |
 | P3.S2  | Item images storage bucket                     | `COMPLETED`   |
 | P3.S3  | Item validation schemas                        | `COMPLETED`   |
-| P3.S4  | Image picker and upload component              | `NOT STARTED` |
+| P3.S4  | Image picker and upload component              | `COMPLETED`   |
 | P3.S5  | Create item page                               | `NOT STARTED` |
 | P3.S6  | Item detail page (basic)                       | `NOT STARTED` |
 | P3.S7  | Edit, delete, mark resolved                    | `NOT STARTED` |
@@ -1334,12 +1334,14 @@ with up to 5 images; everyone can view an item page.
 - **Note (from P3.S1):** "today" is the date in `Europe/Skopje`, as in the database trigger. Map `FL429` (`daily_item_limit`) to `rate_limited` (in the action, P3.S5).
 - **Implemented:** `itemSchema({ categoryIds, userId })` — a factory, because "known category" and "own image folder" depend on data the action loads (category ids) and on the signed-in user. Fields: `itemId` (uuid from the browser), `type`, `title`, `description`, `categoryId` (string → number), `occurredOn` (ISO date ≤ `todayInAppTimeZone()` from `src/lib/dates.ts`), `locationName` (blank → null), optional `lat`/`lng` (both or neither, ranges; required from P5.S3), `imagePaths` (≤ 5, unique, `isOwnItemImagePath`). `ITEM_LIMITS` holds the lengths for form attributes. Object-level checks (coordinate pair, image paths) run only once the fields are valid (Zod behavior).
 
-#### P3.S4 — Image picker and upload
+#### P3.S4 — Image picker and upload — `COMPLETED`
 
 - **Depends on:** P3.S2, P2.S8 (`src/lib/images.ts`).
 - **Affects:** `src/components/items/image-picker.tsx`, `src/lib/images.ts`.
 - **Sub-steps:** select/drag multiple images; preview; reorder (cover first); remove; compress to WebP ≤ 1600 px; upload to `{uid}/{itemId}/{uuid}.webp` with progress; the item ID is generated in the browser (`crypto.randomUUID()`) before upload.
 - **Verify:** a 6 MB photo uploads as a few hundred KB; more than 5 images blocked; errors shown.
+- **Implemented:** `src/lib/item-images.ts` (bucket constants, `newItemImagePath`, `itemImageUrl`, `moveImage`, `takeWithinLimit`, `uploadItemImage`) instead of changes to `images.ts` (reused unchanged). `uploadItemImage` posts to the Storage REST endpoint with `XMLHttpRequest` and the user's access token, because supabase-js has no upload progress; policies apply as usual. `<ImagePicker userId itemId name defaultPaths onPendingChange />` processes one photo at a time (memory on phones), shows a progress bar, retries failed uploads, reorders with arrow buttons (no drag reordering: HTML drag and drop does not work on touch screens), deletes files it uploaded when they are removed, and submits `imagePaths` hidden inputs in order. Messages in the `ImagePicker` namespace.
+- **Verified** in headless Edge (temporary page, not committed): a 5.55 MB JPEG was stored as a 231 KB WebP (1600 px, `max-age=31536000`); progress bar and pending state seen; PDF and 6th file rejected with messages; undecodable file reported; reorder changes the submitted order and the cover; removing deletes the file from Storage; mobile and desktop layouts checked; no console errors. Test user and files removed.
 
 #### P3.S5 — Create item page
 
@@ -1701,6 +1703,7 @@ started (no auth code or profile tables exist yet).
 | F-12 | Advisors warn that `current_profile()` (a `security definer` function in `public`) is callable by `anon`/`authenticated`.                                                                                                                                                                                                                                                                   | Intentional: it returns only the caller's own row (nothing for anon). Accepted warning.                                                                                                                                                                                                                                                                                                                                                                     | Accepted      |
 | F-19 | Advisors warn "Leaked password protection disabled" (HaveIBeenPwned check of new passwords). Noticed during P2.S8.                                                                                                                                                                                                                                                                          | Optional: enable it in Supabase → Authentication (password security) if the plan allows it; rejected passwords already show `weak_password`.                                                                                                                                                                                                                                                                                                                | Open          |
 | F-20 | Deleting an auth user (dashboard or SQL) removes the profile but not the user's files in Storage: the owner's old avatar stayed in `avatars` as an orphan after the account was recreated (2026-09-26).                                                                                                                                                                                     | Clean up files when account deletion is implemented (admin user management, P10.S5, or a self-service delete); the orphan was left in place (user data).                                                                                                                                                                                                                                                                                                    | Open          |
+| F-21 | Photos are uploaded before the item is saved (the item id is generated in the browser). If the user abandons the form, or the create action fails, the uploaded files stay in `item-images` without an `item_images` row. Removing a photo in the picker deletes its file; abandoned forms cannot. Noticed in P3.S4.                                                                        | Acceptable for now (files are small). Options: the create action removes the uploaded files on failure (P3.S5); a periodic clean-up of files older than a day without an `item_images` row (scheduled SQL job or admin action, P10/P11).                                                                                                                                                                                                                    | Open          |
 | F-10 | No automated tests yet.                                                                                                                                                                                                                                                                                                                                                                     | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                                                                                                                                                                                                                                                                                                                                | Fixed         |
 
 ---
@@ -1709,6 +1712,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-26 | P3.S4     | `ImagePicker` (WebP ≤ 1600 px, upload with progress via XHR, reorder, remove, retry, limits) and `src/lib/item-images.ts`; verified in the browser (5.55 MB → 231 KB).                               |
 | 2026-09-26 | P3.S3     | `itemSchema()` (Zod) mirroring the DB rules, `isOwnItemImagePath`, `todayInAppTimeZone()` (Europe/Skopje), 13 `Validation` messages in mk/en; 49 new unit tests.                                     |
 | 2026-09-26 | P3.S2     | Public `item-images` bucket (5 MB, WebP/JPEG) with owner/admin storage policies; SQL tests and a real Storage API check (own folder, other folder, overwrite, PNG, 6 MB).                            |
 | 2026-09-26 | P3.S1     | `items`, `item_images`, enums, triggers (resolved_at, no future date in Skopje time, 20 items/24 h), RLS + column grants incl. admin hide, `create_item()` RPC; SQL tests. Phase 3 started.          |
@@ -1739,12 +1743,14 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P3.S4 — Image picker and upload** (see §22, Phase 3).
+**P3.S5 — Create item page** (see §22, Phase 3).
 
-Why next: the bucket (P3.S2) and the validation of image paths (P3.S3) exist. The
-create form (P3.S5) needs the picker: select/drag up to 5 images, preview,
-reorder (cover first), remove, compress to WebP ≤ 1600 px and upload to
-`{uid}/{itemId}/{uuid}.webp` with progress, using a browser-generated item id.
+Why next: the schema, bucket, validation (`itemSchema`) and `ImagePicker` exist.
+P3.S5 puts them together: `(app)/items/new` with the item form (type toggle
+preselected by `?type=`, title, description, category, date, location name,
+photos), the `createItem` action calling `create_item`, error mapping
+(`FL429` → `rate_limited`, `occurred_on_in_future`), removing uploaded files on
+failure (F-21), and a redirect to the item page (built in P3.S6).
 
 Open manual items:
 

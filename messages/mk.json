@@ -170,5 +170,24 @@
     "cancel": "Откажи",
     "googleOnlyTitle": "Најава со Google",
     "passwordGoogleOnly": "Сметката нема лозинка — се најавувате преку Google."
+  },
+  "ImagePicker": {
+    "add": "Додај фотографии",
+    "count": "{count}/{max}",
+    "hint": "До {max} фотографии (JPG, PNG или WebP, до 10 MB). Првата е насловна. Може и да ги повлечете тука.",
+    "listLabel": "Фотографии на предметот",
+    "photoAlt": "Фотографија {number}",
+    "cover": "Насловна",
+    "remove": "Отстрани ја фотографијата {number}",
+    "moveEarlier": "Помести ја фотографијата {number} нанапред",
+    "moveLater": "Помести ја фотографијата {number} наназад",
+    "processing": "Се обработува…",
+    "uploading": "Се прикачува фотографијата {number}",
+    "uploadFailed": "Прикачувањето не успеа.",
+    "retry": "Обиди се повторно",
+    "invalidType": "{name}: изберете JPG, PNG или WebP слика.",
+    "tooLarge": "{name}: сликата може да има најмногу 10 MB.",
+    "processingFailed": "{name}: сликата не може да се прочита. Пробајте друга.",
+    "tooMany": "Можете да додадете најмногу {max} фотографии."
   }
 }
