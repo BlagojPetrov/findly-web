@@ -23,7 +23,7 @@ status and the next step. Read it before any work.
 ## Current state
 
 - Phases 1 and 2 completed (auth, profile, first deployment). Phase 3 in progress:
-  P3.S1 (items schema) done. Next: P3.S2 (item images bucket).
+  P3.S1–S2 (items schema, image bucket) done. Next: P3.S3 (validation).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup

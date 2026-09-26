@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-26
 - **Current phase:** Phase 3 — Items CRUD and image upload (in progress)
-- **Next step:** P3.S2 (§22)
+- **Next step:** P3.S3 (§22)
 
 ---
 
@@ -129,7 +129,7 @@ to these IDs. "Next step" always means the step named in
 | P2.S9  | SMTP setup (manual) — done before P2.S5        | `COMPLETED`   |
 | P2.S10 | GitHub remote and first Vercel deployment      | `COMPLETED`   |
 | P3.S1  | Items and images schema                        | `COMPLETED`   |
-| P3.S2  | Item images storage bucket                     | `NOT STARTED` |
+| P3.S2  | Item images storage bucket                     | `COMPLETED`   |
 | P3.S3  | Item validation schemas                        | `NOT STARTED` |
 | P3.S4  | Image picker and upload component              | `NOT STARTED` |
 | P3.S5  | Create item page                               | `NOT STARTED` |
@@ -468,10 +468,10 @@ Validated at startup by `src/lib/env.ts`. `.env.local` is gitignored;
 
 ### Storage
 
-| Bucket        | Public read | Write rule                                                                                                 | Phase |
-| ------------- | ----------- | ---------------------------------------------------------------------------------------------------------- | ----- |
-| `avatars` ✓   | yes         | `{user_id}/{uuid}.webp` (or `.jpg`); owner inserts, sees and deletes, no updates; 1 MB, WebP/JPEG (P2.S8). | 2     |
-| `item-images` | yes         | Path `{user_id}/{item_id}/...`; only the owner; max 5 MB, images.                                          | 3     |
+| Bucket          | Public read | Write rule                                                                                                                             | Phase |
+| --------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----- |
+| `avatars` ✓     | yes         | `{user_id}/{uuid}.webp` (or `.jpg`); owner inserts, sees and deletes, no updates; 1 MB, WebP/JPEG (P2.S8).                             | 2     |
+| `item-images` ✓ | yes         | `{user_id}/{item_id}/{uuid}.webp` (or `.jpg`); owner inserts, sees, deletes; admin sees, deletes; no updates; 5 MB, WebP/JPEG (P3.S2). | 3     |
 
 Public buckets are acceptable because items are public. Images of hidden items
 remain reachable by direct URL (known limitation, documented for the thesis).
@@ -1318,11 +1318,12 @@ with up to 5 images; everyone can view an item page.
 - **Sub-steps:** enums `item_type`, `item_status`; tables `items`, `item_images` (§9); `updated_at` and `resolved_at` triggers; trigger rejecting future `occurred_on`; daily insert limit trigger; RLS per §11 incl. column grants; indexes; SQL function `create_item(...)` (`security invoker`) that inserts the item and its image rows in one transaction.
 - **Verify:** SQL tests: owner CRUD works; other users cannot update/delete; banned user cannot insert; hidden items invisible to others; admin sees hidden items (after setting a test admin).
 
-#### P3.S2 — Item images storage bucket
+#### P3.S2 — Item images storage bucket — `COMPLETED`
 
 - **Depends on:** P3.S1.
 - **Affects:** migration `*_item_images_bucket.sql`.
-- **Sub-steps:** public bucket `item-images`, 5 MB limit, MIME `image/webp,image/jpeg,image/png`; policies: insert/update/delete only when the first path segment = `auth.uid()`.
+- **Sub-steps:** public bucket `item-images`, 5 MB limit, MIME `image/webp,image/jpeg`; policies: insert only as `{uid}/{uuid}/{uuid}.(webp|jpg)` and `can_write()`; select/delete own folder or admin; no update policy (files are never overwritten).
+- **Changed during implementation:** PNG dropped (the picker always re-encodes to WebP/JPEG and `item_images.storage_path` only accepts `.webp`/`.jpg`); no update policy, as for avatars; admins may see and delete item images for moderation clean-up (P10.S4).
 - **Verify:** upload to your own folder works; upload into another user's folder fails.
 
 #### P3.S3 — Item validation schemas
@@ -1707,6 +1708,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-26 | P3.S2     | Public `item-images` bucket (5 MB, WebP/JPEG) with owner/admin storage policies; SQL tests and a real Storage API check (own folder, other folder, overwrite, PNG, 6 MB).                            |
 | 2026-09-26 | P3.S1     | `items`, `item_images`, enums, triggers (resolved_at, no future date in Skopje time, 20 items/24 h), RLS + column grants incl. admin hide, `create_item()` RPC; SQL tests. Phase 3 started.          |
 | 2026-09-26 | P2.S10    | Deployed to https://findly-web-nine.vercel.app; production checks and profile suite 70/70; real registration, reset and Google sign-in confirmed → COMPLETED. Phase 2 completed.                     |
 | 2026-09-25 | P2.S10    | Deployment prep: templates link to `RedirectTo` (works for local + Vercel), site URL fallback to the Vercel domain, `fra1` region, README; Vercel import + template re-paste pending (NEEDS REVIEW). |
@@ -1735,12 +1737,12 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P3.S2 — Item images storage bucket** (see §22, Phase 3).
+**P3.S3 — Item validation schemas** (see §22, Phase 3).
 
-Why next: the `items`/`item_images` tables and `create_item()` exist (P3.S1).
-Images need the public `item-images` bucket (5 MB, WebP/JPEG/PNG) with policies
-on `storage.objects` limited to the owner's folder `{uid}/{item_id}/…`, before
-the image picker (P3.S4) can upload anything.
+Why next: the schema (P3.S1) and the image bucket (P3.S2) exist. The create/edit
+forms need a Zod schema that mirrors the database rules (lengths, no future date in
+`Europe/Skopje`, known category, at most 5 image paths in the user's own
+`{uid}/{item_id}/…` folder) with unit tests, before the image picker and create page.
 
 Open manual items:
 
