@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-26
 - **Current phase:** Phase 3 — Items CRUD and image upload (in progress)
-- **Next step:** P3.S6 (§22)
+- **Next step:** P3.S7 (§22)
 
 ---
 
@@ -133,7 +133,7 @@ to these IDs. "Next step" always means the step named in
 | P3.S3  | Item validation schemas                        | `COMPLETED`   |
 | P3.S4  | Image picker and upload component              | `COMPLETED`   |
 | P3.S5  | Create item page                               | `COMPLETED`   |
-| P3.S6  | Item detail page (basic)                       | `NOT STARTED` |
+| P3.S6  | Item detail page (basic)                       | `COMPLETED`   |
 | P3.S7  | Edit, delete, mark resolved                    | `NOT STARTED` |
 | P3.S8  | Dashboard ("My reports")                       | `NOT STARTED` |
 | P4.S1  | Search normalization and indexes               | `NOT STARTED` |
@@ -1352,11 +1352,13 @@ with up to 5 images; everyone can view an item page.
 - **Implemented:** `(app)/items/new/page.tsx` (new item id per visit from the server, `?type=lost|found` preselects, otherwise the user chooses; the date picker's `max` is today in Skopje), `ItemForm` (type cards, title, description, category tiles, date with a label that follows the type, optional location name, `ImagePicker`; submit disabled while photos upload; values kept after errors; success → toast and `router.push('/items/<id>')`), `createItem` in `src/actions/items.ts` (`itemSchema` with category ids from `getCategories()`, checks that every photo exists in the item's folder, `create_item` RPC), `itemWriteFailure()` in `src/lib/item-errors.ts` (`FL429` → `rate_limited`, future date / too many images / deleted category → field errors, `42501` → `forbidden`), `src/lib/queries/categories.ts` (`getCategories`, `categoryName`), `FormTextareaField` + shadcn `Textarea`, `Items` messages, and a "Report an item" link in the user menu (not in the original step; the page had no entry point before P3.S8).
 - **Verified** (production build, headless Edge, temporary user, deleted afterwards with its items and files): 27/27 — guest redirect with `next`, `?type=found` preselected, menu link, empty submit shows four field errors and no generic alert, too-short title and future date rejected with values kept, `aria-invalid`, submit disabled while photos upload, a photo path that was never uploaded is rejected and the photos stay in the form, success redirects to `/items/<id>` with a toast (item + 2 image rows in order), English form without photos, no overflow at 360 px, no console errors. The item page itself is P3.S6 (until then the redirect shows the 404 page).
 
-#### P3.S6 — Item detail page (basic)
+#### P3.S6 — Item detail page (basic) — `COMPLETED`
 
 - **Depends on:** P3.S5.
 - **Affects:** `src/app/[locale]/items/[id]/page.tsx`, `src/lib/queries/items.ts`, `src/components/items/{image-gallery,item-type-badge}.tsx`, lost/found color tokens in `globals.css`.
 - **Verify:** public item visible to guests; hidden item gives 404 to others; owner sees edit/delete controls; invalid UUID gives 404.
+- **Implemented:** `getItem(id)` (`src/lib/queries/items.ts`, cached per request; invalid UUID → null without a query; embeds category, the owner's public profile columns and images sorted cover first), `items/[id]/page.tsx` (public, outside `(app)`; `generateMetadata` with title + description, `noindex` for hidden items; gallery, type and "Resolved" badges, category, date (calendar day formatted in UTC), location name, posted date, owner with avatar, description with line breaks; hidden notice for owner/admin), `ImageGallery` (main photo, previous/next, thumbnails with `aria-current`, placeholder with the category icon), `ItemTypeBadge`, `--lost`/`--found` tokens (light and dark). Owner panel shows **Edit** only; resolve and delete arrive with their actions in P3.S7 (the edit page too — until then the link is a 404).
+- **Verified** (production build, headless Edge, two temporary users, deleted with their items and files): 25/25 — owner redirected after create and sees the owner panel; guest sees title, `<title>`, badge, category, date label, location, line breaks, owner, both photos load, next/thumbnail switching; hidden item, invalid id and unknown UUID → HTTP 404 for guest and other user; resolved item shows badge and notice; no-photo placeholder; owner sees the hidden item with notice, without edit link, `noindex`; English labels; no overflow at 360 px.
 
 #### P3.S7 — Edit, delete, mark resolved
 
@@ -1714,6 +1716,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-27 | P3.S6     | Item detail page: `getItem`, gallery, type badge, lost/found tokens, owner panel (edit link), 404 for hidden/invalid; browser check 25/25.                                                           |
 | 2026-09-27 | P3.S5     | Create item page: `ItemForm`, `createItem` (checks uploaded photos exist, `create_item`), `itemWriteFailure`, `getCategories`, `FormTextareaField`, user-menu link; browser check 27/27.             |
 | 2026-09-26 | P3.S4     | `ImagePicker` (WebP ≤ 1600 px, upload with progress via XHR, reorder, remove, retry, limits) and `src/lib/item-images.ts`; verified in the browser (5.55 MB → 231 KB).                               |
 | 2026-09-26 | P3.S3     | `itemSchema()` (Zod) mirroring the DB rules, `isOwnItemImagePath`, `todayInAppTimeZone()` (Europe/Skopje), 13 `Validation` messages in mk/en; 49 new unit tests.                                     |
@@ -1746,12 +1749,12 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P3.S6 — Item detail page (basic)** (see §22, Phase 3).
+**P3.S7 — Edit, delete, mark resolved** (see §22, Phase 3).
 
-Why next: items can be created (P3.S5) and the form already redirects to
-`/items/<id>`, which is still a 404. P3.S6 adds the public item page (query in
-`src/lib/queries/items.ts`, image gallery, lost/found badge and color tokens),
-404 for hidden items (for others) and invalid UUIDs, and owner controls.
+Why next: the item page (P3.S6) links owners to `/items/<id>/edit`, which does
+not exist yet, and its owner panel waits for resolve/delete. P3.S7 adds the edit
+page (reusing `ItemForm` and `ImagePicker` with `defaultPaths`), `updateItem`,
+`deleteItem` (removing the photos from Storage) and `setItemStatus`.
 
 Open manual items:
 

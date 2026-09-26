@@ -222,6 +222,40 @@
     "photosDescription": "Optional. Photos make the item easier to recognize.",
     "waitForPhotos": "Wait until the photos are uploaded.",
     "submit": "Publish report",
-    "created": "Your report is published."
+    "created": "Your report is published.",
+    "badges": {
+      "lost": "Lost",
+      "found": "Found"
+    },
+    "status": {
+      "resolved": "Resolved"
+    },
+    "gallery": {
+      "noPhotos": "No photos",
+      "photoAlt": "{title} — photo {number} of {count}",
+      "previous": "Previous photo",
+      "next": "Next photo",
+      "show": "Show photo {number}"
+    },
+    "detail": {
+      "category": "Category",
+      "occurredOn": {
+        "lost": "Lost on",
+        "found": "Found on"
+      },
+      "location": "Location",
+      "posted": "Posted",
+      "postedBy": "Posted by {name}",
+      "memberSince": "Member since {date}",
+      "description": "Description",
+      "hiddenNotice": "This report was hidden by a moderator and other people cannot see it.",
+      "resolvedNotice": {
+        "lost": "The owner found the item.",
+        "found": "The item was returned to its owner."
+      },
+      "ownerTitle": "This is your report",
+      "ownerHint": "You can edit it, mark it as resolved or delete it.",
+      "edit": "Edit"
+    }
   }
 }

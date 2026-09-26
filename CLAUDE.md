@@ -23,8 +23,8 @@ status and the next step. Read it before any work.
 ## Current state
 
 - Phases 1 and 2 completed (auth, profile, first deployment). Phase 3 in progress:
-  P3.S1–S5 (schema, image bucket, validation, image picker, create page) done. Next: P3.S6
-  (item detail page).
+  P3.S1–S6 (schema, image bucket, validation, image picker, create page, item page) done.
+  Next: P3.S7 (edit, delete, resolve).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -108,7 +108,9 @@ status and the next step. Read it before any work.
   hidden inputs; block submit while `onPendingChange(true)`. Helpers in `@/lib/item-images`.
   Item writes map database errors with `itemWriteFailure()` (`@/lib/item-errors`);
   categories come from `getCategories()` (`@/lib/queries/categories`). Multi-line
-  inputs use `FormTextareaField`.
+  inputs use `FormTextareaField`. Item reads: `getItem(id)` (`@/lib/queries/items`, RLS
+  decides visibility; null → `notFound()`). Type colors: `lost`/`found` tokens
+  (`bg-lost/10 text-lost`), `ItemTypeBadge`.
 - SQL tests: `supabase/tests/<name>.sql` using helpers from `_helpers.sql`
   (`pg_temp.create_user`, `login_as`, `login_as_anon`, `logout`) and `assert`.
   The runner wraps each file in `begin … rollback`.
