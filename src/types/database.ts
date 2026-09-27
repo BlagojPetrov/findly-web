@@ -215,6 +215,36 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      search_items: {
+        Args: {
+          category_slugs?: string[]
+          date_from?: string
+          date_to?: string
+          item_status?: Database["public"]["Enums"]["item_status"]
+          item_type?: Database["public"]["Enums"]["item_type"]
+          page?: number
+          page_size?: number
+          q?: string
+          sort?: string
+        }
+        Returns: {
+          category_icon: string
+          category_id: number
+          category_name_en: string
+          category_name_mk: string
+          category_slug: string
+          cover_path: string
+          created_at: string
+          id: string
+          location_name: string
+          occurred_on: string
+          rank: number
+          status: Database["public"]["Enums"]["item_status"]
+          title: string
+          total_count: number
+          type: Database["public"]["Enums"]["item_type"]
+        }[]
+      }
       update_item: {
         Args: {
           category_id: number

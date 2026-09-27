@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-28
 - **Current phase:** Phase 4 — Feed, search and advanced filters (in progress)
-- **Next step:** P4.S2 (§22)
+- **Next step:** P4.S3 (§22)
 
 ---
 
@@ -137,7 +137,7 @@ to these IDs. "Next step" always means the step named in
 | P3.S7  | Edit, delete, mark resolved                    | `COMPLETED`   |
 | P3.S8  | Dashboard ("My reports")                       | `COMPLETED`   |
 | P4.S1  | Search normalization and indexes               | `COMPLETED`   |
-| P4.S2  | `search_items` SQL function                    | `NOT STARTED` |
+| P4.S2  | `search_items` SQL function                    | `COMPLETED`   |
 | P4.S3  | Search params schema and parsing               | `NOT STARTED` |
 | P4.S4  | Items feed page with filters                   | `NOT STARTED` |
 | P4.S5  | Item cards, pagination, empty/loading states   | `NOT STARTED` |
@@ -830,25 +830,39 @@ more lenient. (Changed in P4.S1 from the originally planned ч→ch, ш→sh, �
 that mapping could not make "Паричник" equal "paricnik", which the step's
 test requires and which is how most people type Macedonian in Latin.)
 
-### `search_items` (P4.S2)
+### `search_items` (P4.S2 ✓, `20260927224223_search_items.sql`)
 
 ```
 search_items(
   q text default null, item_type item_type default null, category_slugs text[] default null,
-  status item_status default 'active', date_from date default null, date_to date default null,
-  near_lat float default null, near_lng float default null, radius_km float default null,  -- P5.S5
-  sort text default 'newest',   -- newest | relevance | nearest
+  item_status item_status default 'active', date_from date default null, date_to date default null,
+  sort text default 'newest',   -- newest | relevance (nearest + near_lat/near_lng/radius_km: P5.S5)
   page_size int default 20, page int default 1
-) returns table (... item columns, cover_path, distance_km, total_count bigint)
+) returns table (id, type, status, title, occurred_on, location_name, created_at,
+  category_id, category_slug, category_name_mk, category_name_en, category_icon,
+  cover_path, rank real, total_count bigint)
 ```
 
-- `security invoker` → RLS still applies (hidden items never returned).
-- Text: `search_vector @@ websearch_to_tsquery('simple', normalize_text(q))` OR
-  `word_similarity(normalize_text(q), search_text) > 0.4` (catches typos);
-  relevance = `ts_rank + word_similarity`.
-- Radius: `ST_DWithin(location, ST_MakePoint(lng, lat)::geography, radius_km * 1000)`.
-- Pagination: offset/limit with `count(*) over ()` for the total. Page size is
-  capped at 50.
+- `security invoker` (plpgsql, `stable`) → RLS applies; `hidden` items are also
+  excluded explicitly, so owners and admins never get them in the feed.
+  `item_status => null` = active and resolved (the parameter is `item_status`,
+  not `status`, because the result has a `status` column).
+- Text: `q` is normalized; blank after normalization = no text filter. Match:
+  `search_vector @@ plainto_tsquery('simple', q)` (every word) OR
+  `q <% search_text` (word similarity ≥ 0.4, set with
+  `set pg_trgm.word_similarity_threshold = 0.4` on the function so the trigram
+  index can be used). `plainto_tsquery` instead of `websearch_to_tsquery`:
+  normalization removes the quotes and minus signs websearch syntax needs.
+  `rank` = `ts_rank + word_similarity` (0 without `q`).
+- Sort: `newest` = `created_at desc, id desc`; `relevance` = rank first (same as
+  newest without `q`); anything else → SQLSTATE `22023` `invalid_sort`.
+- Radius (P5.S5): `ST_DWithin(location, ST_MakePoint(lng, lat)::geography, radius_km * 1000)`.
+- Pagination: `page_size` clamped to 1–50, `page` to ≥ 1; offset/limit with
+  `count(*) over ()` as `total_count` on every row. A page past the end returns
+  no rows (no total), so the feed must treat "0 rows on page > 1" as out of range.
+- Generated types mark every result column as non-null and `item_status` as not
+  nullable; `location_name` and `cover_path` can be null, and the query layer
+  (P4.S4) must treat them so.
 
 ### URL contract (P4.S3)
 
@@ -1405,11 +1419,14 @@ tests) · images compressed · both languages · checks pass.
 - **Changed during implementation:** transliteration without diacritics plus Latin digraph folding instead of ч→ch, ш→sh, … (§12), so the Verify case holds.
 - **Verified:** dry run in a rolled-back transaction; `db:test` 6/6 (`search.sql`: Cyrillic / Latin / diacritics / digraph equivalences for every special letter, punctuation, null; anon can normalize; `search_text` on insert and update, unchanged by a status change; full-text match with Cyrillic and Latin queries; typos "parichnk" (score > 0.4), "клучви" and "телефн самсунг" rank the right item first; direct write to `search_text` rejected); both existing items backfilled with `updated_at` untouched; `EXPLAIN` uses both GIN indexes; advisors: only F-12/F-19.
 
-#### P4.S2 — `search_items` function
+#### P4.S2 — `search_items` function — `COMPLETED`
 
 - **Depends on:** P4.S1.
 - **Affects:** migration `*_search_items.sql`, types.
 - **Verify:** SQL tests for each filter, pagination totals, hidden items excluded, page size capped at 50.
+- **Implemented:** migration `20260927224223_search_items.sql` with `public.search_items()` as described in §12 (execute for `anon`/`authenticated` only), types regenerated, `supabase/tests/search_items.sql`.
+- **Changed during implementation:** parameter `item_status` instead of `status`; `plainto_tsquery` instead of `websearch_to_tsquery`; unknown `sort` raises `22023`; radius parameters left for P5.S5 (§12). The migration calls `extensions.show_limit()` before `create function`: until pg_trgm's library is loaded, `pg_trgm.word_similarity_threshold` is a placeholder that the (non-superuser) `postgres` role may not put in a function's `SET` clause (`42501`). Callers are not affected (checked as `anon` in a fresh session).
+- **Verified:** dry run; `db:test` 7/7 (`search_items.sql`, test items isolated by date so real items do not interfere: defaults, type, one/two/empty categories, resolved, any status, hidden never returned (as a visitor, as the hidden item's owner and as an admin, even when searched for), inclusive date range, combined filters, Cyrillic / Latin-with-diacritics / typo / unfinished-word queries, description words, no match, punctuation-only query ignored, text search keeps the status filter, newest vs relevance order, relevance without `q`, `sort` null, unknown sort rejected, pages 1–3, page 0, page size 0 → 1, `total_count` on page 2, 55 items with page size 500 → 50 rows, total 55, cover = position 0, null cover, category fields, rank); supabase-js as a visitor through the API (defaults, text query, page size 1000 → capped, invalid sort → `22023`); advisors: only F-12/F-19.
 
 #### P4.S3 — Search params schema and parsing
 
@@ -1734,6 +1751,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-28 | P4.S2     | `search_items()`: text (full text + typos), type/category/status/date filters, newest/relevance, pagination capped at 50; SQL tests 7/7.                                                             |
 | 2026-09-28 | P4.S1     | `normalize_text()` (Cyrillic/Latin/diacritics/digraphs), `search_text` trigger, `search_vector`, GIN indexes, backfill; SQL tests 6/6.                                                               |
 | 2026-09-27 | P3.S8     | Dashboard: `getOwnItems`, `ItemCard`, status tabs, compact quick actions, empty state; sign-in lands on `/dashboard`; F-22; browser check 40/40. Phase 3 done.                                       |
 | 2026-09-27 | P3.S7     | Edit page (`ItemForm` edit mode), `update_item()` migration + SQL tests, `updateItem`/`setItemStatus`/`deleteItem`, owner actions with delete dialog; browser check 27/27.                           |
@@ -1770,14 +1788,14 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P4.S2 — `search_items` function** (see §22, Phase 4, and §12).
+**P4.S3 — Search params schema and parsing** (see §22, Phase 4, and §12 URL contract).
 
-Why next: the search columns and indexes exist (P4.S1). P4.S2 adds the SQL
-function the feed will call: text search (full-text OR `word_similarity`
-
-> 0.4 on `search_text`), type / category / status / date filters, sorting,
-> offset pagination with the total, page size capped at 50, `security invoker`
-> so hidden items stay out. Migration + types + SQL tests; no UI yet.
+Why next: `search_items()` exists (P4.S2). Before the feed page (P4.S4) the URL
+filters need a Zod schema in `src/lib/validation/search.ts` that parses
+`searchParams` (invalid values fall back to defaults instead of throwing) and
+serializes filters back into URLs, with unit tests. It should map onto the
+function's arguments (`item_status` = `any` → null, category slugs, page size
+default 20). Code and tests only; no migration.
 
 Open manual items:
 
