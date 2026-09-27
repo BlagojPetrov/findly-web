@@ -34,6 +34,8 @@ export function itemWriteFailure(error: DatabaseError): ActionResult<never> {
       return fieldError("categoryId", "categoryInvalid");
     case "42501": // RLS: banned user, or not the owner
       return { ok: false, error: "forbidden" };
+    case "P0002": // no_data_found: update_item() found no editable item
+      return { ok: false, error: "not_found" };
   }
   console.error(`Item write failed: ${error.code}: ${error.message}`);
   return { ok: false, error: "database" };

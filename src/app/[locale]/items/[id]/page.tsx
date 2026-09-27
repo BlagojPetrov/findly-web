@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, EyeOff, MapPin, Pencil } from "lucide-react";
+import { CalendarDays, Clock, EyeOff, MapPin } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { Locale } from "next-intl";
@@ -10,10 +10,9 @@ import {
 import type { ReactNode } from "react";
 import { CategoryIcon } from "@/components/items/category-icon";
 import { ImageGallery } from "@/components/items/image-gallery";
+import { ItemOwnerActions } from "@/components/items/item-owner-actions";
 import { ItemTypeBadge } from "@/components/items/item-type-badge";
 import { UserAvatar } from "@/components/profile/user-avatar";
-import { buttonVariants } from "@/components/ui/button";
-import { Link } from "@/i18n/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { itemImageUrl } from "@/lib/item-images";
 import { categoryName } from "@/lib/queries/categories";
@@ -170,7 +169,6 @@ export default async function ItemPage({
             </div>
           </div>
 
-          {/* Resolve and delete are added with their actions in P3.S7. */}
           {isOwner && (
             <section className="grid gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
               <div>
@@ -178,20 +176,14 @@ export default async function ItemPage({
                   {t("detail.ownerTitle")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  {t("detail.ownerHint")}
+                  {t(
+                    item.status === "hidden"
+                      ? "detail.ownerHintHidden"
+                      : "detail.ownerHint",
+                  )}
                 </p>
               </div>
-              {item.status !== "hidden" && (
-                <div className="flex flex-wrap gap-2">
-                  <Link
-                    href={`/items/${item.id}/edit`}
-                    className={buttonVariants({ variant: "outline" })}
-                  >
-                    <Pencil aria-hidden />
-                    {t("detail.edit")}
-                  </Link>
-                </div>
-              )}
+              <ItemOwnerActions itemId={item.id} status={item.status} />
             </section>
           )}
         </div>

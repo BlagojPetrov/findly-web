@@ -37,6 +37,10 @@ describe("itemWriteFailure", () => {
       { code: "42501", message: "new row violates row-level security policy" },
       { ok: false, error: "forbidden" },
     ],
+    [
+      { code: "P0002", message: "item_not_found" },
+      { ok: false, error: "not_found" },
+    ],
   ])("maps %j", (error, expected) => {
     expect(itemWriteFailure(error)).toEqual(expected);
   });

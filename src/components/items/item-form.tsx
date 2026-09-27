@@ -4,7 +4,7 @@ import { HandHeart, SearchX } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useActionState, useState } from "react";
 import { toast } from "sonner";
-import { createItem } from "@/actions/items";
+import { createItem, updateItem } from "@/actions/items";
 import { FormError } from "@/components/forms/form-error";
 import { FormField, FormTextareaField } from "@/components/forms/form-field";
 import { SubmitButton } from "@/components/forms/submit-button";
@@ -14,13 +14,14 @@ import {
   SettingsCard,
   SettingsCardBody,
 } from "@/components/profile/settings-card";
-import { useRouter } from "@/i18n/navigation";
+import { buttonVariants } from "@/components/ui/button";
+import { Link, useRouter } from "@/i18n/navigation";
 import type { ActionResult } from "@/lib/action-result";
 import { ITEM_LIMITS } from "@/lib/validation/items";
 import type { ValidationMessage } from "@/lib/validation/messages";
 
 type ItemType = "lost" | "found";
-type Values = {
+export type ItemFormValues = {
   type: ItemType | null;
   title: string;
   description: string;
@@ -28,6 +29,7 @@ type Values = {
   occurredOn: string;
   locationName: string;
 };
+type Values = ItemFormValues;
 type State = { result: ActionResult<{ id: string }>; values: Values } | null;
 
 export type CategoryOption = { id: number; name: string; icon: string };
@@ -58,32 +60,38 @@ function GroupError({ id, errors }: { id: string; errors?: string[] }) {
   );
 }
 
-// Form for a new lost/found report. The item id comes from the page (a new
-// UUID per visit): the photos are uploaded into the item's folder before
-// the form is submitted.
+// Form for a new lost/found report ("create") or for editing one ("edit").
+// The item id comes from the page (a new UUID per visit when creating): the
+// photos are uploaded into the item's folder before the form is submitted.
 export function ItemForm({
+  mode,
   userId,
   itemId,
   categories,
-  defaultType,
+  initialValues,
+  initialImagePaths = [],
   today,
 }: {
+  mode: "create" | "edit";
   userId: string;
   itemId: string;
   categories: CategoryOption[];
-  defaultType: ItemType | null;
+  initialValues: Values;
+  // Saved photos of the item being edited, cover first.
+  initialImagePaths?: string[];
   // "YYYY-MM-DD" in Macedonia; the latest date the picker allows.
   today: string;
 }) {
   const t = useTranslations("Items");
   const router = useRouter();
-  const [type, setType] = useState<ItemType | null>(defaultType);
+  const [type, setType] = useState<ItemType | null>(initialValues.type);
   const [uploading, setUploading] = useState(false);
   const [state, formAction, pending] = useActionState(
     async (_prev: State, formData: FormData): Promise<State> => {
-      const result = await createItem(formData);
+      const save = mode === "edit" ? updateItem : createItem;
+      const result = await save(formData);
       if (result.ok) {
-        toast.success(t("created"));
+        toast.success(t(mode === "edit" ? "saved" : "created"));
         router.push(`/items/${result.data.id}`);
       }
       // Keep the entered values after an error (React resets the form).
@@ -91,14 +99,7 @@ export function ItemForm({
     },
     null,
   );
-  const values: Values = state?.values ?? {
-    type: defaultType,
-    title: "",
-    description: "",
-    categoryId: "",
-    occurredOn: "",
-    locationName: "",
-  };
+  const values = state?.values ?? initialValues;
   const failure = state && !state.result.ok ? state.result : undefined;
   const errors = failure?.fieldErrors;
   // After success the page navigates away; keep the form locked meanwhile.
@@ -244,6 +245,7 @@ export function ItemForm({
           <ImagePicker
             userId={userId}
             itemId={itemId}
+            defaultPaths={initialImagePaths}
             onPendingChange={setUploading}
             disabled={pending || done}
             describedBy={errors?.imagePaths ? "imagePaths-error" : undefined}
@@ -258,11 +260,19 @@ export function ItemForm({
             {t("waitForPhotos")}
           </p>
         )}
+        {mode === "edit" && (
+          <Link
+            href={`/items/${itemId}`}
+            className={buttonVariants({ variant: "outline", size: "lg" })}
+          >
+            {t("cancel")}
+          </Link>
+        )}
         <SubmitButton
           pending={pending || done}
           disabled={pending || done || uploading}
         >
-          {t("submit")}
+          {t(mode === "edit" ? "save" : "submit")}
         </SubmitButton>
       </div>
     </form>

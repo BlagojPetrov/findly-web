@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-26
 - **Current phase:** Phase 3 — Items CRUD and image upload (in progress)
-- **Next step:** P3.S7 (§22)
+- **Next step:** P3.S8 (§22)
 
 ---
 
@@ -134,7 +134,7 @@ to these IDs. "Next step" always means the step named in
 | P3.S4  | Image picker and upload component              | `COMPLETED`   |
 | P3.S5  | Create item page                               | `COMPLETED`   |
 | P3.S6  | Item detail page (basic)                       | `COMPLETED`   |
-| P3.S7  | Edit, delete, mark resolved                    | `NOT STARTED` |
+| P3.S7  | Edit, delete, mark resolved                    | `COMPLETED`   |
 | P3.S8  | Dashboard ("My reports")                       | `NOT STARTED` |
 | P4.S1  | Search normalization and indexes               | `NOT STARTED` |
 | P4.S2  | `search_items` SQL function                    | `NOT STARTED` |
@@ -1360,11 +1360,14 @@ with up to 5 images; everyone can view an item page.
 - **Implemented:** `getItem(id)` (`src/lib/queries/items.ts`, cached per request; invalid UUID → null without a query; embeds category, the owner's public profile columns and images sorted cover first), `items/[id]/page.tsx` (public, outside `(app)`; `generateMetadata` with title + description, `noindex` for hidden items; gallery, type and "Resolved" badges, category, date (calendar day formatted in UTC), location name, posted date, owner with avatar, description with line breaks; hidden notice for owner/admin), `ImageGallery` (main photo, previous/next, thumbnails with `aria-current`, placeholder with the category icon), `ItemTypeBadge`, `--lost`/`--found` tokens (light and dark). Owner panel shows **Edit** only; resolve and delete arrive with their actions in P3.S7 (the edit page too — until then the link is a 404).
 - **Verified** (production build, headless Edge, two temporary users, deleted with their items and files): 25/25 — owner redirected after create and sees the owner panel; guest sees title, `<title>`, badge, category, date label, location, line breaks, owner, both photos load, next/thumbnail switching; hidden item, invalid id and unknown UUID → HTTP 404 for guest and other user; resolved item shows badge and notice; no-photo placeholder; owner sees the hidden item with notice, without edit link, `noindex`; English labels; no overflow at 360 px.
 
-#### P3.S7 — Edit, delete, mark resolved
+#### P3.S7 — Edit, delete, mark resolved — `COMPLETED`
 
 - **Depends on:** P3.S6.
 - **Affects:** `(app)/items/[id]/edit/page.tsx`, `src/actions/items.ts` (`updateItem`, `deleteItem`, `setItemStatus`), image removal from storage.
 - **Verify:** only the owner can edit/delete (try another account); deleting removes storage files; resolved items show a "Resolved" badge.
+- **Changed during implementation:** new migration `20260927000103_update_item.sql` with `update_item(item_id, type, title, description, category_id, occurred_on, location_name?, image_paths?)` (`security invoker`, `authenticated` only): updates the item and syncs its image rows (delete missing, insert new, reposition existing via `on conflict (storage_path)`) in one transaction, returns the removed paths; `no_data_found` (`P0002`) when the item is missing, not the caller's, or hidden. Without it an edit would take several requests and could leave an item half-updated. SQL tests: `supabase/tests/items_update.sql`.
+- **Implemented:** `(app)/items/[id]/edit/page.tsx` (owner only, not hidden; otherwise 404), `ItemForm` with `mode: "create" | "edit"`, `initialValues`, `initialImagePaths` (cancel link in edit mode), actions `updateItem` (removed photos' files deleted after the save), `setItemStatus` (`active` ⇄ `resolved`, `itemStatusSchema`), `deleteItem` (owner or admin; deletes every file in `<owner>/<item>/`, so abandoned uploads of that item go too), `ItemOwnerActions` on the item page (edit, mark as resolved / reopen, delete with an `AlertDialog`; a hidden item offers only delete), `P0002` → `not_found` in `itemWriteFailure`. After deleting, the owner goes to `/` until the dashboard exists (P3.S8).
+- **Verified** (production build, headless Edge, two temporary users, deleted afterwards): 27/27 — owner controls; edit form prefilled with values and photos in order; blank title rejected with photos kept; remove / reorder / add a photo, change title and type → saved, rows in the new order, the removed photo's file deleted only after saving; cancel; resolve (badge, `resolved_at`) and reopen; other user: edit page 404, no controls, and through the API (supabase-js as that user) update, `update_item`, status change, delete and file removal all rejected with the item unchanged; hidden item: only delete, edit page 404; delete dialog cancel; delete removes the item, its rows and all files including an abandoned upload, then 404; no overflow at 360 px; no console errors. `db:test` 5/5, advisors: only F-12/F-19.
 
 #### P3.S8 — Dashboard ("My reports")
 
@@ -1604,7 +1607,7 @@ weights and results documented.
 
 #### P10.S1 — Reports schema and admin policies
 
-- **Affects:** migration `*_moderation.sql` (enums, `reports`, admin policies on reports/categories/profiles — item admin policies already exist since P3.S1, `admin_set_banned()`, `admin_stats()`, moderation notification trigger).
+- **Affects:** migration `*_moderation.sql` (enums, `reports`, admin policies on reports/categories/profiles — item admin policies already exist since P3.S1, and `deleteItem` already works for admins (P3.S7), `admin_set_banned()`, `admin_stats()`, moderation notification trigger).
 - **Verify:** SQL tests: non-admins cannot read others' reports or call admin RPCs; banned user cannot insert anything.
 
 #### P10.S2 — Report item UI
@@ -1707,7 +1710,7 @@ started (no auth code or profile tables exist yet).
 | F-12 | Advisors warn that `current_profile()` (a `security definer` function in `public`) is callable by `anon`/`authenticated`.                                                                                                                                                                                                                                                                   | Intentional: it returns only the caller's own row (nothing for anon). Accepted warning.                                                                                                                                                                                                                                                                                                                                                                     | Accepted      |
 | F-19 | Advisors warn "Leaked password protection disabled" (HaveIBeenPwned check of new passwords). Noticed during P2.S8.                                                                                                                                                                                                                                                                          | Optional: enable it in Supabase → Authentication (password security) if the plan allows it; rejected passwords already show `weak_password`.                                                                                                                                                                                                                                                                                                                | Open          |
 | F-20 | Deleting an auth user (dashboard or SQL) removes the profile but not the user's files in Storage: the owner's old avatar stayed in `avatars` as an orphan after the account was recreated (2026-09-26).                                                                                                                                                                                     | Clean up files when account deletion is implemented (admin user management, P10.S5, or a self-service delete); the orphan was left in place (user data).                                                                                                                                                                                                                                                                                                    | Open          |
-| F-21 | Photos are uploaded before the item is saved (the item id is generated in the browser). If the user abandons the form, or the create action fails, the uploaded files stay in `item-images` without an `item_images` row. Removing a photo in the picker deletes its file; abandoned forms cannot. Noticed in P3.S4.                                                                        | Acceptable for now (files are small). The create action does **not** delete them on failure, because the form keeps the photos for the next attempt (P3.S5). Option: a periodic clean-up of files older than a day without an `item_images` row (scheduled SQL job or admin action, P10/P11).                                                                                                                                                               | Open          |
+| F-21 | Photos are uploaded before the item is saved (the item id is generated in the browser). If the user abandons the form, or the create action fails, the uploaded files stay in `item-images` without an `item_images` row. Removing a photo in the picker deletes its file; abandoned forms cannot. Noticed in P3.S4.                                                                        | Acceptable for now (files are small). The create action does **not** delete them on failure, because the form keeps the photos for the next attempt (P3.S5). Deleting an item now removes every file in its folder, including such uploads (P3.S7). Option for abandoned new items: a periodic clean-up of files older than a day without an `item_images` row (scheduled SQL job or admin action, P10/P11).                                                | Open          |
 | F-10 | No automated tests yet.                                                                                                                                                                                                                                                                                                                                                                     | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                                                                                                                                                                                                                                                                                                                                | Fixed         |
 
 ---
@@ -1716,6 +1719,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-27 | P3.S7     | Edit page (`ItemForm` edit mode), `update_item()` migration + SQL tests, `updateItem`/`setItemStatus`/`deleteItem`, owner actions with delete dialog; browser check 27/27.                           |
 | 2026-09-27 | P3.S6     | Item detail page: `getItem`, gallery, type badge, lost/found tokens, owner panel (edit link), 404 for hidden/invalid; browser check 25/25.                                                           |
 | 2026-09-27 | P3.S5     | Create item page: `ItemForm`, `createItem` (checks uploaded photos exist, `create_item`), `itemWriteFailure`, `getCategories`, `FormTextareaField`, user-menu link; browser check 27/27.             |
 | 2026-09-26 | P3.S4     | `ImagePicker` (WebP ≤ 1600 px, upload with progress via XHR, reorder, remove, retry, limits) and `src/lib/item-images.ts`; verified in the browser (5.55 MB → 231 KB).                               |
@@ -1749,12 +1753,13 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P3.S7 — Edit, delete, mark resolved** (see §22, Phase 3).
+**P3.S8 — Dashboard ("My reports")** (see §22, Phase 3).
 
-Why next: the item page (P3.S6) links owners to `/items/<id>/edit`, which does
-not exist yet, and its owner panel waits for resolve/delete. P3.S7 adds the edit
-page (reusing `ItemForm` and `ImagePicker` with `defaultPaths`), `updateItem`,
-`deleteItem` (removing the photos from Storage) and `setItemStatus`.
+Why next: the full item lifecycle works (create, view, edit, resolve, delete),
+but owners have no list of their own reports. P3.S8 adds `/dashboard` with
+the user's items by status and quick actions, `item-card.tsx` (reused in P4),
+`AFTER_SIGN_IN_PATH` → `/dashboard`, and the redirect after deleting an item
+(currently `/`). It completes Phase 3 (Definition of Done in §22).
 
 Open manual items:
 

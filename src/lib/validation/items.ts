@@ -115,3 +115,13 @@ export function itemSchema({ categoryIds, userId }: ItemSchemaContext) {
 }
 
 export type ItemInput = z.infer<ReturnType<typeof itemSchema>>;
+
+const itemIdSchema = z.uuid({ error: msg("invalidValue") });
+
+// Owners switch between active and resolved; "hidden" is set only by admins.
+export const itemStatusSchema = z.object({
+  itemId: itemIdSchema,
+  status: z.enum(["active", "resolved"], { error: msg("invalidValue") }),
+});
+
+export const itemIdFormSchema = z.object({ itemId: itemIdSchema });

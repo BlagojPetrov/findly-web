@@ -53,7 +53,15 @@ export default async function NewItemPage({
           icon: category.icon,
           name: categoryName(category, locale),
         }))}
-        defaultType={defaultType}
+        mode="create"
+        initialValues={{
+          type: defaultType,
+          title: "",
+          description: "",
+          categoryId: "",
+          occurredOn: "",
+          locationName: "",
+        }}
         today={todayInAppTimeZone()}
       />
     </div>

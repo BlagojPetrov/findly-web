@@ -209,6 +209,19 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      update_item: {
+        Args: {
+          category_id: number
+          description: string
+          image_paths?: string[]
+          item_id: string
+          location_name?: string
+          occurred_on: string
+          title: string
+          type: Database["public"]["Enums"]["item_type"]
+        }
+        Returns: string[]
+      }
     }
     Enums: {
       item_status: "active" | "resolved" | "hidden"

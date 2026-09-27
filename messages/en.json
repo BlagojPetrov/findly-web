@@ -255,7 +255,25 @@
       },
       "ownerTitle": "This is your report",
       "ownerHint": "You can edit it, mark it as resolved or delete it.",
-      "edit": "Edit"
+      "ownerHintHidden": "A hidden report cannot be edited, but you can delete it."
+    },
+    "editTitle": "Edit report",
+    "editDescription": "Change the details or photos of your report.",
+    "save": "Save changes",
+    "saved": "Your changes are saved.",
+    "cancel": "Cancel",
+    "owner": {
+      "edit": "Edit",
+      "resolve": "Mark as resolved",
+      "reopen": "Reopen",
+      "delete": "Delete",
+      "deleteTitle": "Delete this report?",
+      "deleteDescription": "The report and its photos will be deleted permanently. This cannot be undone.",
+      "cancel": "Cancel",
+      "confirmDelete": "Delete",
+      "resolvedToast": "The report is marked as resolved.",
+      "reopenedToast": "The report is active again.",
+      "deletedToast": "The report was deleted."
     }
   }
 }

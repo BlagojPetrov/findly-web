@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { isOwnItemImagePath, itemSchema } from "./items";
+import { isOwnItemImagePath, itemSchema, itemStatusSchema } from "./items";
 
 const userId = "00000000-0000-4000-8000-00000000000a";
 const otherUserId = "00000000-0000-4000-8000-00000000000b";
@@ -196,5 +196,21 @@ describe("isOwnItemImagePath", () => {
     expect(isOwnItemImagePath(imagePath(1), otherUserId, itemId)).toBe(false);
     expect(isOwnItemImagePath(imagePath(1), userId, otherItemId)).toBe(false);
     expect(isOwnItemImagePath(`x${imagePath(1)}`, userId, itemId)).toBe(false);
+  });
+});
+
+describe("itemStatusSchema", () => {
+  it.each(["active", "resolved"])("accepts %s", (status) => {
+    expect(itemStatusSchema.safeParse({ itemId, status }).success).toBe(true);
+  });
+
+  it.each(["hidden", "", null])("rejects %j", (status) => {
+    expect(itemStatusSchema.safeParse({ itemId, status }).success).toBe(false);
+  });
+
+  it("rejects an invalid id", () => {
+    expect(
+      itemStatusSchema.safeParse({ itemId: "x", status: "resolved" }).success,
+    ).toBe(false);
   });
 });

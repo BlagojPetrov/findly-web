@@ -23,8 +23,8 @@ status and the next step. Read it before any work.
 ## Current state
 
 - Phases 1 and 2 completed (auth, profile, first deployment). Phase 3 in progress:
-  P3.S1–S6 (schema, image bucket, validation, image picker, create page, item page) done.
-  Next: P3.S7 (edit, delete, resolve).
+  P3.S1–S7 (schema, bucket, validation, image picker, create, item page, edit/resolve/delete)
+  done. Next: P3.S8 (dashboard, last step of Phase 3).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -98,7 +98,8 @@ status and the next step. Read it before any work.
   user's own full row (role, is_banned, preferred_locale) comes from
   `rpc("current_profile")`. `preferred_locale` is mirrored to `user_metadata.locale`
   (the auth email templates read that) by `updateProfile`.
-- Items: create through `rpc("create_item")` (item + images in one transaction). Trigger
+- Items: create through `rpc("create_item")`, edit through `rpc("update_item")` (item + images in one
+  transaction; returns removed paths to delete). `deleteItem` removes the item's whole folder. Trigger
   errors the app maps: `23514` `occurred_on_in_future` (today = `Europe/Skopje` date),
   `FL429` `daily_item_limit` (20 items / 24 h). Owners cannot hide or edit hidden items;
   admins hide/restore. Trigger functions go in schema `private`. Forms validate with
