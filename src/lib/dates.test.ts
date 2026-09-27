@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { todayInAppTimeZone } from "./dates";
+import { calendarDay, todayInAppTimeZone } from "./dates";
 
 describe("todayInAppTimeZone", () => {
   it.each([
@@ -11,5 +11,13 @@ describe("todayInAppTimeZone", () => {
     ["2026-12-31T23:00:00Z", "2027-01-01"],
   ])("%s is %s in Macedonia", (instant, date) => {
     expect(todayInAppTimeZone(new Date(instant))).toBe(date);
+  });
+});
+
+describe("calendarDay", () => {
+  it("is midnight UTC of that day", () => {
+    expect(calendarDay("2026-03-01").toISOString()).toBe(
+      "2026-03-01T00:00:00.000Z",
+    );
   });
 });

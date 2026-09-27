@@ -10,7 +10,8 @@
     "register": "Register",
     "accountMenu": "Account",
     "profile": "Profile",
-    "reportItem": "Report an item"
+    "reportItem": "Report an item",
+    "dashboard": "My reports"
   },
   "Home": {
     "title": "Find what was lost, return what was found",
@@ -228,7 +229,9 @@
       "found": "Found"
     },
     "status": {
-      "resolved": "Resolved"
+      "active": "Active",
+      "resolved": "Resolved",
+      "hidden": "Hidden"
     },
     "gallery": {
       "noPhotos": "No photos",
@@ -274,6 +277,29 @@
       "resolvedToast": "The report is marked as resolved.",
       "reopenedToast": "The report is active again.",
       "deletedToast": "The report was deleted."
+    }
+  },
+  "Dashboard": {
+    "title": "My reports",
+    "description": "Your lost and found reports. Edit them, mark them as resolved when the item is back with its owner, or delete them.",
+    "reportItem": "Report an item",
+    "tabsLabel": "Reports by status",
+    "tabs": {
+      "active": "Active",
+      "resolved": "Resolved",
+      "hidden": "Hidden"
+    },
+    "hiddenHint": "A moderator hid these reports, so other people cannot see them. You can only delete them.",
+    "empty": {
+      "title": "You have no reports yet",
+      "description": "Lost something, or found something that is not yours? Report it and Findly will help you reach the other person.",
+      "reportLost": "I lost something",
+      "reportFound": "I found something"
+    },
+    "emptyTab": {
+      "active": "You have no active reports.",
+      "resolved": "You have no resolved reports yet.",
+      "hidden": "You have no hidden reports."
     }
   }
 }

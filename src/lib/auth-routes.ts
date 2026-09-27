@@ -6,9 +6,9 @@ import { safeRedirectPath } from "@/lib/safe-redirect";
 // final word, so these rules are a convenience, not the security boundary.
 
 export const SIGN_IN_PATH = "/login";
-// Where signed-in users land when they open /login or /register.
-// Becomes "/dashboard" once the dashboard exists (P3.S8).
-export const AFTER_SIGN_IN_PATH = "/";
+// Where users land after signing in (without a "next" target) and when they
+// open /login or /register while signed in.
+export const AFTER_SIGN_IN_PATH = "/dashboard";
 
 const protectedPrefixes = [
   "/dashboard",

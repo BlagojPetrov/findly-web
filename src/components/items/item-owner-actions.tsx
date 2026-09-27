@@ -24,15 +24,22 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Link, useRouter } from "@/i18n/navigation";
+import { cn } from "@/lib/utils";
 
-// Owner controls on the item page: edit, mark as resolved / reopen, delete.
-// A hidden item (moderated) can only be deleted.
+// Owner controls: edit, mark as resolved / reopen, delete. A hidden item
+// (moderated) can only be deleted. `compact` (dashboard cards) uses small
+// buttons and an icon-only delete button. After a delete the page goes to
+// `redirectAfterDelete`, or is refreshed when there is none.
 export function ItemOwnerActions({
   itemId,
   status,
+  compact = false,
+  redirectAfterDelete,
 }: {
   itemId: string;
   status: "active" | "resolved" | "hidden";
+  compact?: boolean;
+  redirectAfterDelete?: string;
 }) {
   const t = useTranslations("Items.owner");
   const tErrors = useTranslations("Errors");
@@ -41,6 +48,7 @@ export function ItemOwnerActions({
   const [deletePending, startDelete] = useTransition();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const busy = statusPending || deletePending;
+  const size = compact ? "sm" : "default";
 
   function formData(extra: Record<string, string> = {}) {
     const data = new FormData();
@@ -70,19 +78,24 @@ export function ItemOwnerActions({
         return;
       }
       toast.success(t("deletedToast"));
-      // Becomes the dashboard in P3.S8.
-      router.replace("/");
+      if (redirectAfterDelete) {
+        router.replace(redirectAfterDelete);
+      } else {
+        setConfirmOpen(false);
+        router.refresh();
+      }
     });
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className={cn("flex flex-wrap", compact ? "gap-1.5" : "gap-2")}>
       {status !== "hidden" && (
         <>
           <Link
             href={`/items/${itemId}/edit`}
             aria-disabled={busy}
-            className={buttonVariants({ variant: "outline" })}
+            // cn() resolves the base border-transparent against the outline border.
+            className={cn(buttonVariants({ variant: "outline", size }))}
           >
             <Pencil aria-hidden />
             {t("edit")}
@@ -90,6 +103,7 @@ export function ItemOwnerActions({
           <Button
             type="button"
             variant="outline"
+            size={size}
             disabled={busy}
             onClick={() =>
               changeStatus(status === "resolved" ? "active" : "resolved")
@@ -113,13 +127,18 @@ export function ItemOwnerActions({
             <Button
               type="button"
               variant="ghost"
+              size={compact ? "icon-sm" : "default"}
               disabled={busy}
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              aria-label={compact ? t("delete") : undefined}
+              className={cn(
+                "text-destructive hover:bg-destructive/10 hover:text-destructive",
+                compact && "ml-auto",
+              )}
             />
           }
         >
           <Trash2 aria-hidden />
-          {t("delete")}
+          {!compact && t("delete")}
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>

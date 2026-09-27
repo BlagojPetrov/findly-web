@@ -22,11 +22,11 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phases 1 and 2 completed (auth, profile, first deployment). Phase 3 in progress:
-  P3.S1–S7 (schema, bucket, validation, image picker, create, item page, edit/resolve/delete)
-  done. Next: P3.S8 (dashboard, last step of Phase 3).
+- Phases 1–3 completed (auth, profile, first deployment; items CRUD with photos, item
+  page, `/dashboard`). Next: Phase 4, starting with P4.S1 (search normalization).
 - Open manual items: minimum password length 8 (F-07); decision on locale
-  detection (F-13); optional leaked password protection (F-19).
+  detection (F-13); optional leaked password protection (F-19); local Turbopack build
+  blocked by Windows Application Control (F-22).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
   must delete only test users by their own email pattern (`…@findly.test`,
   `findly-e2e-…@mailinator.com`).
@@ -111,7 +111,13 @@ status and the next step. Read it before any work.
   categories come from `getCategories()` (`@/lib/queries/categories`). Multi-line
   inputs use `FormTextareaField`. Item reads: `getItem(id)` (`@/lib/queries/items`, RLS
   decides visibility; null → `notFound()`). Type colors: `lost`/`found` tokens
-  (`bg-lost/10 text-lost`), `ItemTypeBadge`.
+  (`bg-lost/10 text-lost`), `ItemTypeBadge`. Item grids use `ItemCard` (`ItemSummary`
+  from `getOwnItems`; `actions` slot sits above the card's stretched link). Owner controls:
+  `ItemOwnerActions` (`compact` on cards, `redirectAfterDelete` on the item page).
+  Calendar days are formatted with `calendarDay()` + `timeZone: "UTC"`.
+- Pages in `(app)` set their own width (`mx-auto w-full max-w-2xl` for forms/settings,
+  `max-w-5xl` for the dashboard); the layout only adds padding. Signed-in users land on
+  `AFTER_SIGN_IN_PATH` (`/dashboard`).
 - SQL tests: `supabase/tests/<name>.sql` using helpers from `_helpers.sql`
   (`pg_temp.create_user`, `login_as`, `login_as_anon`, `logout`) and `assert`.
   The runner wraps each file in `begin … rollback`.
@@ -136,6 +142,9 @@ status and the next step. Read it before any work.
 ## Environment notes
 
 - Windows; Bash and PowerShell both available. No Docker, so no local Supabase stack.
+- Local `npm run build` currently fails (Turbopack needs the native SWC binary, which
+  Windows Application Control blocks; F-22). Verify with `npx next build --webpack`
+  until that is resolved; do not change the scripts (Vercel builds normally).
 - `npx supabase login` needs an interactive terminal: the user runs it in their own
   PowerShell window, not through the agent.
 - Never edit applied migrations; never run `supabase config push` (config.toml holds

@@ -14,3 +14,9 @@ export function todayInAppTimeZone(now = new Date()) {
     day: "2-digit",
   }).format(now);
 }
+
+// A "YYYY-MM-DD" calendar day as a Date at midnight UTC. Format it with
+// timeZone "UTC" so the day never shifts.
+export function calendarDay(date: string) {
+  return new Date(`${date}T00:00:00Z`);
+}

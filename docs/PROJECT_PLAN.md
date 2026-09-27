@@ -6,9 +6,9 @@
 > progress of the Findly web project. Every step starts by reading it and ends by
 > updating it.
 
-- **Last updated:** 2026-09-26
-- **Current phase:** Phase 3 — Items CRUD and image upload (in progress)
-- **Next step:** P3.S8 (§22)
+- **Last updated:** 2026-09-27
+- **Current phase:** Phase 4 — Feed, search and advanced filters (not started)
+- **Next step:** P4.S1 (§22)
 
 ---
 
@@ -95,7 +95,7 @@ to these IDs. "Next step" always means the step named in
 | ----- | ------------------------------------- | ------------- |
 | 1     | Project setup and architecture        | `COMPLETED`   |
 | 2     | Authentication                        | `COMPLETED`   |
-| 3     | Items CRUD and image upload           | `IN PROGRESS` |
+| 3     | Items CRUD and image upload           | `COMPLETED`   |
 | 4     | Feed, search and advanced filters     | `NOT STARTED` |
 | 5     | Map and location                      | `NOT STARTED` |
 | 6     | Automatic matching                    | `NOT STARTED` |
@@ -135,7 +135,7 @@ to these IDs. "Next step" always means the step named in
 | P3.S5  | Create item page                               | `COMPLETED`   |
 | P3.S6  | Item detail page (basic)                       | `COMPLETED`   |
 | P3.S7  | Edit, delete, mark resolved                    | `COMPLETED`   |
-| P3.S8  | Dashboard ("My reports")                       | `NOT STARTED` |
+| P3.S8  | Dashboard ("My reports")                       | `COMPLETED`   |
 | P4.S1  | Search normalization and indexes               | `NOT STARTED` |
 | P4.S2  | `search_items` SQL function                    | `NOT STARTED` |
 | P4.S3  | Search params schema and parsing               | `NOT STARTED` |
@@ -719,7 +719,7 @@ profiles 1─* reports *─1 items
    `/favorites`, `/notifications`, `/admin`, with or without `/en`) without a user
    are redirected to `/login?next=<path>`. Signed-in users visiting
    `/login`/`/register` are redirected to a safe `next` or to
-   `AFTER_SIGN_IN_PATH` (currently `/`, becomes `/dashboard` in P3.S8).
+   `AFTER_SIGN_IN_PATH` (`/dashboard` since P3.S8; `/` before).
    Rules live in `src/lib/auth-routes.ts` (pure, unit-tested); the path is
    URL-decoded before matching. **New protected routes must be added there.**
 2. **Server (authoritative):** `getCurrentUser()` / `requireUser(next?)` /
@@ -1306,7 +1306,7 @@ pass · all checks pass · plan updated.
 
 ---
 
-### Phase 3 — Items CRUD and image upload — `IN PROGRESS`
+### Phase 3 — Items CRUD and image upload — `COMPLETED`
 
 **Goal:** signed-in users can create, edit, resolve and delete lost/found reports
 with up to 5 images; everyone can view an item page.
@@ -1369,11 +1369,14 @@ with up to 5 images; everyone can view an item page.
 - **Implemented:** `(app)/items/[id]/edit/page.tsx` (owner only, not hidden; otherwise 404), `ItemForm` with `mode: "create" | "edit"`, `initialValues`, `initialImagePaths` (cancel link in edit mode), actions `updateItem` (removed photos' files deleted after the save), `setItemStatus` (`active` ⇄ `resolved`, `itemStatusSchema`), `deleteItem` (owner or admin; deletes every file in `<owner>/<item>/`, so abandoned uploads of that item go too), `ItemOwnerActions` on the item page (edit, mark as resolved / reopen, delete with an `AlertDialog`; a hidden item offers only delete), `P0002` → `not_found` in `itemWriteFailure`. After deleting, the owner goes to `/` until the dashboard exists (P3.S8).
 - **Verified** (production build, headless Edge, two temporary users, deleted afterwards): 27/27 — owner controls; edit form prefilled with values and photos in order; blank title rejected with photos kept; remove / reorder / add a photo, change title and type → saved, rows in the new order, the removed photo's file deleted only after saving; cancel; resolve (badge, `resolved_at`) and reopen; other user: edit page 404, no controls, and through the API (supabase-js as that user) update, `update_item`, status change, delete and file removal all rejected with the item unchanged; hidden item: only delete, edit page 404; delete dialog cancel; delete removes the item, its rows and all files including an abandoned upload, then 404; no overflow at 360 px; no console errors. `db:test` 5/5, advisors: only F-12/F-19.
 
-#### P3.S8 — Dashboard ("My reports")
+#### P3.S8 — Dashboard ("My reports") — `COMPLETED`
 
 - **Depends on:** P3.S7.
 - **Affects:** `(app)/dashboard/page.tsx`, `src/components/items/item-card.tsx` (reused in P4), `src/lib/auth-routes.ts` (`AFTER_SIGN_IN_PATH` → `/dashboard`).
 - **Verify:** lists own items by status with quick actions; empty state links to "Report item".
+- **Implemented:** `getOwnItems(userId)` (`src/lib/queries/items.ts`; all of the user's items newest first, card columns + cover path = the photo with the lowest position; filtered by `user_id` because RLS also returns others' active items; index `items_user_id_created_at_idx`), `ItemSummary` type, `ItemCard` (cover photo or category icon, type and status badges, title as a stretched link to the item page, category, date, location; optional `actions` footer above the link), `(app)/dashboard/page.tsx` (tabs Active / Resolved / Hidden as links with counts, state in `?status=`, invalid values → active; the Hidden tab only when something is hidden; hint on the hidden tab; empty state with "I lost / I found something" → `/items/new?type=…`; per-tab empty message), `ItemOwnerActions` with `compact` (small buttons, icon-only delete) and `redirectAfterDelete` (item page → `/dashboard`; dashboard refreshes in place), "My reports" in the user menu, `AFTER_SIGN_IN_PATH` = `/dashboard`, `calendarDay()` moved to `@/lib/dates`. `Dashboard` messages, `Items.status.active/hidden`, `Header.dashboard`.
+- **Changed during implementation:** the `(app)` layout no longer sets a max width; each page does (`max-w-2xl` for profile and the item forms, `max-w-5xl` for the dashboard). Outline `Link` buttons in `ItemOwnerActions` and the empty state use `cn(buttonVariants(…))`: without class merging the base `border-transparent` hid their border (the item page's Edit link had the same bug since P3.S7).
+- **Verified** (production build with `--webpack` because of F-22, headless Edge, two temporary users, deleted with their items and files): 40/40 — guest → login with `next` (tab kept); sign-in without `next` and `/login`, `/en/login` while signed in → dashboard; empty state and its links (type preselected); user-menu link; tabs, counts, current tab, newest first; cover = first photo and loads, no-photo card shows the category icon; card fields; quick actions; card click opens the item; resolve / reopen from the dashboard move the item between tabs; hidden tab (hint, badge, only delete); invalid `status`; delete dialog cancel / confirm from the dashboard (item and files gone, stays on the dashboard); delete on the item page → dashboard; the other user sees none of it; English; at 360 px quick actions in one row, all tabs visible, no overflow; profile keeps its width; no console errors.
 
 **Definition of done — Phase 3:** full item lifecycle (create with images → view →
 edit → resolve → delete) works for the owner and is blocked for others (UI + RLS
@@ -1410,7 +1413,7 @@ tests) · images compressed · both languages · checks pass.
 
 #### P4.S5 — Item cards, pagination, empty/loading states
 
-- **Affects:** `item-card.tsx`, `pagination.tsx`, `items/loading.tsx`.
+- **Affects:** `item-card.tsx` (exists since P3.S8; extend if the feed needs more), `pagination.tsx`, `items/loading.tsx`.
 - **Verify:** responsive grid on mobile/desktop; pagination preserves filters.
 
 #### P4.S6 — SEO
@@ -1711,6 +1714,7 @@ started (no auth code or profile tables exist yet).
 | F-19 | Advisors warn "Leaked password protection disabled" (HaveIBeenPwned check of new passwords). Noticed during P2.S8.                                                                                                                                                                                                                                                                          | Optional: enable it in Supabase → Authentication (password security) if the plan allows it; rejected passwords already show `weak_password`.                                                                                                                                                                                                                                                                                                                | Open          |
 | F-20 | Deleting an auth user (dashboard or SQL) removes the profile but not the user's files in Storage: the owner's old avatar stayed in `avatars` as an orphan after the account was recreated (2026-09-26).                                                                                                                                                                                     | Clean up files when account deletion is implemented (admin user management, P10.S5, or a self-service delete); the orphan was left in place (user data).                                                                                                                                                                                                                                                                                                    | Open          |
 | F-21 | Photos are uploaded before the item is saved (the item id is generated in the browser). If the user abandons the form, or the create action fails, the uploaded files stay in `item-images` without an `item_images` row. Removing a photo in the picker deletes its file; abandoned forms cannot. Noticed in P3.S4.                                                                        | Acceptable for now (files are small). The create action does **not** delete them on failure, because the form keeps the photos for the next attempt (P3.S5). Deleting an item now removes every file in its folder, including such uploads (P3.S7). Option for abandoned new items: a periodic clean-up of files older than a day without an `item_images` row (scheduled SQL job or admin action, P10/P11).                                                | Open          |
+| F-22 | Local `next build` (Turbopack) fails on the development machine: Windows Application Control blocks the native `@next/swc-win32-x64-msvc` binary, Next falls back to WASM bindings, and Turbopack requires native ones. Seen first in P3.S8 (earlier steps built normally). Lint, typecheck and tests are unaffected; Vercel builds on Linux.                                               | Code is unaffected. Locally, verify with `npx next build --webpack` until the policy allows the file (user: Windows Security → App & browser control, or reinstall `node_modules`). Scripts stay unchanged.                                                                                                                                                                                                                                                 | Open          |
 | F-10 | No automated tests yet.                                                                                                                                                                                                                                                                                                                                                                     | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                                                                                                                                                                                                                                                                                                                                | Fixed         |
 
 ---
@@ -1719,6 +1723,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-27 | P3.S8     | Dashboard: `getOwnItems`, `ItemCard`, status tabs, compact quick actions, empty state; sign-in lands on `/dashboard`; F-22; browser check 40/40. Phase 3 done.                                       |
 | 2026-09-27 | P3.S7     | Edit page (`ItemForm` edit mode), `update_item()` migration + SQL tests, `updateItem`/`setItemStatus`/`deleteItem`, owner actions with delete dialog; browser check 27/27.                           |
 | 2026-09-27 | P3.S6     | Item detail page: `getItem`, gallery, type badge, lost/found tokens, owner panel (edit link), 404 for hidden/invalid; browser check 25/25.                                                           |
 | 2026-09-27 | P3.S5     | Create item page: `ItemForm`, `createItem` (checks uploaded photos exist, `create_item`), `itemWriteFailure`, `getCategories`, `FormTextareaField`, user-menu link; browser check 27/27.             |
@@ -1753,16 +1758,17 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P3.S8 — Dashboard ("My reports")** (see §22, Phase 3).
+**P4.S1 — Search normalization and indexes** (see §22, Phase 4).
 
-Why next: the full item lifecycle works (create, view, edit, resolve, delete),
-but owners have no list of their own reports. P3.S8 adds `/dashboard` with
-the user's items by status and quick actions, `item-card.tsx` (reused in P4),
-`AFTER_SIGN_IN_PATH` → `/dashboard`, and the redirect after deleting an item
-(currently `/`). It completes Phase 3 (Definition of Done in §22).
+Why next: Phase 3 is complete (items can be created with photos, viewed,
+edited, resolved and deleted, and owners manage them on `/dashboard`). Phase 4
+builds the public feed, and its search depends on P4.S1: `normalize_text()`
+(Cyrillic/Latin, accents), the `search_text` / `search_vector` columns with GIN
+indexes, and SQL tests for them. It is a migration-only step (§12).
 
 Open manual items:
 
 - Set the minimum password length to 8 in the Supabase dashboard (F-07).
 - Decide on locale detection (F-13).
 - Optional: leaked password protection (F-19).
+- Local Turbopack build blocked by Windows Application Control (F-22).

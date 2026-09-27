@@ -14,6 +14,7 @@ import { ItemOwnerActions } from "@/components/items/item-owner-actions";
 import { ItemTypeBadge } from "@/components/items/item-type-badge";
 import { UserAvatar } from "@/components/profile/user-avatar";
 import { getCurrentUser } from "@/lib/auth";
+import { calendarDay } from "@/lib/dates";
 import { itemImageUrl } from "@/lib/item-images";
 import { categoryName } from "@/lib/queries/categories";
 import { getItem } from "@/lib/queries/items";
@@ -30,12 +31,6 @@ export async function generateMetadata({
     // Only the owner and admins can open hidden items.
     robots: item.status === "hidden" ? { index: false } : undefined,
   };
-}
-
-// "YYYY-MM-DD" is a calendar day, not an instant: formatted in UTC so the
-// day never shifts.
-function calendarDay(date: string) {
-  return new Date(`${date}T00:00:00Z`);
 }
 
 function Detail({
@@ -183,7 +178,11 @@ export default async function ItemPage({
                   )}
                 </p>
               </div>
-              <ItemOwnerActions itemId={item.id} status={item.status} />
+              <ItemOwnerActions
+                itemId={item.id}
+                status={item.status}
+                redirectAfterDelete="/dashboard"
+              />
             </section>
           )}
         </div>

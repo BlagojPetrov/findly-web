@@ -91,15 +91,17 @@ describe("getAuthRedirect", () => {
   });
 
   it("sends signed-in users away from login/register", () => {
-    expect(redirectFor("/login", true)).toBe("/");
-    expect(redirectFor("/en/register", true)).toBe("/en");
+    expect(redirectFor("/login", true)).toBe("/dashboard");
+    expect(redirectFor("/en/register", true)).toBe("/en/dashboard");
     expect(redirectFor("/login?next=%2Fprofile", true)).toBe("/profile");
     expect(redirectFor("/en/login?next=%2Fprofile", true)).toBe("/en/profile");
   });
 
   it("never redirects signed-in users to another site", () => {
-    expect(redirectFor("/login?next=https%3A%2F%2Fevil.com", true)).toBe("/");
-    expect(redirectFor("/login?next=%2F%2Fevil.com", true)).toBe("/");
+    expect(redirectFor("/login?next=https%3A%2F%2Fevil.com", true)).toBe(
+      "/dashboard",
+    );
+    expect(redirectFor("/login?next=%2F%2Fevil.com", true)).toBe("/dashboard");
   });
 
   it("does not double the locale when next already has one", () => {
