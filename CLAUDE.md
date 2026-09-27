@@ -23,8 +23,8 @@ status and the next step. Read it before any work.
 ## Current state
 
 - Phases 1–3 completed (auth, profile, first deployment; items CRUD with photos, item
-  page, `/dashboard`). Phase 4 in progress: P4.S1 (search normalization) and P4.S2
-  (`search_items` function) done. Next: P4.S3 (search params schema).
+  page, `/dashboard`). Phase 4 in progress: P4.S1–S3 (search normalization,
+  `search_items` function, search params schema) done. Next: P4.S4 (feed page).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19); local Turbopack build
   blocked by Windows Application Control (F-22).
@@ -123,6 +123,8 @@ status and the next step. Read it before any work.
   through `rpc("search_items")` (§12): generated types claim non-null results, but
   `location_name` and `cover_path` can be null. A migration that puts a `pg_trgm.*`
   setting in a function's `SET` clause must first call `extensions.show_limit()`.
+  Feed URL filters: `parseSearchParams()` / `searchQuery()` (`@/lib/validation/search`);
+  build feed links from `searchQuery()` so URLs stay canonical.
 - Pages in `(app)` set their own width (`mx-auto w-full max-w-2xl` for forms/settings,
   `max-w-5xl` for the dashboard); the layout only adds padding. Signed-in users land on
   `AFTER_SIGN_IN_PATH` (`/dashboard`).

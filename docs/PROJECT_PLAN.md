@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-28
 - **Current phase:** Phase 4 — Feed, search and advanced filters (in progress)
-- **Next step:** P4.S3 (§22)
+- **Next step:** P4.S4 (§22)
 
 ---
 
@@ -138,7 +138,7 @@ to these IDs. "Next step" always means the step named in
 | P3.S8  | Dashboard ("My reports")                       | `COMPLETED`   |
 | P4.S1  | Search normalization and indexes               | `COMPLETED`   |
 | P4.S2  | `search_items` SQL function                    | `COMPLETED`   |
-| P4.S3  | Search params schema and parsing               | `NOT STARTED` |
+| P4.S3  | Search params schema and parsing               | `COMPLETED`   |
 | P4.S4  | Items feed page with filters                   | `NOT STARTED` |
 | P4.S5  | Item cards, pagination, empty/loading states   | `NOT STARTED` |
 | P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `NOT STARTED` |
@@ -866,11 +866,26 @@ search_items(
 
 ### URL contract (P4.S3)
 
-`/items?q=&type=lost|found&category=keys,wallet&status=active|resolved&from=YYYY-MM-DD&to=YYYY-MM-DD&lat=&lng=&radius=5&sort=newest&page=2`
+`/items?q=&type=lost|found&category=keys,wallet&status=active|resolved|all&from=YYYY-MM-DD&to=YYYY-MM-DD&sort=newest|relevance&page=2`
+(`lat`, `lng`, `radius`, `sort=nearest`: P5.S5)
 
-Parsed with a Zod schema (`src/lib/validation/search.ts`); invalid values fall
-back to defaults instead of throwing. The same schema serializes filters back
-into URLs (filter form, pagination, locale switcher keeps them).
+Implemented in P4.S3 (`src/lib/validation/search.ts`): `parseSearchParams()`
+turns `searchParams` into `SearchFilters`; `searchQuery()` turns filters back
+into a query without default values (filter form, pagination, locale switcher
+keep them). Rules:
+
+- Every field falls back to its own default when missing or invalid (the rest
+  are kept); nothing throws. A repeated parameter counts with its first value.
+- `q`: whitespace collapsed, trimmed, at most 100 characters; `""` = none.
+- `type`: `lost` | `found` | none. `status`: `active` (default) | `resolved` |
+  `all` (→ `item_status => null`).
+- `category`: comma list or repeated keys; lower-cased, duplicates removed,
+  malformed slugs dropped, unknown slugs dropped when the page passes the
+  existing slugs; at most 20.
+- `from` / `to`: ISO calendar days; a reversed range is swapped.
+- `sort`: default `relevance` when there is a query, otherwise `newest`.
+- `page`: integer 1–1000, default 1.
+- Canonical URLs: `/items` is the default feed; defaults are never written.
 
 ---
 
@@ -1428,10 +1443,13 @@ tests) · images compressed · both languages · checks pass.
 - **Changed during implementation:** parameter `item_status` instead of `status`; `plainto_tsquery` instead of `websearch_to_tsquery`; unknown `sort` raises `22023`; radius parameters left for P5.S5 (§12). The migration calls `extensions.show_limit()` before `create function`: until pg_trgm's library is loaded, `pg_trgm.word_similarity_threshold` is a placeholder that the (non-superuser) `postgres` role may not put in a function's `SET` clause (`42501`). Callers are not affected (checked as `anon` in a fresh session).
 - **Verified:** dry run; `db:test` 7/7 (`search_items.sql`, test items isolated by date so real items do not interfere: defaults, type, one/two/empty categories, resolved, any status, hidden never returned (as a visitor, as the hidden item's owner and as an admin, even when searched for), inclusive date range, combined filters, Cyrillic / Latin-with-diacritics / typo / unfinished-word queries, description words, no match, punctuation-only query ignored, text search keeps the status filter, newest vs relevance order, relevance without `q`, `sort` null, unknown sort rejected, pages 1–3, page 0, page size 0 → 1, `total_count` on page 2, 55 items with page size 500 → 50 rows, total 55, cover = position 0, null cover, category fields, rank); supabase-js as a visitor through the API (defaults, text query, page size 1000 → capped, invalid sort → `22023`); advisors: only F-12/F-19.
 
-#### P4.S3 — Search params schema and parsing
+#### P4.S3 — Search params schema and parsing — `COMPLETED`
 
 - **Affects:** `src/lib/validation/search.ts`, tests.
 - **Verify:** unit tests: invalid values fall back to defaults; round trip parse → serialize.
+- **Implemented:** `src/lib/validation/search.ts`: `SearchFilters` type, `DEFAULT_SEARCH_FILTERS`, `searchParamsSchema({ categorySlugs? })` (Zod; every field has its own fallback), `parseSearchParams(params, { categorySlugs? })` (page `searchParams` or `URLSearchParams`; never throws), `searchQuery(filters)` (URL query without default values, for `Link` `query` or `URLSearchParams`), `defaultSort(q)`, `SEARCH_STATUSES`, `SEARCH_SORTS`, `SEARCH_LIMITS`. Rules in §12 (URL contract).
+- **Changed during implementation:** `status` also accepts `all`; the default sort is `relevance` with a query and `newest` without; location parameters wait for P5.S5 (§12).
+- **Verified:** `search.test.ts`, 46 tests: defaults; every filter; 15 invalid values each falling back alone; valid fields kept next to invalid ones; repeated parameters; query cleaning; default sort; category lists (case, spaces, empty items, duplicates, unknown and malformed slugs, repeated keys, format-only without known slugs, max 20); reversed dates swapped; `URLSearchParams` input; serialization omits defaults; round trips parse(serialize(f)) = f for 5 filter sets and serialize(parse(url)) canonical for messy URLs. All checks pass (258 unit tests).
 
 #### P4.S4 — Items feed page with filters
 
@@ -1751,6 +1769,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-28 | P4.S3     | Search params: `parseSearchParams` (per-field fallbacks), `searchQuery` (canonical URLs); 46 unit tests.                                                                                             |
 | 2026-09-28 | P4.S2     | `search_items()`: text (full text + typos), type/category/status/date filters, newest/relevance, pagination capped at 50; SQL tests 7/7.                                                             |
 | 2026-09-28 | P4.S1     | `normalize_text()` (Cyrillic/Latin/diacritics/digraphs), `search_text` trigger, `search_vector`, GIN indexes, backfill; SQL tests 6/6.                                                               |
 | 2026-09-27 | P3.S8     | Dashboard: `getOwnItems`, `ItemCard`, status tabs, compact quick actions, empty state; sign-in lands on `/dashboard`; F-22; browser check 40/40. Phase 3 done.                                       |
@@ -1788,14 +1807,15 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P4.S3 — Search params schema and parsing** (see §22, Phase 4, and §12 URL contract).
+**P4.S4 — Items feed page with filters** (see §22, Phase 4).
 
-Why next: `search_items()` exists (P4.S2). Before the feed page (P4.S4) the URL
-filters need a Zod schema in `src/lib/validation/search.ts` that parses
-`searchParams` (invalid values fall back to defaults instead of throwing) and
-serializes filters back into URLs, with unit tests. It should map onto the
-function's arguments (`item_status` = `any` → null, category slugs, page size
-default 20). Code and tests only; no migration.
+Why next: the search function (P4.S2) and the URL filters (P4.S3) exist.
+P4.S4 builds the public `/items` page: a query function in
+`src/lib/queries/items.ts` that maps `SearchFilters` to `rpc("search_items")`
+(`status: "all"` → `item_status: null`; nullable `location_name`/`cover_path`),
+a filter form in `src/components/search/*` that works without JavaScript,
+results as `ItemCard`s, and the `Search` messages. Pagination, loading and
+empty states follow in P4.S5.
 
 Open manual items:
 
