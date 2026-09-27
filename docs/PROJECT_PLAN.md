@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-28
 - **Current phase:** Phase 4 — Feed, search and advanced filters (in progress)
-- **Next step:** P4.S4 (§22)
+- **Next step:** P4.S5 (§22)
 
 ---
 
@@ -139,7 +139,7 @@ to these IDs. "Next step" always means the step named in
 | P4.S1  | Search normalization and indexes               | `COMPLETED`   |
 | P4.S2  | `search_items` SQL function                    | `COMPLETED`   |
 | P4.S3  | Search params schema and parsing               | `COMPLETED`   |
-| P4.S4  | Items feed page with filters                   | `NOT STARTED` |
+| P4.S4  | Items feed page with filters                   | `COMPLETED`   |
 | P4.S5  | Item cards, pagination, empty/loading states   | `NOT STARTED` |
 | P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `NOT STARTED` |
 | P4.S7  | Home page latest items                         | `NOT STARTED` |
@@ -883,9 +883,12 @@ keep them). Rules:
   malformed slugs dropped, unknown slugs dropped when the page passes the
   existing slugs; at most 20.
 - `from` / `to`: ISO calendar days; a reversed range is swapped.
-- `sort`: default `relevance` when there is a query, otherwise `newest`.
+- `sort`: default `relevance` when there is a query; without a query always
+  `newest` (never written to the URL).
 - `page`: integer 1–1000, default 1.
-- Canonical URLs: `/items` is the default feed; defaults are never written.
+- Canonical URLs: `/items` is the default feed; defaults are never written. The
+  feed page redirects any other URL for the same filters to the canonical one
+  (P4.S4).
 
 ---
 
@@ -1451,11 +1454,14 @@ tests) · images compressed · both languages · checks pass.
 - **Changed during implementation:** `status` also accepts `all`; the default sort is `relevance` with a query and `newest` without; location parameters wait for P5.S5 (§12).
 - **Verified:** `search.test.ts`, 46 tests: defaults; every filter; 15 invalid values each falling back alone; valid fields kept next to invalid ones; repeated parameters; query cleaning; default sort; category lists (case, spaces, empty items, duplicates, unknown and malformed slugs, repeated keys, format-only without known slugs, max 20); reversed dates swapped; `URLSearchParams` input; serialization omits defaults; round trips parse(serialize(f)) = f for 5 filter sets and serialize(parse(url)) canonical for messy URLs. All checks pass (258 unit tests).
 
-#### P4.S4 — Items feed page with filters
+#### P4.S4 — Items feed page with filters — `COMPLETED`
 
 - **Depends on:** P4.S2, P4.S3.
 - **Affects:** `src/app/[locale]/items/page.tsx`, `src/components/search/*`, `src/lib/queries/items.ts`, `messages/*.json` (`Search`), new shadcn components (select, badge, popover/calendar if needed).
 - **Verify:** filters change the URL and results; back button restores filters; works without JavaScript for the basic form.
+- **Implemented:** `searchItems(filters)` and `SEARCH_PAGE_SIZE` (20) in `src/lib/queries/items.ts` (maps `SearchFilters` to `rpc("search_items")`, `status: "all"` → `item_status: null`, rows → `ItemSummary`, which is now an explicit type with nullable `location_name`/`coverPath`, shared with `getOwnItems`); `src/app/[locale]/items/page.tsx` (public; metadata; parses the URL with the existing category slugs; **redirects every non-canonical URL to the one `searchQuery()` builds** — empty form fields, repeated `category` keys, invalid values, unknown parameters; result count; results as `ItemCard`s; basic empty message); `src/components/search/search-filters.tsx` (`next/form` GET form: search text, type, categories, date range (max today), status, sort only when there is a text; apply and clear; remounted per URL via `key` so back/forward show the URL's values; on small screens the panel sits behind a CSS-only checkbox toggle with the number of active filters, so it also works without JavaScript); "Browse" link in the header (icon only on phones); `Search` messages.
+- **Changed during implementation:** native controls instead of new shadcn components (select, popover, calendar), because they work without JavaScript; P4.S3's parser now forces `sort` to `newest` without a query and `searchQuery()` never writes `sort` then (a cleared search would otherwise keep a meaningless `sort=relevance`).
+- **Verified** (production build with `--webpack`, headless Edge, a temporary user with 5 items, deleted afterwards): 43/43 — guest access, title; defaults (active only, never hidden); search by Cyrillic, Latin and typo; count; relevance vs newest; type + categories, status resolved / all, date range through the form, each ending on the canonical URL with the form showing the filters; back ×3 and forward restore URL, results and form; messy and invalid URLs redirect to canonical ones; empty state and clear; card → item page; header link; locale switch keeps the filters; English; without JavaScript at 390 px (CSS toggle, submit, redirect, results, active count); 360 px without overflow (header fits); no console errors. No filter label clipped at 1280 or 360 px.
 
 #### P4.S5 — Item cards, pagination, empty/loading states
 
@@ -1769,6 +1775,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-28 | P4.S4     | `/items` feed: `searchItems`, `next/form` filters (work without JS), canonical-URL redirect, header link; no sort without a query; browser check 43/43.                                              |
 | 2026-09-28 | P4.S3     | Search params: `parseSearchParams` (per-field fallbacks), `searchQuery` (canonical URLs); 46 unit tests.                                                                                             |
 | 2026-09-28 | P4.S2     | `search_items()`: text (full text + typos), type/category/status/date filters, newest/relevance, pagination capped at 50; SQL tests 7/7.                                                             |
 | 2026-09-28 | P4.S1     | `normalize_text()` (Cyrillic/Latin/diacritics/digraphs), `search_text` trigger, `search_vector`, GIN indexes, backfill; SQL tests 6/6.                                                               |
@@ -1807,15 +1814,14 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P4.S4 — Items feed page with filters** (see §22, Phase 4).
+**P4.S5 — Item cards, pagination, empty/loading states** (see §22, Phase 4).
 
-Why next: the search function (P4.S2) and the URL filters (P4.S3) exist.
-P4.S4 builds the public `/items` page: a query function in
-`src/lib/queries/items.ts` that maps `SearchFilters` to `rpc("search_items")`
-(`status: "all"` → `item_status: null`; nullable `location_name`/`cover_path`),
-a filter form in `src/components/search/*` that works without JavaScript,
-results as `ItemCard`s, and the `Search` messages. Pagination, loading and
-empty states follow in P4.S5.
+Why next: the feed works (P4.S4) but shows only the first 20 results.
+P4.S5 adds `pagination.tsx` (links built with `searchQuery()`, so filters are
+kept; a page past the end, which returns no rows and total 0, should redirect
+to the last page or page 1), `items/loading.tsx`, richer empty states (no
+results vs. nothing reported yet) and a check of the card grid on phone and
+desktop widths.
 
 Open manual items:
 

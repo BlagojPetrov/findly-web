@@ -1,4 +1,4 @@
-import { SearchCheck } from "lucide-react";
+import { Search, SearchCheck } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { LocaleSwitcher } from "@/components/layout/locale-switcher";
@@ -22,6 +22,14 @@ export async function SiteHeader() {
           Findly
         </Link>
         <div className="flex items-center gap-2">
+          <Link
+            href="/items"
+            className={cn(buttonVariants({ variant: "ghost" }), "px-2")}
+          >
+            <Search aria-hidden />
+            {/* Icon only on phones; the text stays for screen readers. */}
+            <span className="max-sm:sr-only">{t("browse")}</span>
+          </Link>
           <Suspense>
             <LocaleSwitcher />
           </Suspense>

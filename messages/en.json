@@ -11,7 +11,8 @@
     "accountMenu": "Account",
     "profile": "Profile",
     "reportItem": "Report an item",
-    "dashboard": "My reports"
+    "dashboard": "My reports",
+    "browse": "Browse"
   },
   "Home": {
     "title": "Find what was lost, return what was found",
@@ -301,5 +302,41 @@
       "resolved": "You have no resolved reports yet.",
       "hidden": "You have no hidden reports."
     }
+  },
+  "Search": {
+    "title": "Lost and found items",
+    "description": "Browse reports of lost and found items. Search by words, type, category and date.",
+    "searchLabel": "Search",
+    "searchPlaceholder": "e.g. black wallet",
+    "submitSearch": "Search",
+    "filters": "Filters",
+    "filtersActive": "{count} active",
+    "type": "Type",
+    "types": {
+      "all": "All",
+      "lost": "Lost",
+      "found": "Found"
+    },
+    "categories": "Category",
+    "dates": "Date lost or found",
+    "from": "From",
+    "to": "To",
+    "status": "Status",
+    "statuses": {
+      "active": "Active",
+      "resolved": "Resolved",
+      "all": "All"
+    },
+    "sort": "Sort by",
+    "sorts": {
+      "relevance": "Best match",
+      "newest": "Newest"
+    },
+    "apply": "Apply filters",
+    "clear": "Clear",
+    "resultCount": "{count, plural, =0 {No items} one {# item} other {# items}}",
+    "emptyTitle": "No items match your search",
+    "emptyDescription": "Try other words or fewer filters.",
+    "emptyFeed": "No items have been reported yet."
   }
 }

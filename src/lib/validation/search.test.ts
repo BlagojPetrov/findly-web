@@ -91,6 +91,7 @@ describe("parseSearchParams", () => {
     expect(parse({ q: "keys", sort: "newest" }).sort).toBe("newest");
     expect(parse({ q: "keys", sort: "bogus" }).sort).toBe("relevance");
     expect(parse({ q: "  " }).sort).toBe("newest");
+    expect(parse({ sort: "relevance" }).sort).toBe("newest");
   });
 
   describe("categories", () => {
@@ -181,11 +182,11 @@ describe("searchQuery", () => {
     });
   });
 
-  it("omits the sort that is the default for the query", () => {
+  it("omits the default sort, and any sort without a query", () => {
     expect(searchQuery({ q: "keys", sort: "relevance" })).toEqual({
       q: "keys",
     });
-    expect(searchQuery({ sort: "relevance" })).toEqual({ sort: "relevance" });
+    expect(searchQuery({ sort: "relevance" })).toEqual({});
   });
 
   it("omits page 1 and status active", () => {
@@ -208,12 +209,7 @@ describe("round trip", () => {
       sort: "relevance",
       page: 7,
     },
-    {
-      ...DEFAULT_SEARCH_FILTERS,
-      type: "found",
-      status: "resolved",
-      sort: "relevance",
-    },
+    { ...DEFAULT_SEARCH_FILTERS, type: "found", status: "resolved" },
   ];
 
   it.each(cases)("parse(serialize(%j)) returns the same filters", (filters) => {
@@ -225,6 +221,7 @@ describe("round trip", () => {
     "q=%20keys%20%20ring&sort=relevance&page=1&status=active",
     "category=Keys,wallet,keys&type=lost&from=2026-09-20&to=2026-09-01",
     "status=bogus&page=x&q=",
+    "sort=relevance&q=",
   ])("serialize(parse(%s)) is canonical", (search) => {
     const once = searchQuery(
       parseSearchParams(new URLSearchParams(search), { categorySlugs }),

@@ -1,7 +1,10 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
+import type { Category } from "@/lib/queries/categories";
 import { createClient } from "@/lib/supabase/server";
+import type { SearchFilters } from "@/lib/validation/search";
+import type { Enums } from "@/types/database";
 
 // Columns of an item page. location (PostGIS) is added in P5.S4; profiles
 // has column privileges, so only its public columns are selected.
@@ -40,8 +43,22 @@ export const getItem = cache(async (id: string) => {
   return fetchItem(id);
 });
 
-// Columns of an item card (dashboard, later the feed): the photos only for
-// the cover.
+type ItemStatus = Enums<"item_status">;
+
+// What an item card shows (dashboard, feed).
+export type ItemSummary = {
+  id: string;
+  type: Enums<"item_type">;
+  status: ItemStatus;
+  title: string;
+  occurred_on: string;
+  location_name: string | null;
+  created_at: string;
+  category: Category;
+  coverPath: string | null;
+};
+
+// Columns of an item card for a table query: the photos only for the cover.
 const itemCardColumns = `
   id, type, status, title, occurred_on, location_name, created_at,
   category:categories (id, slug, name_mk, name_en, icon),
@@ -51,7 +68,7 @@ const itemCardColumns = `
 // The signed-in user's own reports, newest first, with every status
 // (hidden items are visible to their owner). Filtered by user_id because
 // RLS also returns other users' active items.
-export async function getOwnItems(userId: string) {
+export async function getOwnItems(userId: string): Promise<ItemSummary[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("items")
@@ -70,4 +87,52 @@ export async function getOwnItems(userId: string) {
   }));
 }
 
-export type ItemSummary = Awaited<ReturnType<typeof getOwnItems>>[number];
+// Page size of the public feed.
+export const SEARCH_PAGE_SIZE = 20;
+
+// One page of the public feed (search_items(), P4.S2) for the parsed URL
+// filters, with the total number of matches. A page past the end has no
+// rows and total 0.
+export async function searchItems(
+  filters: SearchFilters,
+): Promise<{ items: ItemSummary[]; total: number }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("search_items", {
+    q: filters.q || undefined,
+    item_type: filters.type ?? undefined,
+    category_slugs:
+      filters.categories.length > 0 ? filters.categories : undefined,
+    // null = active and resolved (the generated types do not allow null).
+    item_status: (filters.status === "all"
+      ? null
+      : filters.status) as ItemStatus,
+    date_from: filters.from ?? undefined,
+    date_to: filters.to ?? undefined,
+    sort: filters.sort,
+    page: filters.page,
+    page_size: SEARCH_PAGE_SIZE,
+  });
+  if (error) throw new Error(`Failed to search items: ${error.message}`);
+  return {
+    // The generated types mark every column as non-null; location_name and
+    // cover_path can be null.
+    items: data.map((row) => ({
+      id: row.id,
+      type: row.type,
+      status: row.status,
+      title: row.title,
+      occurred_on: row.occurred_on,
+      location_name: row.location_name ?? null,
+      created_at: row.created_at,
+      category: {
+        id: row.category_id,
+        slug: row.category_slug,
+        name_mk: row.category_name_mk,
+        name_en: row.category_name_en,
+        icon: row.category_icon,
+      },
+      coverPath: row.cover_path ?? null,
+    })),
+    total: data[0]?.total_count ?? 0,
+  };
+}

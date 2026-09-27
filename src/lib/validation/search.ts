@@ -116,7 +116,8 @@ export function searchParamsSchema({
         categories: category,
         from: start,
         to: end,
-        sort: sort ?? defaultSort(rest.q),
+        // Without a query there is nothing to rank.
+        sort: rest.q ? (sort ?? defaultSort(rest.q)) : "newest",
       };
     });
 }
@@ -150,7 +151,7 @@ export function searchQuery(
   if (f.status !== DEFAULT_SEARCH_FILTERS.status) query.status = f.status;
   if (f.from) query.from = f.from;
   if (f.to) query.to = f.to;
-  if (f.sort !== defaultSort(f.q)) query.sort = f.sort;
+  if (f.q && f.sort !== defaultSort(f.q)) query.sort = f.sort;
   if (f.page > 1) query.page = String(f.page);
   return query;
 }
