@@ -23,7 +23,8 @@ status and the next step. Read it before any work.
 ## Current state
 
 - Phases 1–3 completed (auth, profile, first deployment; items CRUD with photos, item
-  page, `/dashboard`). Next: Phase 4, starting with P4.S1 (search normalization).
+  page, `/dashboard`). Phase 4 in progress: P4.S1 (search normalization) done. Next:
+  P4.S2 (`search_items` function).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19); local Turbopack build
   blocked by Windows Application Control (F-22).
@@ -115,6 +116,10 @@ status and the next step. Read it before any work.
   from `getOwnItems`; `actions` slot sits above the card's stretched link). Owner controls:
   `ItemOwnerActions` (`compact` on cards, `redirectAfterDelete` on the item page).
   Calendar days are formatted with `calendarDay()` + `timeZone: "UTC"`.
+- Search: `items.search_text` (trigger-maintained) and `items.search_vector` (generated)
+  hold `private.normalize_text()` output; normalize queries with the same function
+  (never compare raw text). Full text uses the `simple` config; typos use
+  `extensions.word_similarity` / `%>` (trigram index on `search_text`).
 - Pages in `(app)` set their own width (`mx-auto w-full max-w-2xl` for forms/settings,
   `max-w-5xl` for the dashboard); the layout only adds padding. Signed-in users land on
   `AFTER_SIGN_IN_PATH` (`/dashboard`).

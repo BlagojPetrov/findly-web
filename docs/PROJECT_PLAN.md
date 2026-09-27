@@ -6,9 +6,9 @@
 > progress of the Findly web project. Every step starts by reading it and ends by
 > updating it.
 
-- **Last updated:** 2026-09-27
-- **Current phase:** Phase 4 — Feed, search and advanced filters (not started)
-- **Next step:** P4.S1 (§22)
+- **Last updated:** 2026-09-28
+- **Current phase:** Phase 4 — Feed, search and advanced filters (in progress)
+- **Next step:** P4.S2 (§22)
 
 ---
 
@@ -96,7 +96,7 @@ to these IDs. "Next step" always means the step named in
 | 1     | Project setup and architecture        | `COMPLETED`   |
 | 2     | Authentication                        | `COMPLETED`   |
 | 3     | Items CRUD and image upload           | `COMPLETED`   |
-| 4     | Feed, search and advanced filters     | `NOT STARTED` |
+| 4     | Feed, search and advanced filters     | `IN PROGRESS` |
 | 5     | Map and location                      | `NOT STARTED` |
 | 6     | Automatic matching                    | `NOT STARTED` |
 | 7     | Notifications                         | `NOT STARTED` |
@@ -136,7 +136,7 @@ to these IDs. "Next step" always means the step named in
 | P3.S6  | Item detail page (basic)                       | `COMPLETED`   |
 | P3.S7  | Edit, delete, mark resolved                    | `COMPLETED`   |
 | P3.S8  | Dashboard ("My reports")                       | `COMPLETED`   |
-| P4.S1  | Search normalization and indexes               | `NOT STARTED` |
+| P4.S1  | Search normalization and indexes               | `COMPLETED`   |
 | P4.S2  | `search_items` SQL function                    | `NOT STARTED` |
 | P4.S3  | Search params schema and parsing               | `NOT STARTED` |
 | P4.S4  | Items feed page with filters                   | `NOT STARTED` |
@@ -810,17 +810,25 @@ password" always reports success, so emails cannot be enumerated).
 
 ### Normalization (P4.S1)
 
-`normalize_text(text) returns text immutable`:
+`private.normalize_text(text) returns text immutable strict` (P4.S1,
+`20260927223351_search.sql`; executable by `anon`/`authenticated` because
+`search_items` runs as the caller):
 
 1. `lower()`
-2. `extensions.unaccent()` (wrapped in an immutable function)
-3. Macedonian Cyrillic → Latin transliteration with `translate()` plus
-   replacements for multi-letter pairs (ж→zh, ч→ch, ш→sh, џ→dzh, ѓ→gj, ќ→kj,
-   љ→lj, њ→nj, ѕ→dz).
-4. Collapse whitespace.
+2. Macedonian Cyrillic → Latin **without diacritics**: `replace()` for
+   џ/ѕ→dz, љ→lj, њ→nj, then `translate()` for the rest (ч→c, ш→s, ж→z, ѓ→g,
+   ќ→k, ц→c, ѐ→e, ѝ→i, …).
+3. `private.immutable_unaccent()` (unaccent with the dictionary named, so it
+   can be immutable): č→c, š→s, ž→z, ǵ→g, ḱ→k.
+4. Latin digraphs folded the same way: dzh→dz, zh→z, ch→c, sh→s, gj→g, kj→k.
+5. Every run of non-alphanumeric characters → one space; trimmed.
 
-The same function normalizes the stored `search_text` and the user's query, so
-"telefon", "Телефон" and "TELEFON" all match.
+So "Паричник", "paričnik", "parichnik" and "PARICNIK" all become `paricnik`.
+The same function normalizes the stored `search_text` and the user's query.
+Some letters collide (ц and ч are both `c`), which only makes search slightly
+more lenient. (Changed in P4.S1 from the originally planned ч→ch, ш→sh, …:
+that mapping could not make "Паричник" equal "paricnik", which the step's
+test requires and which is how most people type Macedonian in Latin.)
 
 ### `search_items` (P4.S2)
 
@@ -1384,15 +1392,18 @@ tests) · images compressed · both languages · checks pass.
 
 ---
 
-### Phase 4 — Feed, search and advanced filters — `NOT STARTED`
+### Phase 4 — Feed, search and advanced filters — `IN PROGRESS`
 
 **Goal:** a public, server-side searchable feed with filters in the URL, and SEO-ready item pages.
 
-#### P4.S1 — Search normalization and indexes
+#### P4.S1 — Search normalization and indexes — `COMPLETED`
 
 - **Affects:** migration `*_search.sql`, `supabase/tests/search.sql`.
 - **Sub-steps:** `immutable_unaccent()`, `normalize_text()` (§12); `search_text` column + trigger; `search_vector` generated column; GIN indexes; backfill existing rows.
 - **Verify:** SQL tests: `normalize_text('Црн Паричник')` = `normalize_text('crn paricnik')`; typo query ranks correctly.
+- **Implemented:** migration `20260927223351_search.sql`: `private.immutable_unaccent()`, `private.normalize_text()` (§12; execute for `anon`/`authenticated`), `items.search_text` (not null, set by the `items_set_search_text` trigger on insert and on updates of title/description/location name; users have no privilege on the column), `items.search_vector` (stored generated `to_tsvector('simple', search_text)`), GIN indexes `items_search_vector_idx` and `items_search_text_trgm_idx` (`gin_trgm_ops`), backfill of existing items with `items_set_updated_at` disabled so `updated_at` is unchanged. Types regenerated (`search_text` is required in `Insert`, but items are only inserted through `create_item()`).
+- **Changed during implementation:** transliteration without diacritics plus Latin digraph folding instead of ч→ch, ш→sh, … (§12), so the Verify case holds.
+- **Verified:** dry run in a rolled-back transaction; `db:test` 6/6 (`search.sql`: Cyrillic / Latin / diacritics / digraph equivalences for every special letter, punctuation, null; anon can normalize; `search_text` on insert and update, unchanged by a status change; full-text match with Cyrillic and Latin queries; typos "parichnk" (score > 0.4), "клучви" and "телефн самсунг" rank the right item first; direct write to `search_text` rejected); both existing items backfilled with `updated_at` untouched; `EXPLAIN` uses both GIN indexes; advisors: only F-12/F-19.
 
 #### P4.S2 — `search_items` function
 
@@ -1723,6 +1734,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-28 | P4.S1     | `normalize_text()` (Cyrillic/Latin/diacritics/digraphs), `search_text` trigger, `search_vector`, GIN indexes, backfill; SQL tests 6/6.                                                               |
 | 2026-09-27 | P3.S8     | Dashboard: `getOwnItems`, `ItemCard`, status tabs, compact quick actions, empty state; sign-in lands on `/dashboard`; F-22; browser check 40/40. Phase 3 done.                                       |
 | 2026-09-27 | P3.S7     | Edit page (`ItemForm` edit mode), `update_item()` migration + SQL tests, `updateItem`/`setItemStatus`/`deleteItem`, owner actions with delete dialog; browser check 27/27.                           |
 | 2026-09-27 | P3.S6     | Item detail page: `getItem`, gallery, type badge, lost/found tokens, owner panel (edit link), 404 for hidden/invalid; browser check 25/25.                                                           |
@@ -1758,13 +1770,14 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P4.S1 — Search normalization and indexes** (see §22, Phase 4).
+**P4.S2 — `search_items` function** (see §22, Phase 4, and §12).
 
-Why next: Phase 3 is complete (items can be created with photos, viewed,
-edited, resolved and deleted, and owners manage them on `/dashboard`). Phase 4
-builds the public feed, and its search depends on P4.S1: `normalize_text()`
-(Cyrillic/Latin, accents), the `search_text` / `search_vector` columns with GIN
-indexes, and SQL tests for them. It is a migration-only step (§12).
+Why next: the search columns and indexes exist (P4.S1). P4.S2 adds the SQL
+function the feed will call: text search (full-text OR `word_similarity`
+
+> 0.4 on `search_text`), type / category / status / date filters, sorting,
+> offset pagination with the total, page size capped at 50, `security invoker`
+> so hidden items stay out. Migration + types + SQL tests; no UI yet.
 
 Open manual items:
 

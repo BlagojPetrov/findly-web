@@ -86,6 +86,8 @@ export type Database = {
           location_name: string | null
           occurred_on: string
           resolved_at: string | null
+          search_text: string
+          search_vector: unknown
           status: Database["public"]["Enums"]["item_status"]
           title: string
           type: Database["public"]["Enums"]["item_type"]
@@ -101,6 +103,8 @@ export type Database = {
           location_name?: string | null
           occurred_on: string
           resolved_at?: string | null
+          search_text: string
+          search_vector?: unknown
           status?: Database["public"]["Enums"]["item_status"]
           title: string
           type: Database["public"]["Enums"]["item_type"]
@@ -116,6 +120,8 @@ export type Database = {
           location_name?: string | null
           occurred_on?: string
           resolved_at?: string | null
+          search_text?: string
+          search_vector?: unknown
           status?: Database["public"]["Enums"]["item_status"]
           title?: string
           type?: Database["public"]["Enums"]["item_type"]
