@@ -9,6 +9,7 @@ import { useEffect, useMemo } from "react";
 import { Marker, useMap, useMapEvents } from "react-leaflet";
 import type { LatLng } from "@/lib/map";
 import BaseMap from "./base-map";
+import { markerIcon } from "./marker-icon";
 
 export type MapViewTarget = { center: LatLng; zoom: number };
 
@@ -77,6 +78,7 @@ export default function LocationPickerMap({
       {point && (
         <Marker
           position={point}
+          icon={markerIcon}
           draggable={!disabled}
           alt={pinLabel}
           title={pinLabel}

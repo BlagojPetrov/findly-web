@@ -147,7 +147,10 @@ status and the next step. Read it before any work.
   `@/components/map` (`index.tsx`) with `dynamic(..., { ssr: false, loading: MapLoading })`;
   pages never import react-leaflet. Render maps inside `MapFrame` (label, size via
   `className`; `isolate` keeps Leaflet's z-indexes under the header). Constants
-  (`DEFAULT_CENTER`, OSM tile URL/attribution) in `@/lib/map`.
+  (`DEFAULT_CENTER`, OSM tile URL/attribution) in `@/lib/map`. Markers use `markerIcon`
+  (`src/components/map/marker-icon.ts`), passed as `icon`. Image imports from
+  `node_modules` are `StaticImageData` in webpack but URL strings in Turbopack (Vercel) and
+  Vitest: handle both (F-25).
   Geocoding only through `@/lib/geocoding` (`searchAddress`, `reverseGeocode`): it holds
   the shared Nominatim throttle (≥ 1 s between requests, policy) and cache; never call
   Nominatim directly. Location input: `LocationPicker` (`src/components/map/location-picker.tsx`)
@@ -188,6 +191,8 @@ status and the next step. Read it before any work.
 - Local `npm run build` currently fails (Turbopack needs the native SWC binary, which
   Windows Application Control blocks; F-22). Verify with `npx next build --webpack`
   until that is resolved; do not change the scripts (Vercel builds normally).
+  webpack and Turbopack can differ (F-25): after pushing browser-facing changes (maps,
+  assets), re-run the browser check against the Vercel deployment.
 - `npx supabase login` needs an interactive terminal: the user runs it in their own
   PowerShell window, not through the agent.
 - Never edit applied migrations; never run `supabase config push` (config.toml holds

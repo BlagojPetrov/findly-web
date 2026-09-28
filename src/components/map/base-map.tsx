@@ -1,10 +1,8 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
-import markerIcon from "leaflet/dist/images/marker-icon.png";
-import markerShadow from "leaflet/dist/images/marker-shadow.png";
+// Sets the default marker icon for every map.
+import "./marker-icon";
 import type { ReactNode } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 import {
@@ -15,19 +13,6 @@ import {
   OSM_MAX_ZOOM,
   OSM_TILE_URL,
 } from "@/lib/map";
-
-// Leaflet finds its default marker images through a CSS path guess that
-// bundlers break, so every marker gets the bundled images instead.
-L.Marker.prototype.options.icon = L.icon({
-  iconUrl: markerIcon.src,
-  iconRetinaUrl: markerIcon2x.src,
-  shadowUrl: markerShadow.src,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  tooltipAnchor: [16, -28],
-  shadowSize: [41, 41],
-});
 
 export type BaseMapProps = {
   // Initial view only: Leaflet ignores later changes (move the map with
