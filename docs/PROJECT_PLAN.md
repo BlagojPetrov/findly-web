@@ -7,8 +7,8 @@
 > updating it.
 
 - **Last updated:** 2026-09-28
-- **Current phase:** Phase 4 — Feed, search and advanced filters (in progress)
-- **Next step:** P4.S7 (§22)
+- **Current phase:** Phase 5 — Map and location (not started)
+- **Next step:** P5.S1 (§22)
 
 ---
 
@@ -96,7 +96,7 @@ to these IDs. "Next step" always means the step named in
 | 1     | Project setup and architecture        | `COMPLETED`   |
 | 2     | Authentication                        | `COMPLETED`   |
 | 3     | Items CRUD and image upload           | `COMPLETED`   |
-| 4     | Feed, search and advanced filters     | `IN PROGRESS` |
+| 4     | Feed, search and advanced filters     | `COMPLETED`   |
 | 5     | Map and location                      | `NOT STARTED` |
 | 6     | Automatic matching                    | `NOT STARTED` |
 | 7     | Notifications                         | `NOT STARTED` |
@@ -142,7 +142,7 @@ to these IDs. "Next step" always means the step named in
 | P4.S4  | Items feed page with filters                   | `COMPLETED`   |
 | P4.S5  | Item cards, pagination, empty/loading states   | `COMPLETED`   |
 | P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `COMPLETED`   |
-| P4.S7  | Home page latest items                         | `NOT STARTED` |
+| P4.S7  | Home page latest items                         | `COMPLETED`   |
 | P5.S1  | Leaflet base map component                     | `NOT STARTED` |
 | P5.S2  | Location picker and geocoding                  | `NOT STARTED` |
 | P5.S3  | Location in item forms, make location required | `NOT STARTED` |
@@ -1424,7 +1424,7 @@ tests) · images compressed · both languages · checks pass.
 
 ---
 
-### Phase 4 — Feed, search and advanced filters — `IN PROGRESS`
+### Phase 4 — Feed, search and advanced filters — `COMPLETED`
 
 **Goal:** a public, server-side searchable feed with filters in the URL, and SEO-ready item pages.
 
@@ -1480,14 +1480,21 @@ tests) · images compressed · both languages · checks pass.
 - **Verified** (production build with `--webpack`, temporary user with an active item with a photo, a resolved and a hidden item, deleted afterwards): 69/69 on the HTML source, with a browser and a link-preview (`facebookexternalhit`) user agent, all tags inside `<head>`: title, description (≤ 160, "…", no double spaces), canonical, hreflang ×3, `og:title/description/type/url/site_name/locale/locale:alternate/image/image:alt`, article times, Twitter card, indexable; English title/description/canonical/locale; resolved item without photo (no `og:image`, `summary`); hidden item → 404 without its title, `noindex`; feed canonical/hreflang/OG, filtered feed canonical with the query (mk and en), search `noindex, follow`; home `/` and `/en` canonicals; login `noindex`; `robots.txt` (13 disallow checks, `/items` allowed, sitemap URL); `sitemap.xml` lists home, feed and the active item in both locales with hreflang and `lastmod`, not the resolved or hidden item, nothing protected. Browser smoke test of home, feed, search and item pages in both locales: no console errors. Found and fixed during the check: Macedonian long dates end with "г.", which made "2026 г.. text".
 - **Note:** the sitemap's Supabase request goes through Next's fetch data cache (revalidated hourly with the route), so a local rebuild can reuse an earlier result; delete `.next/cache/fetch-cache` to force fresh data.
 
-#### P4.S7 — Home page latest items
+#### P4.S7 — Home page latest items — `COMPLETED`
 
 - **Affects:** `src/app/[locale]/page.tsx`.
 - **Verify:** latest lost and found items shown; categories link to filtered feed.
+- **Implemented:** home page: hero with a search box (`next/form` GET to `/items`, `q` required, works without JavaScript), "Report an item" and "Browse all items"; "Recently lost" / "Recently found" sections with the 4 newest active reports of each type (`searchItems({ ...DEFAULT_SEARCH_FILTERS, type }, { pageSize: 4 })`, the new optional `pageSize` of `searchItems`; `ItemCard` grid 1/2/4 columns, on phones one swipe row with scroll snap where the next card peeks in), "All lost/found items" links to `/items?type=…`, an empty message per section; category tiles are links to `/items?category=<slug>` built with `searchQuery()`; categories come from `getCategories()` (the P1 connection-check message `Home.categoriesError` is gone, a failure now goes to the error page like elsewhere); "How it works" moved below; `Home` messages.
+- **Verified** (production build with `--webpack`, headless Edge, temporary user with 6 lost + 5 found active items and a newer hidden and resolved one, deleted afterwards): 34/34 — 4 newest per type in order, hidden/resolved never shown, badges; "All lost/found" → `/items?type=…` with the filter checked; 8 category links → canonical `/items?category=wallet` (no redirect) with the filter checked; empty hero search not submitted; hero search → `/items?q=…` finding the items; "Report an item" as a guest → `/login?next=/items/new`; "Browse all" → `/items`; card → item page; 4/4/2/2 columns at 1280/1024/768/640 px, swipe row at 390/360 px (next card visible, page 2,728 px tall instead of 5,188 with a column), no horizontal page overflow; English headings and `/en` links and form action; without JavaScript hero search and category links work; no console errors. The empty section message could not be shown against the shared dev database (it has real items of both types).
 
 **Definition of done — Phase 4:** text search works with Cyrillic, Latin and typos ·
 every filter is server-side and combinable · shareable URLs · SEO tags and sitemap
 present · SQL and unit tests pass.
+
+✅ Met on 2026-09-28: Cyrillic/Latin/typo search (P4.S1–S2 SQL tests, P4.S4 browser
+check); type, category, status, date and text filters combined in `search_items()`;
+canonical shareable URLs (P4.S3–S5); metadata, hreflang, Open Graph, sitemap and
+robots (P4.S6); `db:test` 7/7 and 286 unit tests pass.
 
 ---
 
@@ -1783,6 +1790,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-28 | P4.S7     | Home page: hero search, latest 4 lost/found (swipe row on phones), category links to the feed; browser check 34/34. Phase 4 done.                                                                    |
 | 2026-09-28 | P4.S6     | SEO: `@/lib/seo` helpers, item metadata (canonical, hreflang, OG/Twitter with cover photo), feed/home alternates, search `noindex`, `sitemap.ts` (active items, hourly), `robots.ts`; check 69/69.   |
 | 2026-09-28 | P4.S5     | Feed pagination (filters kept, past-the-end → last page), result range, empty states with actions, navigation-pending dimming instead of `loading.tsx` (keeps no-JS + 307s); browser check 48/48.    |
 | 2026-09-28 | P4.S4     | `/items` feed: `searchItems`, `next/form` filters (work without JS), canonical-URL redirect, header link; no sort without a query; browser check 43/43.                                              |
@@ -1824,14 +1832,15 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P4.S7 — Home page latest items** (see §22, Phase 4), the last step of Phase 4.
+**P5.S1 — Leaflet base map component** (see §22, Phase 5).
 
-Why next: search, feed, pagination and SEO are done (P4.S1–S6). The home page
-still shows only the introduction and static categories. P4.S7 adds the latest
-lost and latest found items (e.g. `searchItems` with `type` and a small page
-size, rendered with `ItemCard`) with "see all" links to the filtered feed, and
-turns the categories into links built with `searchQuery({ categories: [slug] })`.
-Then the Phase 4 definition of done can be checked.
+Why next: Phase 4 is complete. Phase 5 adds coordinates to every report, and
+every later map step (picker, item page map, radius filter, `/map`) builds on a
+shared map component. P5.S1 adds `leaflet`/`react-leaflet`, a client-only
+`base-map.tsx` loaded with a dynamic import without SSR (Leaflet needs
+`window`), OpenStreetMap tiles with visible attribution and working marker
+icons (bundlers break Leaflet's default icon paths). Check the current
+react-leaflet version against React 19 before installing.
 
 Open manual items:
 

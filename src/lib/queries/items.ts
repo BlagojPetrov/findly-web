@@ -92,9 +92,10 @@ export const SEARCH_PAGE_SIZE = 20;
 
 // One page of the public feed (search_items(), P4.S2) for the parsed URL
 // filters, with the total number of matches. A page past the end has no
-// rows and total 0.
+// rows and total 0. Other lists (the home page) can ask for fewer rows.
 export async function searchItems(
   filters: SearchFilters,
+  { pageSize = SEARCH_PAGE_SIZE }: { pageSize?: number } = {},
 ): Promise<{ items: ItemSummary[]; total: number }> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("search_items", {
@@ -110,7 +111,7 @@ export async function searchItems(
     date_to: filters.to ?? undefined,
     sort: filters.sort,
     page: filters.page,
-    page_size: SEARCH_PAGE_SIZE,
+    page_size: pageSize,
   });
   if (error) throw new Error(`Failed to search items: ${error.message}`);
   return {

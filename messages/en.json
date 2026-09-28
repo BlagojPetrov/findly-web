@@ -33,7 +33,28 @@
       }
     },
     "categoriesTitle": "Categories",
-    "categoriesError": "Categories could not be loaded. Check the Supabase connection."
+    "searchLabel": "Search reports",
+    "searchPlaceholder": "e.g. black wallet",
+    "submitSearch": "Search",
+    "reportItem": "Report an item",
+    "browseAll": "Browse all items",
+    "latest": {
+      "lost": "Recently lost",
+      "found": "Recently found"
+    },
+    "latestDescription": {
+      "lost": "Did you find one of these? Open the report and contact the owner.",
+      "found": "Is one of these yours? Open the report and contact the finder."
+    },
+    "seeAll": {
+      "lost": "All lost items",
+      "found": "All found items"
+    },
+    "latestEmpty": {
+      "lost": "No lost items have been reported yet.",
+      "found": "No found items have been reported yet."
+    },
+    "categoriesDescription": "Browse the reports in one category."
   },
   "Footer": {
     "tagline": "Diploma project — a web platform for lost and found items."

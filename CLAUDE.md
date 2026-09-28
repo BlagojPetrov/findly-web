@@ -22,10 +22,9 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phases 1–3 completed (auth, profile, first deployment; items CRUD with photos, item
-  page, `/dashboard`). Phase 4 in progress: P4.S1–S6 (search normalization,
-  `search_items` function, search params schema, `/items` feed, pagination and
-  empty/loading states, SEO) done. Next: P4.S7 (home page latest items).
+- Phases 1–4 completed (auth, profile, first deployment; items CRUD with photos, item
+  page, `/dashboard`; search, `/items` feed with filters and pagination, SEO, home page
+  with latest items). Next: Phase 5, P5.S1 (Leaflet base map component).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19); local Turbopack build
   blocked by Windows Application Control (F-22).
@@ -126,7 +125,7 @@ status and the next step. Read it before any work.
   setting in a function's `SET` clause must first call `extensions.show_limit()`.
   Feed URL filters: `parseSearchParams()` / `searchQuery()` (`@/lib/validation/search`);
   build feed links from `searchQuery()` so URLs stay canonical (the feed redirects
-  other URLs). Feed data: `searchItems(filters)` (`@/lib/queries/items`), returning
+  other URLs). Feed data: `searchItems(filters, { pageSize? })` (`@/lib/queries/items`), returning
   `ItemSummary` like `getOwnItems`. The filter form (`src/components/search/`) is a
   `next/form` GET form with native controls so it works without JavaScript.
   Paged lists use `Pagination` (`src/components/search/pagination.tsx`, `href(page)`
