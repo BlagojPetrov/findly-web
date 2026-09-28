@@ -23,9 +23,9 @@ status and the next step. Read it before any work.
 ## Current state
 
 - Phases 1–3 completed (auth, profile, first deployment; items CRUD with photos, item
-  page, `/dashboard`). Phase 4 in progress: P4.S1–S4 (search normalization,
-  `search_items` function, search params schema, `/items` feed) done. Next: P4.S5
-  (pagination, loading and empty states).
+  page, `/dashboard`). Phase 4 in progress: P4.S1–S5 (search normalization,
+  `search_items` function, search params schema, `/items` feed, pagination and
+  empty/loading states) done. Next: P4.S6 (SEO).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19); local Turbopack build
   blocked by Windows Application Control (F-22).
@@ -129,6 +129,12 @@ status and the next step. Read it before any work.
   other URLs). Feed data: `searchItems(filters)` (`@/lib/queries/items`), returning
   `ItemSummary` like `getOwnItems`. The filter form (`src/components/search/`) is a
   `next/form` GET form with native controls so it works without JavaScript.
+  Paged lists use `Pagination` (`src/components/search/pagination.tsx`, `href(page)`
+  callback) and `pageCount`/`pageItems` (`@/lib/pagination`); a page past the end
+  redirects to the last page. No `loading.tsx`/Suspense fallback on pages that must work
+  without JavaScript or redirect with 307 (F-23): show pending state with
+  `LinkPendingMarker`/`FormPendingMarker` (`data-pending`) and style it with
+  `group-has-[[data-pending]]/…:`. Sibling elements must not share a `key`.
 - Pages in `(app)` set their own width (`mx-auto w-full max-w-2xl` for forms/settings,
   `max-w-5xl` for the dashboard); the layout only adds padding. Signed-in users land on
   `AFTER_SIGN_IN_PATH` (`/dashboard`).

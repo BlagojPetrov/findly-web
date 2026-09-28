@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-28
 - **Current phase:** Phase 4 — Feed, search and advanced filters (in progress)
-- **Next step:** P4.S5 (§22)
+- **Next step:** P4.S6 (§22)
 
 ---
 
@@ -140,7 +140,7 @@ to these IDs. "Next step" always means the step named in
 | P4.S2  | `search_items` SQL function                    | `COMPLETED`   |
 | P4.S3  | Search params schema and parsing               | `COMPLETED`   |
 | P4.S4  | Items feed page with filters                   | `COMPLETED`   |
-| P4.S5  | Item cards, pagination, empty/loading states   | `NOT STARTED` |
+| P4.S5  | Item cards, pagination, empty/loading states   | `COMPLETED`   |
 | P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `NOT STARTED` |
 | P4.S7  | Home page latest items                         | `NOT STARTED` |
 | P5.S1  | Leaflet base map component                     | `NOT STARTED` |
@@ -1463,10 +1463,13 @@ tests) · images compressed · both languages · checks pass.
 - **Changed during implementation:** native controls instead of new shadcn components (select, popover, calendar), because they work without JavaScript; P4.S3's parser now forces `sort` to `newest` without a query and `searchQuery()` never writes `sort` then (a cleared search would otherwise keep a meaningless `sort=relevance`).
 - **Verified** (production build with `--webpack`, headless Edge, a temporary user with 5 items, deleted afterwards): 43/43 — guest access, title; defaults (active only, never hidden); search by Cyrillic, Latin and typo; count; relevance vs newest; type + categories, status resolved / all, date range through the form, each ending on the canonical URL with the form showing the filters; back ×3 and forward restore URL, results and form; messy and invalid URLs redirect to canonical ones; empty state and clear; card → item page; header link; locale switch keeps the filters; English; without JavaScript at 390 px (CSS toggle, submit, redirect, results, active count); 360 px without overflow (header fits); no console errors. No filter label clipped at 1280 or 360 px.
 
-#### P4.S5 — Item cards, pagination, empty/loading states
+#### P4.S5 — Item cards, pagination, empty/loading states — `COMPLETED`
 
 - **Affects:** `item-card.tsx` (exists since P3.S8; extend if the feed needs more), `pagination.tsx`, `items/loading.tsx`.
 - **Verify:** responsive grid on mobile/desktop; pagination preserves filters.
+- **Implemented:** `src/lib/pagination.ts` (`pageCount()`, `pageItems()`: first, last, current ± 1 and gaps, a gap never hides a single page, constant length of 7); `src/components/search/pagination.tsx` (`Pagination`: plain links built by an `href(page)` callback, for the feed `searchQuery({ ...filters, page })`, so filters are kept and page 1 has no `page` parameter; previous/next with `rel`, disabled at the ends; page numbers with `aria-current` from `sm`, "page x of y" on phones); feed page: result range heading ("21–40 of 45 items") when there is more than one page; **a page past the end redirects to the last page** (one extra `searchItems` call for page 1's total; page 1 when nothing matches); empty states: no matches → "Clear filters" link, empty feed → links to report a lost/found item; loading state: `src/components/search/pending-marker.tsx` (`LinkPendingMarker` with `useLinkStatus` in every page link, `FormPendingMarker` with `useFormStatus` in the filter form) marks a running navigation with `data-pending`, and the feed dims its results and shows a spinner with "Loading results…" in the (live) result heading via `group-has-[[data-pending]]/feed:`; the sticky filter panel is capped at the viewport height and scrolls (at 1280×900 it was 860 px tall, so "Apply filters" was below the fold while scrolled); `Search`/`Pagination` messages. `ItemCard` needed no changes.
+- **Changed during implementation:** **no `items/loading.tsx` and no Suspense fallback for the results.** Both stream the fallback first on a full page load, and the streamed results are only swapped in by inline JavaScript: without JavaScript the feed stayed on the skeleton forever (P4.S4 requires the feed to work without JavaScript, and crawlers that do not run JavaScript would see no items), and the canonical and out-of-range redirects became streamed client redirects instead of HTTP 307. The page cannot stream only client navigations (Next strips the `RSC` header from `headers()`), so the loading state is the navigation-pending dimming above. Found on the way: `SearchFilters` and a keyed `Suspense` sibling had the same `key`, which made React keep every old form in the DOM (4 forms after 4 navigations); gone with the Suspense, and the check now asserts one form.
+- **Verified** (production build with `--webpack`, headless Edge, a temporary user with 45 items dated 2002-05-01, deleted afterwards): 48/48 — 20/20/5 cards on pages 1–3 with range headings, page links 1–3, `aria-current`, disabled previous/next at the ends, filters kept in page links, page 1 without `page`, scroll to top, back restores page 2; applying the filter form from page 2 goes to page 1; `type=lost` page 2 (22 items) and its links keep `type`; page 9 → page 3, `type=lost&page=5` → page 2, no matches on page 4 → page 1 (also as HTTP 307 with curl, and without JavaScript); filtered empty state and "Clear filters" → `/items`; grid 3/2/2/1/1 columns at 1280/1024/768/390/360 px without horizontal overflow, numbered pagination from 640 px and compact below; results dimmed with the spinner while a page link or the filter form waits for a (delayed) server response, not dimmed at rest or afterwards; one filter form after several navigations; filter panel fits the viewport while scrolled; English range heading and labels, links keep `/en`; without JavaScript at 390 px results visible and page links work; no console errors. Pagination unit tests: 18 (`pagination.test.ts`). The empty-feed state (no reports at all) could not be shown against the shared dev database, which has real items.
 
 #### P4.S6 — SEO
 
@@ -1767,6 +1770,7 @@ started (no auth code or profile tables exist yet).
 | F-20 | Deleting an auth user (dashboard or SQL) removes the profile but not the user's files in Storage: the owner's old avatar stayed in `avatars` as an orphan after the account was recreated (2026-09-26).                                                                                                                                                                                     | Clean up files when account deletion is implemented (admin user management, P10.S5, or a self-service delete); the orphan was left in place (user data).                                                                                                                                                                                                                                                                                                    | Open          |
 | F-21 | Photos are uploaded before the item is saved (the item id is generated in the browser). If the user abandons the form, or the create action fails, the uploaded files stay in `item-images` without an `item_images` row. Removing a photo in the picker deletes its file; abandoned forms cannot. Noticed in P3.S4.                                                                        | Acceptable for now (files are small). The create action does **not** delete them on failure, because the form keeps the photos for the next attempt (P3.S5). Deleting an item now removes every file in its folder, including such uploads (P3.S7). Option for abandoned new items: a periodic clean-up of files older than a day without an `item_images` row (scheduled SQL job or admin action, P10/P11).                                                | Open          |
 | F-22 | Local `next build` (Turbopack) fails on the development machine: Windows Application Control blocks the native `@next/swc-win32-x64-msvc` binary, Next falls back to WASM bindings, and Turbopack requires native ones. Seen first in P3.S8 (earlier steps built normally). Lint, typecheck and tests are unaffected; Vercel builds on Linux.                                               | Code is unaffected. Locally, verify with `npx next build --webpack` until the policy allows the file (user: Windows Security → App & browser control, or reinstall `node_modules`). Scripts stay unchanged.                                                                                                                                                                                                                                                 | Open          |
+| F-23 | A `loading.tsx` or a Suspense fallback on a page streams the fallback first on a full page load; the real content is swapped in by inline JavaScript. Without JavaScript (and for crawlers that do not run it) the page stays on the fallback, and a `redirect()` after the fallback is a streamed client redirect instead of HTTP 307. Found in P4.S5 on `/items`.                         | Pages that must work without JavaScript or redirect canonically (`/items`, later public pages) render without a fallback; show pending state with `useLinkStatus`/`useFormStatus` markers instead (P4.S5). Keep this in mind for P11.S* ("`loading.tsx` per segment"): only on pages where that is acceptable (e.g. signed-in pages).                                                                                                                       | Documented    |
 | F-10 | No automated tests yet.                                                                                                                                                                                                                                                                                                                                                                     | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                                                                                                                                                                                                                                                                                                                                | Fixed         |
 
 ---
@@ -1775,6 +1779,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-28 | P4.S5     | Feed pagination (filters kept, past-the-end → last page), result range, empty states with actions, navigation-pending dimming instead of `loading.tsx` (keeps no-JS + 307s); browser check 48/48.    |
 | 2026-09-28 | P4.S4     | `/items` feed: `searchItems`, `next/form` filters (work without JS), canonical-URL redirect, header link; no sort without a query; browser check 43/43.                                              |
 | 2026-09-28 | P4.S3     | Search params: `parseSearchParams` (per-field fallbacks), `searchQuery` (canonical URLs); 46 unit tests.                                                                                             |
 | 2026-09-28 | P4.S2     | `search_items()`: text (full text + typos), type/category/status/date filters, newest/relevance, pagination capped at 50; SQL tests 7/7.                                                             |
@@ -1814,14 +1819,15 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P4.S5 — Item cards, pagination, empty/loading states** (see §22, Phase 4).
+**P4.S6 — SEO** (see §22, Phase 4).
 
-Why next: the feed works (P4.S4) but shows only the first 20 results.
-P4.S5 adds `pagination.tsx` (links built with `searchQuery()`, so filters are
-kept; a page past the end, which returns no rows and total 0, should redirect
-to the last page or page 1), `items/loading.tsx`, richer empty states (no
-results vs. nothing reported yet) and a check of the card grid on phone and
-desktop widths.
+Why next: the feed is complete (P4.S4–S5); item pages still have only a
+title. P4.S6 adds `generateMetadata` with description, canonical URL and
+`alternates.languages` (mk without prefix, en at `/en`) to the item page, an
+OG image (cover photo or generated), `sitemap.ts` with active items and
+`robots.ts` that disallows `/admin` and the protected paths from
+`src/lib/auth-routes.ts`. Hidden and missing items must not get metadata or
+sitemap entries (the RLS-based `getItem` already returns null for them).
 
 Open manual items:
 

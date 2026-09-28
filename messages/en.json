@@ -337,6 +337,19 @@
     "resultCount": "{count, plural, =0 {No items} one {# item} other {# items}}",
     "emptyTitle": "No items match your search",
     "emptyDescription": "Try other words or fewer filters.",
-    "emptyFeed": "No items have been reported yet."
+    "emptyFeed": "No items have been reported yet.",
+    "resultRange": "{from}–{to} of {count, plural, one {# item} other {# items}}",
+    "loading": "Loading results…",
+    "clearFilters": "Clear filters",
+    "emptyFeedDescription": "Lost something, or found something that is not yours? Report it and it will appear here.",
+    "reportLost": "I lost something",
+    "reportFound": "I found something"
+  },
+  "Pagination": {
+    "label": "Pages",
+    "previous": "Previous",
+    "next": "Next",
+    "page": "Page {page}",
+    "pageOf": "Page {page} of {totalPages}"
   }
 }

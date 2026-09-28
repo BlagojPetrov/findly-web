@@ -3,6 +3,7 @@ import Form from "next/form";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { CategoryIcon } from "@/components/items/category-icon";
+import { FormPendingMarker } from "@/components/search/pending-marker";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -98,7 +99,7 @@ export function SearchFilters({
   return (
     <Form
       action={action}
-      className="grid gap-4 rounded-xl border bg-card p-4 shadow-xs lg:sticky lg:top-20"
+      className="grid gap-4 rounded-xl border bg-card p-4 shadow-xs lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto"
     >
       <div className="grid gap-1.5">
         <Label htmlFor="search-q">{t("searchLabel")}</Label>
@@ -264,6 +265,7 @@ export function SearchFilters({
           )}
         </div>
       </div>
+      <FormPendingMarker />
     </Form>
   );
 }

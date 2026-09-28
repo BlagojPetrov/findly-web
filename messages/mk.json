@@ -337,6 +337,19 @@
     "resultCount": "{count, plural, =0 {Нема пријави} one {# пријава} other {# пријави}}",
     "emptyTitle": "Нема пријави што одговараат на пребарувањето",
     "emptyDescription": "Обидете се со други зборови или помалку филтри.",
-    "emptyFeed": "Сè уште нема пријавени предмети."
+    "emptyFeed": "Сè уште нема пријавени предмети.",
+    "resultRange": "{from}–{to} од {count, plural, one {# пријава} other {# пријави}}",
+    "loading": "Се вчитуваат резултатите…",
+    "clearFilters": "Исчисти ги филтрите",
+    "emptyFeedDescription": "Изгубивте нешто или најдовте нешто што не е ваше? Пријавете го и ќе се појави тука.",
+    "reportLost": "Изгубив нешто",
+    "reportFound": "Најдов нешто"
+  },
+  "Pagination": {
+    "label": "Страници",
+    "previous": "Претходна",
+    "next": "Следна",
+    "page": "Страница {page}",
+    "pageOf": "Страница {page} од {totalPages}"
   }
 }
