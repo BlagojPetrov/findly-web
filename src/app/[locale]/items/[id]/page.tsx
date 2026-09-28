@@ -18,18 +18,64 @@ import { calendarDay } from "@/lib/dates";
 import { itemImageUrl } from "@/lib/item-images";
 import { categoryName } from "@/lib/queries/categories";
 import { getItem } from "@/lib/queries/items";
+import { localeAlternates, metaDescription, openGraphBase } from "@/lib/seo";
 
+// "Lost: <title>", a description from the category, place, date and the
+// report's text, canonical + hreflang URLs, and the cover photo for link
+// previews. Missing and (for other viewers) hidden items get no metadata;
+// the page itself answers with 404.
 export async function generateMetadata({
   params,
 }: PageProps<"/[locale]/items/[id]">): Promise<Metadata> {
-  const { id } = await params;
+  const { locale, id } = await params;
   const item = await getItem(id);
   if (!item) return {};
+
+  const [t, format] = await Promise.all([
+    getTranslations({ locale: locale as Locale, namespace: "Items" }),
+    getFormatter({ locale: locale as Locale }),
+  ]);
+  const title = `${t(`badges.${item.type}`)}: ${item.title}`;
+  const facts = [
+    categoryName(item.category, locale),
+    item.location_name,
+    format.dateTime(calendarDay(item.occurred_on), {
+      dateStyle: "long",
+      timeZone: "UTC",
+    }),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+  // Macedonian dates end with "г." already.
+  const description = metaDescription(
+    `${facts}${facts.endsWith(".") ? "" : "."} ${item.description}`,
+  );
+  const alternates = localeAlternates(`/items/${item.id}`, locale);
+  const cover = item.images[0];
+
   return {
-    title: item.title,
-    description: item.description.slice(0, 160),
+    title,
+    description,
+    alternates,
     // Only the owner and admins can open hidden items.
     robots: item.status === "hidden" ? { index: false } : undefined,
+    openGraph: {
+      ...openGraphBase(locale),
+      type: "article",
+      title,
+      description,
+      url: alternates.canonical,
+      publishedTime: item.created_at,
+      modifiedTime: item.updated_at,
+      images: cover
+        ? [{ url: itemImageUrl(cover.storage_path), alt: item.title }]
+        : undefined,
+    },
+    twitter: {
+      card: cover ? "summary_large_image" : "summary",
+      title,
+      description,
+    },
   };
 }
 

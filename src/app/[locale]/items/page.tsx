@@ -17,6 +17,7 @@ import { todayInAppTimeZone } from "@/lib/dates";
 import { pageCount } from "@/lib/pagination";
 import { categoryName, getCategories } from "@/lib/queries/categories";
 import { SEARCH_PAGE_SIZE, searchItems } from "@/lib/queries/items";
+import { localeAlternates, openGraphBase } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 import {
   type SearchFilters as Filters,
@@ -25,15 +26,39 @@ import {
   searchQuery,
 } from "@/lib/validation/search";
 
+// Canonical URL with the canonical filter query (the page redirects every
+// other URL to it). Text searches are not indexed; their links are followed.
 export async function generateMetadata({
   params,
+  searchParams,
 }: PageProps<"/[locale]/items">): Promise<Metadata> {
   const { locale } = await params;
-  const t = await getTranslations({
-    locale: locale as Locale,
-    namespace: "Search",
+  const [raw, categories, t] = await Promise.all([
+    searchParams,
+    getCategories(),
+    getTranslations({ locale: locale as Locale, namespace: "Search" }),
+  ]);
+  const filters = parseSearchParams(raw, {
+    categorySlugs: categories.map((category) => category.slug),
   });
-  return { title: t("title"), description: t("description") };
+  const alternates = localeAlternates(
+    "/items",
+    locale,
+    new URLSearchParams(searchQuery(filters)).toString(),
+  );
+  return {
+    title: t("title"),
+    description: t("description"),
+    alternates,
+    robots: filters.q ? { index: false, follow: true } : undefined,
+    openGraph: {
+      ...openGraphBase(locale),
+      type: "website",
+      title: t("title"),
+      description: t("description"),
+      url: alternates.canonical,
+    },
+  };
 }
 
 // The query string exactly as requested (keys and values in URL order).

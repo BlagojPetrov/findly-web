@@ -8,6 +8,7 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { Toaster } from "@/components/ui/sonner";
 import { routing } from "@/i18n/routing";
 import { env } from "@/lib/env";
+import { openGraphBase } from "@/lib/seo";
 import "../globals.css";
 
 // Inter includes Cyrillic glyphs (Geist does not).
@@ -33,6 +34,12 @@ export async function generateMetadata({
     metadataBase: new URL(env.NEXT_PUBLIC_SITE_URL),
     title: { default: t("title"), template: "%s | Findly" },
     description: t("description"),
+    openGraph: {
+      ...openGraphBase(locale),
+      type: "website",
+      title: t("title"),
+      description: t("description"),
+    },
   };
 }
 

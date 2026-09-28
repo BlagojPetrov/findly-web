@@ -1,14 +1,24 @@
 import { BellRing, FilePlus2, MessagesSquare } from "lucide-react";
+import type { Metadata } from "next";
 import type { Locale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { CategoryIcon } from "@/components/items/category-icon";
 import { createClient } from "@/lib/supabase/server";
+import { localeAlternates } from "@/lib/seo";
 
 const steps = [
   { key: "report", icon: FilePlus2 },
   { key: "match", icon: BellRing },
   { key: "contact", icon: MessagesSquare },
 ] as const;
+
+// Title and description come from the layout.
+export async function generateMetadata({
+  params,
+}: PageProps<"/[locale]">): Promise<Metadata> {
+  const { locale } = await params;
+  return { alternates: localeAlternates("/", locale) };
+}
 
 export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const { locale } = (await params) as { locale: Locale };

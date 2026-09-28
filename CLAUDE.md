@@ -23,9 +23,9 @@ status and the next step. Read it before any work.
 ## Current state
 
 - Phases 1–3 completed (auth, profile, first deployment; items CRUD with photos, item
-  page, `/dashboard`). Phase 4 in progress: P4.S1–S5 (search normalization,
+  page, `/dashboard`). Phase 4 in progress: P4.S1–S6 (search normalization,
   `search_items` function, search params schema, `/items` feed, pagination and
-  empty/loading states) done. Next: P4.S6 (SEO).
+  empty/loading states, SEO) done. Next: P4.S7 (home page latest items).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19); local Turbopack build
   blocked by Windows Application Control (F-22).
@@ -135,6 +135,12 @@ status and the next step. Read it before any work.
   without JavaScript or redirect with 307 (F-23): show pending state with
   `LinkPendingMarker`/`FormPendingMarker` (`data-pending`) and style it with
   `group-has-[[data-pending]]/…:`. Sibling elements must not share a `key`.
+- SEO: public pages set `alternates: localeAlternates(path, locale, query?)` (canonical +
+  hreflang) and, when they set `openGraph`, spread `openGraphBase(locale)` (metadata merges
+  shallowly); descriptions go through `metaDescription()` (`@/lib/seo`). `(app)`/`(auth)`
+  pages are `noindex`; new protected routes in `PROTECTED_PREFIXES` are also disallowed in
+  `robots.ts`. Cached public data (sitemap) uses `createPublicClient()`
+  (`@/lib/supabase/public`, anon, no cookies); filter it explicitly (e.g. `status = active`).
 - Pages in `(app)` set their own width (`mx-auto w-full max-w-2xl` for forms/settings,
   `max-w-5xl` for the dashboard); the layout only adds padding. Signed-in users land on
   `AFTER_SIGN_IN_PATH` (`/dashboard`).

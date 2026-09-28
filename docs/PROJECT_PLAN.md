@@ -8,7 +8,7 @@
 
 - **Last updated:** 2026-09-28
 - **Current phase:** Phase 4 — Feed, search and advanced filters (in progress)
-- **Next step:** P4.S6 (§22)
+- **Next step:** P4.S7 (§22)
 
 ---
 
@@ -141,7 +141,7 @@ to these IDs. "Next step" always means the step named in
 | P4.S3  | Search params schema and parsing               | `COMPLETED`   |
 | P4.S4  | Items feed page with filters                   | `COMPLETED`   |
 | P4.S5  | Item cards, pagination, empty/loading states   | `COMPLETED`   |
-| P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `NOT STARTED` |
+| P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `COMPLETED`   |
 | P4.S7  | Home page latest items                         | `NOT STARTED` |
 | P5.S1  | Leaflet base map component                     | `NOT STARTED` |
 | P5.S2  | Location picker and geocoding                  | `NOT STARTED` |
@@ -1471,10 +1471,14 @@ tests) · images compressed · both languages · checks pass.
 - **Changed during implementation:** **no `items/loading.tsx` and no Suspense fallback for the results.** Both stream the fallback first on a full page load, and the streamed results are only swapped in by inline JavaScript: without JavaScript the feed stayed on the skeleton forever (P4.S4 requires the feed to work without JavaScript, and crawlers that do not run JavaScript would see no items), and the canonical and out-of-range redirects became streamed client redirects instead of HTTP 307. The page cannot stream only client navigations (Next strips the `RSC` header from `headers()`), so the loading state is the navigation-pending dimming above. Found on the way: `SearchFilters` and a keyed `Suspense` sibling had the same `key`, which made React keep every old form in the DOM (4 forms after 4 navigations); gone with the Suspense, and the check now asserts one form.
 - **Verified** (production build with `--webpack`, headless Edge, a temporary user with 45 items dated 2002-05-01, deleted afterwards): 48/48 — 20/20/5 cards on pages 1–3 with range headings, page links 1–3, `aria-current`, disabled previous/next at the ends, filters kept in page links, page 1 without `page`, scroll to top, back restores page 2; applying the filter form from page 2 goes to page 1; `type=lost` page 2 (22 items) and its links keep `type`; page 9 → page 3, `type=lost&page=5` → page 2, no matches on page 4 → page 1 (also as HTTP 307 with curl, and without JavaScript); filtered empty state and "Clear filters" → `/items`; grid 3/2/2/1/1 columns at 1280/1024/768/390/360 px without horizontal overflow, numbered pagination from 640 px and compact below; results dimmed with the spinner while a page link or the filter form waits for a (delayed) server response, not dimmed at rest or afterwards; one filter form after several navigations; filter panel fits the viewport while scrolled; English range heading and labels, links keep `/en`; without JavaScript at 390 px results visible and page links work; no console errors. Pagination unit tests: 18 (`pagination.test.ts`). The empty-feed state (no reports at all) could not be shown against the shared dev database, which has real items.
 
-#### P4.S6 — SEO
+#### P4.S6 — SEO — `COMPLETED`
 
 - **Affects:** `items/[id]/page.tsx` (`generateMetadata`, canonical, `alternates.languages`), `items/[id]/opengraph-image.tsx` or cover image as OG image, `src/app/sitemap.ts`, `src/app/robots.ts`, JSON-LD (optional).
 - **Verify:** page source has correct title/description/OG tags in both languages; `/sitemap.xml` lists active items; `/robots.txt` disallows `/admin` and protected paths.
+- **Implemented:** `src/lib/seo.ts` (`localeAlternates(path, locale, query?)`: canonical in the page's locale + hreflang `mk`/`en`/`x-default` (= mk), relative to the layout's `metadataBase`; `openGraphBase(locale)`: site name, `og:locale` `mk_MK`/`en_US` + alternate; `metaDescription()`: whitespace collapsed, cut at a word boundary to ≤ 160 characters with "…"); layout: site-wide Open Graph (`website`); home: alternates; feed: canonical = the canonical filter URL (with its query) and alternates, `noindex, follow` for text searches (`q`), Open Graph; item page: title "Lost: <title>" / "Изгубено: <title>", description "category · place · date. text", canonical + hreflang, Open Graph `article` (url, published/modified time, **cover photo as `og:image`** with alt), Twitter card `summary_large_image` with a photo and `summary` without; hidden items keep `noindex` (owner/admin only) and give other visitors a 404 without item metadata. `src/lib/supabase/public.ts` (`createPublicClient()`: supabase-js without a session or cookies, runs as `anon`); `src/app/sitemap.ts` (home and feed + every **active** item, one entry per locale with `hreflang` alternates, `lastmod` = `updated_at`; read in batches of 1000 up to the 50,000-URL limit; `revalidate = 3600`); `src/app/robots.ts` (allow `/`; disallow `/api/` and every protected prefix from `auth-routes.ts`, now exported as `PROTECTED_PREFIXES`, plus `/items/*/edit`, in both locales; sitemap URL). 9 unit tests (`seo.test.ts`).
+- **Changed during implementation:** no generated `opengraph-image.tsx` — the cover photo is the preview image and items without photos have none (a generated image with Cyrillic text would need a bundled font; can be added in P11). No JSON-LD (optional). Sign-in pages stay crawlable with `noindex` instead of being disallowed (a disallowed page's `noindex` is never seen).
+- **Verified** (production build with `--webpack`, temporary user with an active item with a photo, a resolved and a hidden item, deleted afterwards): 69/69 on the HTML source, with a browser and a link-preview (`facebookexternalhit`) user agent, all tags inside `<head>`: title, description (≤ 160, "…", no double spaces), canonical, hreflang ×3, `og:title/description/type/url/site_name/locale/locale:alternate/image/image:alt`, article times, Twitter card, indexable; English title/description/canonical/locale; resolved item without photo (no `og:image`, `summary`); hidden item → 404 without its title, `noindex`; feed canonical/hreflang/OG, filtered feed canonical with the query (mk and en), search `noindex, follow`; home `/` and `/en` canonicals; login `noindex`; `robots.txt` (13 disallow checks, `/items` allowed, sitemap URL); `sitemap.xml` lists home, feed and the active item in both locales with hreflang and `lastmod`, not the resolved or hidden item, nothing protected. Browser smoke test of home, feed, search and item pages in both locales: no console errors. Found and fixed during the check: Macedonian long dates end with "г.", which made "2026 г.. text".
+- **Note:** the sitemap's Supabase request goes through Next's fetch data cache (revalidated hourly with the route), so a local rebuild can reuse an earlier result; delete `.next/cache/fetch-cache` to force fresh data.
 
 #### P4.S7 — Home page latest items
 
@@ -1779,6 +1783,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                               |
 | ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-28 | P4.S6     | SEO: `@/lib/seo` helpers, item metadata (canonical, hreflang, OG/Twitter with cover photo), feed/home alternates, search `noindex`, `sitemap.ts` (active items, hourly), `robots.ts`; check 69/69.   |
 | 2026-09-28 | P4.S5     | Feed pagination (filters kept, past-the-end → last page), result range, empty states with actions, navigation-pending dimming instead of `loading.tsx` (keeps no-JS + 307s); browser check 48/48.    |
 | 2026-09-28 | P4.S4     | `/items` feed: `searchItems`, `next/form` filters (work without JS), canonical-URL redirect, header link; no sort without a query; browser check 43/43.                                              |
 | 2026-09-28 | P4.S3     | Search params: `parseSearchParams` (per-field fallbacks), `searchQuery` (canonical URLs); 46 unit tests.                                                                                             |
@@ -1819,15 +1824,14 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P4.S6 — SEO** (see §22, Phase 4).
+**P4.S7 — Home page latest items** (see §22, Phase 4), the last step of Phase 4.
 
-Why next: the feed is complete (P4.S4–S5); item pages still have only a
-title. P4.S6 adds `generateMetadata` with description, canonical URL and
-`alternates.languages` (mk without prefix, en at `/en`) to the item page, an
-OG image (cover photo or generated), `sitemap.ts` with active items and
-`robots.ts` that disallows `/admin` and the protected paths from
-`src/lib/auth-routes.ts`. Hidden and missing items must not get metadata or
-sitemap entries (the RLS-based `getItem` already returns null for them).
+Why next: search, feed, pagination and SEO are done (P4.S1–S6). The home page
+still shows only the introduction and static categories. P4.S7 adds the latest
+lost and latest found items (e.g. `searchItems` with `type` and a small page
+size, rendered with `ItemCard`) with "see all" links to the filtered feed, and
+turns the categories into links built with `searchQuery({ categories: [slug] })`.
+Then the Phase 4 definition of done can be checked.
 
 Open manual items:
 

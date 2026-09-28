@@ -10,7 +10,8 @@ export const SIGN_IN_PATH = "/login";
 // open /login or /register while signed in.
 export const AFTER_SIGN_IN_PATH = "/dashboard";
 
-const protectedPrefixes = [
+// Also disallowed for crawlers in robots.txt.
+export const PROTECTED_PREFIXES = [
   "/dashboard",
   "/profile",
   "/items/new",
@@ -44,7 +45,7 @@ export function localizePath(path: string, locale: string) {
 
 export function isProtectedPath(path: string) {
   return (
-    protectedPrefixes.some((prefix) => matchesPrefix(path, prefix)) ||
+    PROTECTED_PREFIXES.some((prefix) => matchesPrefix(path, prefix)) ||
     itemEditPath.test(path)
   );
 }
