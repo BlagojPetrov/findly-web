@@ -274,6 +274,11 @@
         "found": "Found on"
       },
       "location": "Location",
+      "mapLabel": {
+        "lost": "Map: where the item was lost",
+        "found": "Map: where the item was found"
+      },
+      "openInOsm": "Open in OpenStreetMap",
       "posted": "Posted",
       "postedBy": "Posted by {name}",
       "memberSince": "Member since {date}",
@@ -379,7 +384,8 @@
     "pageOf": "Page {page} of {totalPages}"
   },
   "Map": {
-    "loading": "Loading map…"
+    "loading": "Loading map…",
+    "unavailable": "The map could not be shown."
   },
   "LocationPicker": {
     "searchLabel": "Search for an address",

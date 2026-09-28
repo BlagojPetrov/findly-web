@@ -25,7 +25,7 @@ status and the next step. Read it before any work.
 - Phases 1–4 completed (auth, profile, first deployment; items CRUD with photos, item
   page, `/dashboard`; search, `/items` feed with filters and pagination, SEO, home page
   with latest items). Phase 5 in progress: base map, location picker, required
-  location in item forms done; next P5.S4 (map on item page).
+  location in item forms, map on the item page done; next P5.S5 (radius filter).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19); local Turbopack build
   blocked by Windows Application Control (F-22).
@@ -150,7 +150,9 @@ status and the next step. Read it before any work.
   (`DEFAULT_CENTER`, OSM tile URL/attribution) in `@/lib/map`. Markers use `markerIcon`
   (`src/components/map/marker-icon.ts`), passed as `icon`. Image imports from
   `node_modules` are `StaticImageData` in webpack but URL strings in Turbopack (Vercel) and
-  Vitest: handle both (F-25).
+  Vitest: handle both (F-25). `MapFrame` wraps maps in `MapErrorBoundary`: a failing map shows
+  a message instead of breaking the page. Read-only item map: `ItemMap`; link out with
+  `osmUrl()` (`@/lib/map`).
   Geocoding only through `@/lib/geocoding` (`searchAddress`, `reverseGeocode`): it holds
   the shared Nominatim throttle (≥ 1 s between requests, policy) and cache; never call
   Nominatim directly. Location input: `LocationPicker` (`src/components/map/location-picker.tsx`)

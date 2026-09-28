@@ -274,6 +274,11 @@
         "found": "Пронајдено на"
       },
       "location": "Локација",
+      "mapLabel": {
+        "lost": "Карта: каде е изгубен предметот",
+        "found": "Карта: каде е пронајден предметот"
+      },
+      "openInOsm": "Отвори во OpenStreetMap",
       "posted": "Објавено",
       "postedBy": "Објавено од {name}",
       "memberSince": "Член од {date}",
@@ -379,7 +384,8 @@
     "pageOf": "Страница {page} од {totalPages}"
   },
   "Map": {
-    "loading": "Картата се вчитува…"
+    "loading": "Картата се вчитува…",
+    "unavailable": "Картата не може да се прикаже."
   },
   "LocationPicker": {
     "searchLabel": "Пребарај адреса",

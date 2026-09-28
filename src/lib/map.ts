@@ -18,3 +18,11 @@ export const OSM_TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 export const OSM_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 export const OSM_MAX_ZOOM = 19;
+
+// The point on openstreetmap.org (marker at street zoom), e.g. for directions
+// or when the embedded map cannot be shown.
+export function osmUrl({ lat, lng }: LatLng) {
+  const la = lat.toFixed(6);
+  const lo = lng.toFixed(6);
+  return `https://www.openstreetmap.org/?mlat=${la}&mlon=${lo}#map=17/${la}/${lo}`;
+}

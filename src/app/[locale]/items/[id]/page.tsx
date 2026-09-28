@@ -1,4 +1,10 @@
-import { CalendarDays, Clock, EyeOff, MapPin } from "lucide-react";
+import {
+  CalendarDays,
+  Clock,
+  ExternalLink,
+  EyeOff,
+  MapPin,
+} from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { Locale } from "next-intl";
@@ -12,10 +18,12 @@ import { CategoryIcon } from "@/components/items/category-icon";
 import { ImageGallery } from "@/components/items/image-gallery";
 import { ItemOwnerActions } from "@/components/items/item-owner-actions";
 import { ItemTypeBadge } from "@/components/items/item-type-badge";
+import { ItemMap, MapFrame } from "@/components/map";
 import { UserAvatar } from "@/components/profile/user-avatar";
 import { getCurrentUser } from "@/lib/auth";
 import { calendarDay } from "@/lib/dates";
 import { itemImageUrl } from "@/lib/item-images";
+import { osmUrl } from "@/lib/map";
 import { categoryName } from "@/lib/queries/categories";
 import { getItem } from "@/lib/queries/items";
 import { localeAlternates, metaDescription, openGraphBase } from "@/lib/seo";
@@ -114,6 +122,11 @@ export default async function ItemPage({
     getFormatter(),
   ]);
   const isOwner = viewer?.id === item.user_id;
+  // Always set since P5.S3 (generated columns are typed as nullable).
+  const point =
+    item.lat !== null && item.lng !== null
+      ? { lat: item.lat, lng: item.lng }
+      : null;
   const icon = "size-4";
 
   return (
@@ -240,6 +253,39 @@ export default async function ItemPage({
           {item.description}
         </p>
       </section>
+
+      {point && (
+        <section className="mt-10 grid max-w-3xl gap-3">
+          <h2 className="text-lg font-semibold">{t("detail.location")}</h2>
+          {/* A failing map shows a message; the link works without it. */}
+          <MapFrame
+            label={t(`detail.mapLabel.${item.type}`)}
+            className="aspect-4/3 sm:aspect-video"
+          >
+            <ItemMap
+              point={point}
+              pinLabel={item.location_name ?? item.title}
+            />
+          </MapFrame>
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 text-sm">
+            {item.location_name && (
+              <p className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
+                <MapPin className="size-4 shrink-0" aria-hidden />
+                <span className="break-words">{item.location_name}</span>
+              </p>
+            )}
+            <a
+              href={osmUrl(point)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline"
+            >
+              {t("detail.openInOsm")}
+              <ExternalLink className="size-3.5" aria-hidden />
+            </a>
+          </div>
+        </section>
+      )}
     </div>
   );
 }

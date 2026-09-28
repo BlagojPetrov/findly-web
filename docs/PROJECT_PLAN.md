@@ -146,7 +146,7 @@ to these IDs. "Next step" always means the step named in
 | P5.S1  | Leaflet base map component                     | `COMPLETED`                 |
 | P5.S2  | Location picker and geocoding                  | `COMPLETED`                 |
 | P5.S3  | Location in item forms, make location required | `COMPLETED`                 |
-| P5.S4  | Map on item detail page                        | `NOT STARTED`               |
+| P5.S4  | Map on item detail page                        | `COMPLETED`                 |
 | P5.S5  | Radius filter                                  | `NOT STARTED`               |
 | P5.S6  | `/map` page                                    | `NOT STARTED`               |
 | P6.S1  | Matches schema                                 | `NOT STARTED`               |
@@ -907,6 +907,9 @@ MapLoading })`. Pages render it inside `MapFrame` (labelled region, size via
   by default so maps do not catch page scrolling. The marker icon is
   `markerIcon` from `src/components/map/marker-icon.ts` (bundled Leaflet images;
   also set as every marker's default); maps pass it explicitly as `icon` (F-25).
+  `MapFrame` catches map failures (`MapErrorBoundary`) and shows a message, so a
+  page with a map still renders if Leaflet fails (P5.S4 ✓). Item pages link to
+  the point on openstreetmap.org (`osmUrl()`).
 - Tiles: `https://tile.openstreetmap.org/{z}/{x}/{y}.png` with the required
   "© OpenStreetMap contributors" attribution. Default center: Skopje
   (41.9981, 21.4254), zoom 13; Macedonia bounds for "fit".
@@ -1542,10 +1545,12 @@ robots (P4.S6); `db:test` 7/7 and 286 unit tests pass.
 - **Changed during implementation:** coordinates are read through generated columns instead of `ST_Y/ST_X` in an RPC or view (§13), so every query (item page, later radius filter and `/map`) can select `lat, lng` directly. SQL tests updated for the new signatures (positional calls get `lat, lng`; direct inserts get a `location`).
 - **Verified:** dry run in a rolled-back transaction (4 rows backfilled); `db:test` 7/7 with new cases (lat/lng generated, `POINT(lng lat)` stored, missing and out-of-range coordinates rejected, `location` cannot be cleared, `lat` not writable, `update_item` changes the location and rejects a missing latitude); advisors: only F-12/F-19; 301 unit tests. Browser check (production build with `--webpack`, headless Edge, temporary user `p5s3-a@findly.test` deleted afterwards): 23/23 — Location card, privacy note for found items; submit without a point → "Mark the place on the map", other values kept; clicking the map fills the coordinates and address and hides the error; a failed submit keeps the pin and address; create → item page; edit page shows the stored pin (zoom 17) and address; saving without touching the map keeps the location; moving the pin by search and saving stores the new point (`POINT(21.43325 41.997115)` in the database); a tampered edit without coordinates is rejected; English form; no horizontal overflow at 375 px; no console errors. Found F-24 (lost/found choice cleared by a failed submit, pre-existing).
 
-#### P5.S4 — Map on item detail page
+#### P5.S4 — Map on item detail page — `COMPLETED`
 
 - **Affects:** `items/[id]/page.tsx`, `src/components/map/item-map.tsx`.
 - **Verify:** marker at the stored location; page still renders if the map fails.
+- **Implemented:** `item-map.tsx` (browser-only, exported as `ItemMap` from `index.tsx`): read-only map centered on the item's point at zoom 16 with a fixed pin (`markerIcon`, labelled with the address or title). Item page: "Location" section below the description with the map in `MapFrame` (4:3, 16:9 from `sm`; label per type, e.g. "Map: where the item was lost"), the address and an "Open in OpenStreetMap" link (`osmUrl()` in `@/lib/map`; also the location without JavaScript or when the map fails). `MapFrame` now wraps its map in `MapErrorBoundary` (`map-error-boundary.tsx`): a map whose code does not load or that throws shows "The map could not be shown" and the rest of the page keeps working (applies to every map, including the location picker). Messages: `Map.unavailable`, `Items.detail.mapLabel.{lost,found}`, `Items.detail.openInOsm`.
+- **Verified:** unit tests `map.test.ts` (`osmUrl`) and component tests `item-map.test.tsx` (fixed labelled pin with the icon, pin at the map center, failing map replaced by the message with the page kept); 316 unit tests; lint, typecheck, Prettier, webpack build. Browser check (production build with `--webpack`, headless Edge, read-only on a real active item): 24/24 — server HTML has the labelled region, placeholder and OSM link (no Leaflet markup); pin icon 25×41 loaded, labelled, not draggable, its tip at the map center, tiles at zoom 16 for the stored point; OSM link to the stored point; address and attribution visible; English labels; with the Leaflet chunk blocked the page returns 200 with title, description and link and the frame shows the message; 4:3 without horizontal overflow at 375 px; `/items` unaffected; no console errors. Location picker regression check 20/20 (temporary user deleted). Unit-testing a failed `next/dynamic` import is not possible in Vitest (outside Next it resolves to the Pages-router loader, which renders `loading` instead of throwing), so that case is covered by the browser check.
 
 #### P5.S5 — Radius filter
 
@@ -1816,6 +1821,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step      | Change                                                                                                                                                                                                                                           |
 | ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-09-28 | P5.S4     | Item page map: `ItemMap` (fixed pin at the stored point), Location section with address and OpenStreetMap link, `MapErrorBoundary` in `MapFrame`; 5 new tests; browser check 24/24 (incl. blocked map chunk).                                    |
 | 2026-09-28 | F-25 fix  | Marker icon crash on Vercel (Turbopack image imports are strings): shared `marker-icon.ts`, explicit `icon` on the picker pin; 6 regression tests; browser check 20/20 locally and on production.                                                |
 | 2026-09-28 | F-24 fix  | Item form keeps the lost/found choice after failed submits (controlled radios remounted per action result); first component test (`item-form.test.tsx`, jsdom, 4 cases); browser check 15/15.                                                    |
 | 2026-09-28 | P5.S3     | Location required: migration (backfill of 4 items, `not null`, generated `lat`/`lng`, `create_item`/`update_item` with `lat`/`lng`), `LocationPicker` in the item form, edit keeps/changes the point; SQL 7/7, browser check 23/23; F-24 logged. |
@@ -1863,12 +1869,14 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P5.S4 — Map on item detail page** (see §22, Phase 5).
+**P5.S5 — Radius filter** (see §22, Phase 5).
 
-Why next: F-24 is fixed and every item has `lat`/`lng` (`getItem` already
-selects them). Add a browser-only `item-map.tsx` (read-only pin at the stored
-point, exported from `index.tsx`) and show it on `/items/[id]` in `MapFrame`
-next to the address; the page must still render if the map fails to load.
+Why next: items have coordinates and pages show them; the feed can now filter
+by distance. P5.S5 adds `near_lat`/`near_lng`/`radius_km` (1/2/5/10/25/50) to
+`search_items` in a new migration (`ST_DWithin` on the GiST index, distance
+returned per row, "nearest" sort when a center is set), SQL tests with known
+distances, the URL contract in `@/lib/validation/search` (§12), and a radius
+selector with "near me" in the filter form.
 
 Open manual items:
 
