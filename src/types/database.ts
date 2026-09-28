@@ -82,6 +82,8 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          lat: number | null
+          lng: number | null
           location: unknown
           location_name: string | null
           occurred_on: string
@@ -99,7 +101,9 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
-          location?: unknown
+          lat?: number | null
+          lng?: number | null
+          location: unknown
           location_name?: string | null
           occurred_on: string
           resolved_at?: string | null
@@ -116,6 +120,8 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
+          lat?: number | null
+          lng?: number | null
           location?: unknown
           location_name?: string | null
           occurred_on?: string
@@ -189,6 +195,8 @@ export type Database = {
           description: string
           image_paths?: string[]
           item_id?: string
+          lat: number
+          lng: number
           location_name?: string
           occurred_on: string
           title: string
@@ -251,6 +259,8 @@ export type Database = {
           description: string
           image_paths?: string[]
           item_id: string
+          lat: number
+          lng: number
           location_name?: string
           occurred_on: string
           title: string

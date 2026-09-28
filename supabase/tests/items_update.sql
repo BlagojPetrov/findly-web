@@ -10,6 +10,7 @@ select pg_temp.login_as('00000000-0000-4000-8000-0000000000a3');
 select public.create_item(
   type => 'lost', title => 'Old title', description => 'Old description text.',
   category_id => 1::smallint, occurred_on => current_date - 3,
+  lat => 41.9981, lng => 21.4254,
   image_paths => array[
     '00000000-0000-4000-8000-0000000000a3/40000000-0000-4000-8000-000000000001/50000000-0000-4000-8000-000000000001.webp',
     '00000000-0000-4000-8000-0000000000a3/40000000-0000-4000-8000-000000000001/50000000-0000-4000-8000-000000000002.webp',
@@ -28,7 +29,8 @@ begin
   removed := public.update_item(
     item_id => item, type => 'found', title => '  New title  ',
     description => 'New description text.', category_id => 2::smallint,
-    occurred_on => current_date - 1, location_name => '  Park  ',
+    occurred_on => current_date - 1, lat => 41.1172, lng => 20.8016,
+    location_name => '  Park  ',
     image_paths => array[
       base || '50000000-0000-4000-8000-000000000003.webp',
       base || '50000000-0000-4000-8000-000000000001.webp',
@@ -41,6 +43,7 @@ begin
   assert i.type = 'found' and i.title = 'New title' and i.category_id = 2
     and i.location_name = 'Park' and i.occurred_on = current_date - 1,
     'item fields updated and trimmed';
+  assert i.lat = 41.1172 and i.lng = 20.8016, 'location updated';
 
   assert (select array_agg(right(storage_path, 7) order by position)
           from public.item_images where item_id = item)
@@ -48,7 +51,7 @@ begin
 
   -- Blank location clears it; an empty list removes all photos.
   removed := public.update_item(item, 'found', 'New title', 'New description text.',
-    2::smallint, current_date - 1, '   ', '{}');
+    2::smallint, current_date - 1, 41.1172, 20.8016, '   ', '{}');
   assert cardinality(removed) = 3, 'all three photos removed';
   assert (select location_name from public.items where id = item) is null, 'blank location → null';
   assert not exists (select 1 from public.item_images where item_id = item), 'no photo rows left';
@@ -56,19 +59,25 @@ begin
   -- Future date, too many photos, a photo of another item.
   begin
     perform public.update_item(item, 'found', 'New title', 'New description text.',
-      2::smallint, current_date + 2);
+      2::smallint, current_date + 2, 41.1172, 20.8016);
     raise exception 'future date should be rejected';
   exception when check_violation then null;
   end;
   begin
     perform public.update_item(item, 'found', 'New title', 'New description text.',
-      2::smallint, current_date, null, array['a', 'b', 'c', 'd', 'e', 'f']);
+      2::smallint, current_date, null, 20.8016);
+    raise exception 'missing latitude should be rejected';
+  exception when check_violation then null;
+  end;
+  begin
+    perform public.update_item(item, 'found', 'New title', 'New description text.',
+      2::smallint, current_date, 41.1172, 20.8016, null, array['a', 'b', 'c', 'd', 'e', 'f']);
     raise exception 'six photos should be rejected';
   exception when check_violation then null;
   end;
   begin
     perform public.update_item(item, 'found', 'New title', 'New description text.',
-      2::smallint, current_date, null, array[
+      2::smallint, current_date, 41.1172, 20.8016, null, array[
         '00000000-0000-4000-8000-0000000000a3/40000000-0000-4000-8000-000000000099/50000000-0000-4000-8000-000000000009.webp']);
     raise exception 'a photo path of another item should be rejected';
   exception when check_violation then null;
@@ -77,7 +86,7 @@ begin
   -- Missing item.
   begin
     perform public.update_item('40000000-0000-4000-8000-0000000000ff', 'found', 'New title',
-      'New description text.', 2::smallint, current_date);
+      'New description text.', 2::smallint, current_date, 41.1172, 20.8016);
     raise exception 'missing item should raise no_data_found';
   exception when no_data_found then null;
   end;
@@ -91,7 +100,7 @@ do $$
 begin
   begin
     perform public.update_item('40000000-0000-4000-8000-000000000001', 'lost', 'Hacked',
-      'Hacked description.', 1::smallint, current_date);
+      'Hacked description.', 1::smallint, current_date, 0, 0);
     raise exception 'another user should not edit the item';
   exception when no_data_found then null;
   end;
@@ -104,7 +113,7 @@ do $$
 begin
   begin
     perform public.update_item('40000000-0000-4000-8000-000000000001', 'lost', 'Anon',
-      'Anon description.', 1::smallint, current_date);
+      'Anon description.', 1::smallint, current_date, 0, 0);
     raise exception 'anon should not call update_item';
   exception when insufficient_privilege then null;
   end;
@@ -119,7 +128,7 @@ do $$
 begin
   begin
     perform public.update_item('40000000-0000-4000-8000-000000000001', 'lost', 'Edited',
-      'Edited description.', 1::smallint, current_date);
+      'Edited description.', 1::smallint, current_date, 0, 0);
     raise exception 'hidden item should not be editable';
   exception when no_data_found then null;
   end;
@@ -133,7 +142,7 @@ do $$
 begin
   begin
     perform public.update_item('40000000-0000-4000-8000-000000000001', 'lost', 'Edited',
-      'Edited description.', 1::smallint, current_date);
+      'Edited description.', 1::smallint, current_date, 0, 0);
     raise exception 'banned owner should not edit';
   exception when insufficient_privilege then null;
   end;

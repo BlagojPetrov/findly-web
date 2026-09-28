@@ -15,7 +15,8 @@ function fieldError(
 }
 
 // Maps errors from writing items (create_item, updates) to action results.
-// The triggers and create_item() raise these (migration *_items.sql); the
+// The triggers, create_item() and update_item() raise these (migrations
+// *_items.sql, *_items_location_required.sql); the
 // Zod schema catches most of them first, so they appear only in edge cases
 // (e.g. midnight between validation and insert, or a deleted category).
 export function itemWriteFailure(error: DatabaseError): ActionResult<never> {
@@ -28,6 +29,9 @@ export function itemWriteFailure(error: DatabaseError): ActionResult<never> {
       }
       if (error.message.includes("too_many_images")) {
         return fieldError("imagePaths", "tooManyImages");
+      }
+      if (error.message.includes("location_invalid")) {
+        return fieldError("lat", "locationInvalid");
       }
       break;
     case "23503": // foreign_key_violation: the category no longer exists

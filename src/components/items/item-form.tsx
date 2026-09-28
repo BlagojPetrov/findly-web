@@ -10,6 +10,7 @@ import { FormField, FormTextareaField } from "@/components/forms/form-field";
 import { SubmitButton } from "@/components/forms/submit-button";
 import { CategoryIcon } from "@/components/items/category-icon";
 import { ImagePicker } from "@/components/items/image-picker";
+import { LocationPicker } from "@/components/map/location-picker";
 import {
   SettingsCard,
   SettingsCardBody,
@@ -17,6 +18,7 @@ import {
 import { buttonVariants } from "@/components/ui/button";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { ActionResult } from "@/lib/action-result";
+import type { LatLng } from "@/lib/map";
 import { ITEM_LIMITS } from "@/lib/validation/items";
 import type { ValidationMessage } from "@/lib/validation/messages";
 
@@ -28,6 +30,9 @@ export type ItemFormValues = {
   categoryId: string;
   occurredOn: string;
   locationName: string;
+  // Coordinates as posted by the location picker; "" without a point.
+  lat: string;
+  lng: string;
 };
 type Values = ItemFormValues;
 type State = { result: ActionResult<{ id: string }>; values: Values } | null;
@@ -46,7 +51,16 @@ function readValues(formData: FormData): Values {
     categoryId: text("categoryId"),
     occurredOn: text("occurredOn"),
     locationName: text("locationName"),
+    lat: text("lat"),
+    lng: text("lng"),
   };
+}
+
+function toPoint({ lat, lng }: Values): LatLng | null {
+  const point = { lat: Number(lat), lng: Number(lng) };
+  return lat && lng && Number.isFinite(point.lat) && Number.isFinite(point.lng)
+    ? point
+    : null;
 }
 
 // Error below a group of radio buttons (type, category).
@@ -224,16 +238,23 @@ export function ItemForm({
               defaultValue={values.occurredOn}
               errors={errors?.occurredOn}
             />
-            <FormField
-              name="locationName"
-              label={t("locationName")}
-              hint={t("locationNameHint")}
-              maxLength={ITEM_LIMITS.locationNameMax}
-              className="h-9"
-              defaultValue={values.locationName}
-              errors={errors?.locationName}
-            />
           </div>
+        </SettingsCardBody>
+      </SettingsCard>
+
+      <SettingsCard
+        title={t("locationTitle")}
+        description={t(`locationDescription.${type ?? "any"}`)}
+      >
+        <SettingsCardBody>
+          {/* Keeps its own state, so a failed submit keeps the pin. */}
+          <LocationPicker
+            defaultPoint={toPoint(initialValues)}
+            defaultLocationName={initialValues.locationName}
+            errors={errors?.lat ?? errors?.lng}
+            locationNameErrors={errors?.locationName}
+            disabled={pending || done}
+          />
         </SettingsCardBody>
       </SettingsCard>
 

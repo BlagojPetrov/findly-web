@@ -20,11 +20,13 @@ declare
   new_id uuid;
   i public.items;
   n int;
+  msg text;
 begin
   -- Create with two images; positions follow the array order.
   new_id := public.create_item(
     type => 'lost', title => '  Car keys  ', description => 'Black key ring with two keys.',
-    category_id => keys, occurred_on => today, location_name => '  ',
+    category_id => keys, occurred_on => today, lat => 41.9981, lng => 21.4254,
+    location_name => '  ',
     image_paths => array[
       '00000000-0000-4000-8000-00000000000a/10000000-0000-4000-8000-000000000001/20000000-0000-4000-8000-000000000001.webp',
       '00000000-0000-4000-8000-00000000000a/10000000-0000-4000-8000-000000000001/20000000-0000-4000-8000-000000000002.jpg'
@@ -40,14 +42,51 @@ begin
   assert (select count(*) from public.item_images where item_id = item) = 2, 'two images saved';
   assert (select storage_path from public.item_images where item_id = item and position = 0)
     like '%0001.webp', 'first path is the cover (position 0)';
+  assert i.lat = 41.9981 and i.lng = 21.4254, 'lat/lng generated from the point';
+  assert extensions.st_astext(i.location) = 'POINT(21.4254 41.9981)',
+    'location stored as (lng lat)';
+
+  -- The location is required and must be in range.
+  begin
+    perform public.create_item('lost', 'No location', 'An item without a location.', keys, today,
+      null, null);
+    raise exception 'missing location should be rejected';
+  exception when check_violation then
+    get stacked diagnostics msg = message_text;
+    assert msg = 'location_invalid', 'missing location: location_invalid';
+  end;
+  begin
+    perform public.create_item('lost', 'Bad lat', 'Latitude out of range here.', keys, today,
+      91, 21.4254);
+    raise exception 'latitude 91 should be rejected';
+  exception when check_violation then null;
+  end;
+  begin
+    perform public.create_item('lost', 'Bad lng', 'Longitude out of range here.', keys, today,
+      41.9981, -180.5);
+    raise exception 'longitude -180.5 should be rejected';
+  exception when check_violation then null;
+  end;
+  begin
+    update public.items set location = null where id = item;
+    raise exception 'clearing the location should be rejected';
+  exception when not_null_violation then null;
+  end;
+  begin
+    update public.items set lat = 1 where id = item;
+    raise exception 'writing lat should be rejected';
+  exception when insufficient_privilege or generated_always then null;
+  end;
 
   -- Without images and without an id.
-  new_id := public.create_item('found', 'Blue umbrella', 'Found near the bus stop.', keys, today - 3);
+  new_id := public.create_item('found', 'Blue umbrella', 'Found near the bus stop.', keys, today - 3,
+    41.9981, 21.4254);
   assert new_id is not null, 'create_item generates an id';
 
   -- More than 5 images.
   begin
     perform public.create_item('lost', 'Too many', 'Six images is one too many.', keys, today,
+      41.9981, 21.4254,
       image_paths => array['a', 'b', 'c', 'd', 'e', 'f']);
     raise exception 'six images should be rejected';
   exception when check_violation then null;
@@ -55,7 +94,8 @@ begin
 
   -- Future date (in Macedonian time).
   begin
-    perform public.create_item('lost', 'Tomorrow', 'Lost something tomorrow.', keys, today + 1);
+    perform public.create_item('lost', 'Tomorrow', 'Lost something tomorrow.', keys, today + 1,
+      41.9981, 21.4254);
     raise exception 'future occurred_on should be rejected';
   exception when check_violation then null;
   end;
@@ -175,10 +215,12 @@ declare
   other smallint := (select id from public.categories where slug = 'other');
 begin
   for k in 1..20 loop
-    perform public.create_item('found', 'Item ' || k, 'Daily limit test item.', other, current_date - 1);
+    perform public.create_item('found', 'Item ' || k, 'Daily limit test item.', other, current_date - 1,
+      41.9981, 21.4254);
   end loop;
   begin
-    perform public.create_item('found', 'Item 21', 'Daily limit test item.', other, current_date - 1);
+    perform public.create_item('found', 'Item 21', 'Daily limit test item.', other, current_date - 1,
+      41.9981, 21.4254);
     raise exception 'the 21st item in 24 hours should be rejected';
   exception when sqlstate 'FL429' then null;
   end;
@@ -195,7 +237,8 @@ begin
   assert (select count(*) from public.items where id = item) = 1, 'anon sees active items';
   assert (select count(*) from public.item_images where item_id = item) = 2, 'anon sees their images';
   begin
-    perform public.create_item('lost', 'Anon item', 'Anon should not create.', 1::smallint, current_date - 1);
+    perform public.create_item('lost', 'Anon item', 'Anon should not create.', 1::smallint, current_date - 1,
+      41.9981, 21.4254);
     raise exception 'anon calling create_item should be denied';
   exception when insufficient_privilege then null;
   end;
@@ -215,7 +258,8 @@ select pg_temp.login_as('00000000-0000-4000-8000-00000000000d');
 do $$
 begin
   begin
-    perform public.create_item('lost', 'Banned item', 'Banned users cannot create.', 1::smallint, current_date - 1);
+    perform public.create_item('lost', 'Banned item', 'Banned users cannot create.', 1::smallint, current_date - 1,
+      41.9981, 21.4254);
     raise exception 'banned user create_item should be rejected';
   exception when insufficient_privilege then null;
   end;

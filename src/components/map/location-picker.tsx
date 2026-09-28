@@ -78,12 +78,18 @@ export function LocationPicker({
   const [search, setSearch] = useState<SearchState | null>(null);
   const reverseRequest = useRef<AbortController | null>(null);
 
+  // Errors of the last submit, hidden once a new point is chosen (a new
+  // submit passes a new array, which shows again).
+  const [dismissedErrors, setDismissedErrors] = useState<string[]>();
+  const visibleErrors = errors !== dismissedErrors ? errors : undefined;
+
   useEffect(() => () => reverseRequest.current?.abort(), []);
 
   // New pin; the address comes from the search result or reverse geocoding.
   const pick = useCallback(
     (next: LatLng, label?: string) => {
       setPoint(next);
+      setDismissedErrors(errors);
       reverseRequest.current?.abort();
       if (label !== undefined) {
         setLocationName(label);
@@ -104,7 +110,7 @@ export function LocationPicker({
         },
       );
     },
-    [locale],
+    [locale, errors],
   );
 
   const trimmedQuery = query.trim();
@@ -271,7 +277,7 @@ export function LocationPicker({
           label={t("mapLabel")}
           className={cn(
             "aspect-4/3 sm:aspect-video",
-            errors?.length && "border-destructive",
+            visibleErrors?.length && "border-destructive",
           )}
         >
           <LocationPickerMap
@@ -282,9 +288,9 @@ export function LocationPicker({
             disabled={disabled}
           />
         </MapFrame>
-        {errors?.length ? (
+        {visibleErrors?.length ? (
           <p className="text-xs text-destructive">
-            {tValidation(errors[0] as ValidationMessage)}
+            {tValidation(visibleErrors[0] as ValidationMessage)}
           </p>
         ) : (
           <p className="text-xs text-muted-foreground">

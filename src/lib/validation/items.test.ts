@@ -53,17 +53,13 @@ describe("itemSchema", () => {
     });
   });
 
-  it("accepts an item without location name, coordinates and images", () => {
+  it("accepts an item without location name and images", () => {
     const item = schema.parse({
       ...valid,
       locationName: "   ",
-      lat: "",
-      lng: null,
       imagePaths: [],
     });
     expect(item.locationName).toBeNull();
-    expect(item.lat).toBeUndefined();
-    expect(item.lng).toBeUndefined();
     expect(item.imagePaths).toEqual([]);
   });
 
@@ -150,9 +146,13 @@ describe("itemSchema", () => {
       ]);
     });
 
-    it("rejects only one of the two coordinates", () => {
-      expect(errors({ lng: "" }).lat).toEqual(["locationInvalid"]);
-      expect(errors({ lat: null }).lat).toEqual(["locationInvalid"]);
+    it("requires both coordinates", () => {
+      expect(errors({ lat: "", lng: null })).toEqual({
+        lat: ["locationRequired"],
+        lng: ["locationRequired"],
+      });
+      expect(errors({ lng: "  " })).toEqual({ lng: ["locationRequired"] });
+      expect(errors({ lat: undefined })).toEqual({ lat: ["locationRequired"] });
     });
   });
 

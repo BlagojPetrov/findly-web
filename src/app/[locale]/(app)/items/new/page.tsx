@@ -61,6 +61,8 @@ export default async function NewItemPage({
           categoryId: "",
           occurredOn: "",
           locationName: "",
+          lat: "",
+          lng: "",
         }}
         today={todayInAppTimeZone()}
       />

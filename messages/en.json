@@ -99,6 +99,7 @@
     "dateInvalid": "Enter a valid date.",
     "dateInFuture": "The date cannot be in the future.",
     "locationNameTooLong": "The location can be at most 200 characters.",
+    "locationRequired": "Mark the place on the map.",
     "locationInvalid": "Choose a valid location.",
     "tooManyImages": "You can add at most 5 images.",
     "imageInvalid": "One of the images is invalid. Remove it and upload it again."
@@ -239,8 +240,12 @@
       "found": "When did you find it?",
       "any": "Date"
     },
-    "locationName": "Location (optional)",
-    "locationNameHint": "Place or address, e.g. City Park, Skopje.",
+    "locationTitle": "Location",
+    "locationDescription": {
+      "lost": "Where do you think you lost it? Search for an address, use your location or click the map.",
+      "found": "Where did you find it? Choose a nearby public place (a street, square or shop), not a home address — the pin is visible to everyone.",
+      "any": "Search for an address, use your location or click the map. The pin is visible to everyone."
+    },
     "photosTitle": "Photos",
     "photosDescription": "Optional. Photos make the item easier to recognize.",
     "waitForPhotos": "Wait until the photos are uploaded.",

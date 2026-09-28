@@ -107,80 +107,80 @@ to these IDs. "Next step" always means the step named in
 
 ### Step status
 
-| Step   | Title                                          | Status        |
-| ------ | ---------------------------------------------- | ------------- |
-| P1.S1  | Scaffold Next.js project                       | `COMPLETED`   |
-| P1.S2  | Tooling (shadcn/ui, Prettier, scripts)         | `COMPLETED`   |
-| P1.S3  | Internationalization (next-intl, mk/en)        | `COMPLETED`   |
-| P1.S4  | Supabase clients and proxy session refresh     | `COMPLETED`   |
-| P1.S5  | Environment validation                         | `COMPLETED`   |
-| P1.S6  | Initial migration (extensions, categories)     | `COMPLETED`   |
-| P1.S7  | Base layout and home page                      | `COMPLETED`   |
-| P1.S8  | Link Supabase project, push migration, types   | `COMPLETED`   |
-| P1.S9  | Phase 1 audit and master plan                  | `COMPLETED`   |
-| P2.S1  | Test tooling and action conventions            | `COMPLETED`   |
-| P2.S2  | Profiles table, helper functions, RLS          | `COMPLETED`   |
-| P2.S3  | Auth helpers and route protection              | `COMPLETED`   |
-| P2.S4  | Register and login (email/password)            | `COMPLETED`   |
-| P2.S5  | Email verification                             | `COMPLETED`   |
-| P2.S6  | Forgot / reset password                        | `COMPLETED`   |
-| P2.S7  | Google OAuth                                   | `COMPLETED`   |
-| P2.S8  | Profile page and avatar upload                 | `COMPLETED`   |
-| P2.S9  | SMTP setup (manual) — done before P2.S5        | `COMPLETED`   |
-| P2.S10 | GitHub remote and first Vercel deployment      | `COMPLETED`   |
-| P3.S1  | Items and images schema                        | `COMPLETED`   |
-| P3.S2  | Item images storage bucket                     | `COMPLETED`   |
-| P3.S3  | Item validation schemas                        | `COMPLETED`   |
-| P3.S4  | Image picker and upload component              | `COMPLETED`   |
-| P3.S5  | Create item page                               | `COMPLETED`   |
-| P3.S6  | Item detail page (basic)                       | `COMPLETED`   |
-| P3.S7  | Edit, delete, mark resolved                    | `COMPLETED`   |
-| P3.S8  | Dashboard ("My reports")                       | `COMPLETED`   |
-| P4.S1  | Search normalization and indexes               | `COMPLETED`   |
-| P4.S2  | `search_items` SQL function                    | `COMPLETED`   |
-| P4.S3  | Search params schema and parsing               | `COMPLETED`   |
-| P4.S4  | Items feed page with filters                   | `COMPLETED`   |
-| P4.S5  | Item cards, pagination, empty/loading states   | `COMPLETED`   |
-| P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `COMPLETED`   |
-| P4.S7  | Home page latest items                         | `COMPLETED`   |
-| P5.S1  | Leaflet base map component                     | `COMPLETED`   |
-| P5.S2  | Location picker and geocoding                  | `COMPLETED`   |
-| P5.S3  | Location in item forms, make location required | `NOT STARTED` |
-| P5.S4  | Map on item detail page                        | `NOT STARTED` |
-| P5.S5  | Radius filter                                  | `NOT STARTED` |
-| P5.S6  | `/map` page                                    | `NOT STARTED` |
-| P6.S1  | Matches schema                                 | `NOT STARTED` |
-| P6.S2  | Scoring functions                              | `NOT STARTED` |
-| P6.S3  | `compute_matches` and triggers                 | `NOT STARTED` |
-| P6.S4  | Matches UI with explanation                    | `NOT STARTED` |
-| P6.S5  | Dismiss / confirm matches                      | `NOT STARTED` |
-| P6.S6  | Demo dataset and weight tuning                 | `NOT STARTED` |
-| P7.S1  | Notifications schema                           | `NOT STARTED` |
-| P7.S2  | Match notification trigger                     | `NOT STARTED` |
-| P7.S3  | Notification bell with Realtime                | `NOT STARTED` |
-| P7.S4  | Notifications page                             | `NOT STARTED` |
-| P7.S5  | (Optional) Email for new matches               | `NOT STARTED` |
-| P8.S1  | Conversations and messages schema              | `NOT STARTED` |
-| P8.S2  | Start conversation from item                   | `NOT STARTED` |
-| P8.S3  | Conversation list                              | `NOT STARTED` |
-| P8.S4  | Chat view with Realtime                        | `NOT STARTED` |
-| P8.S5  | Read state and unread badge                    | `NOT STARTED` |
-| P8.S6  | Message notifications                          | `NOT STARTED` |
-| P9.S1  | Favorites schema                               | `NOT STARTED` |
-| P9.S2  | Favorite toggle                                | `NOT STARTED` |
-| P9.S3  | Favorites page                                 | `NOT STARTED` |
-| P10.S1 | Reports schema and admin policies              | `NOT STARTED` |
-| P10.S2 | Report item UI                                 | `NOT STARTED` |
-| P10.S3 | Admin area layout and dashboard                | `NOT STARTED` |
-| P10.S4 | Reports queue and item moderation              | `NOT STARTED` |
-| P10.S5 | User management (ban/unban)                    | `NOT STARTED` |
-| P10.S6 | Category management                            | `NOT STARTED` |
-| P11.S1 | Dark mode                                      | `NOT STARTED` |
-| P11.S2 | Responsive, accessibility, error boundaries    | `NOT STARTED` |
-| P11.S3 | Performance pass                               | `NOT STARTED` |
-| P11.S4 | End-to-end tests and CI                        | `NOT STARTED` |
-| P11.S5 | Production environment                         | `NOT STARTED` |
-| P11.S6 | Demo data and defense preparation              | `NOT STARTED` |
+| Step   | Title                                          | Status                      |
+| ------ | ---------------------------------------------- | --------------------------- |
+| P1.S1  | Scaffold Next.js project                       | `COMPLETED`                 |
+| P1.S2  | Tooling (shadcn/ui, Prettier, scripts)         | `COMPLETED`                 |
+| P1.S3  | Internationalization (next-intl, mk/en)        | `COMPLETED`                 |
+| P1.S4  | Supabase clients and proxy session refresh     | `COMPLETED`                 |
+| P1.S5  | Environment validation                         | `COMPLETED`                 |
+| P1.S6  | Initial migration (extensions, categories)     | `COMPLETED`                 |
+| P1.S7  | Base layout and home page                      | `COMPLETED`                 |
+| P1.S8  | Link Supabase project, push migration, types   | `COMPLETED`                 |
+| P1.S9  | Phase 1 audit and master plan                  | `COMPLETED`                 |
+| P2.S1  | Test tooling and action conventions            | `COMPLETED`                 |
+| P2.S2  | Profiles table, helper functions, RLS          | `COMPLETED`                 |
+| P2.S3  | Auth helpers and route protection              | `COMPLETED`                 |
+| P2.S4  | Register and login (email/password)            | `COMPLETED`                 |
+| P2.S5  | Email verification                             | `COMPLETED`                 |
+| P2.S6  | Forgot / reset password                        | `COMPLETED`                 |
+| P2.S7  | Google OAuth                                   | `COMPLETED`                 |
+| P2.S8  | Profile page and avatar upload                 | `COMPLETED`                 |
+| P2.S9  | SMTP setup (manual) — done before P2.S5        | `COMPLETED`                 |
+| P2.S10 | GitHub remote and first Vercel deployment      | `COMPLETED`                 |
+| P3.S1  | Items and images schema                        | `COMPLETED`                 |
+| P3.S2  | Item images storage bucket                     | `COMPLETED`                 |
+| P3.S3  | Item validation schemas                        | `COMPLETED`                 |
+| P3.S4  | Image picker and upload component              | `COMPLETED`                 |
+| P3.S5  | Create item page                               | `COMPLETED`                 |
+| P3.S6  | Item detail page (basic)                       | `COMPLETED`                 |
+| npm    | P3.S7                                          | Edit, delete, mark resolved | `COMPLETED` |
+| P3.S8  | Dashboard ("My reports")                       | `COMPLETED`                 |
+| P4.S1  | Search normalization and indexes               | `COMPLETED`                 |
+| P4.S2  | `search_items` SQL function                    | `COMPLETED`                 |
+| P4.S3  | Search params schema and parsing               | `COMPLETED`                 |
+| P4.S4  | Items feed page with filters                   | `COMPLETED`                 |
+| P4.S5  | Item cards, pagination, empty/loading states   | `COMPLETED`                 |
+| P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `COMPLETED`                 |
+| P4.S7  | Home page latest items                         | `COMPLETED`                 |
+| P5.S1  | Leaflet base map component                     | `COMPLETED`                 |
+| P5.S2  | Location picker and geocoding                  | `COMPLETED`                 |
+| P5.S3  | Location in item forms, make location required | `COMPLETED`                 |
+| P5.S4  | Map on item detail page                        | `NOT STARTED`               |
+| P5.S5  | Radius filter                                  | `NOT STARTED`               |
+| P5.S6  | `/map` page                                    | `NOT STARTED`               |
+| P6.S1  | Matches schema                                 | `NOT STARTED`               |
+| P6.S2  | Scoring functions                              | `NOT STARTED`               |
+| P6.S3  | `compute_matches` and triggers                 | `NOT STARTED`               |
+| P6.S4  | Matches UI with explanation                    | `NOT STARTED`               |
+| P6.S5  | Dismiss / confirm matches                      | `NOT STARTED`               |
+| P6.S6  | Demo dataset and weight tuning                 | `NOT STARTED`               |
+| P7.S1  | Notifications schema                           | `NOT STARTED`               |
+| P7.S2  | Match notification trigger                     | `NOT STARTED`               |
+| P7.S3  | Notification bell with Realtime                | `NOT STARTED`               |
+| P7.S4  | Notifications page                             | `NOT STARTED`               |
+| P7.S5  | (Optional) Email for new matches               | `NOT STARTED`               |
+| P8.S1  | Conversations and messages schema              | `NOT STARTED`               |
+| P8.S2  | Start conversation from item                   | `NOT STARTED`               |
+| P8.S3  | Conversation list                              | `NOT STARTED`               |
+| P8.S4  | Chat view with Realtime                        | `NOT STARTED`               |
+| P8.S5  | Read state and unread badge                    | `NOT STARTED`               |
+| P8.S6  | Message notifications                          | `NOT STARTED`               |
+| P9.S1  | Favorites schema                               | `NOT STARTED`               |
+| P9.S2  | Favorite toggle                                | `NOT STARTED`               |
+| P9.S3  | Favorites page                                 | `NOT STARTED`               |
+| P10.S1 | Reports schema and admin policies              | `NOT STARTED`               |
+| P10.S2 | Report item UI                                 | `NOT STARTED`               |
+| P10.S3 | Admin area layout and dashboard                | `NOT STARTED`               |
+| P10.S4 | Reports queue and item moderation              | `NOT STARTED`               |
+| P10.S5 | User management (ban/unban)                    | `NOT STARTED`               |
+| P10.S6 | Category management                            | `NOT STARTED`               |
+| P11.S1 | Dark mode                                      | `NOT STARTED`               |
+| P11.S2 | Responsive, accessibility, error boundaries    | `NOT STARTED`               |
+| P11.S3 | Performance pass                               | `NOT STARTED`               |
+| P11.S4 | End-to-end tests and CI                        | `NOT STARTED`               |
+| P11.S5 | Production environment                         | `NOT STARTED`               |
+| P11.S6 | Demo data and defense preparation              | `NOT STARTED`               |
 
 ---
 
@@ -558,6 +558,7 @@ Column privileges: `anon`/`authenticated` may **select only** `id, display_name,
 | `occurred_on`              | date                  | when lost/found; not in the future (validated in Zod and a trigger)          |
 | `location_name`            | text null             | ≤ 200 chars, human-readable address                                          |
 | `location`                 | geography(Point,4326) | nullable in P3, `not null` from P5.S3                                        |
+| `lat`, `lng`               | double precision      | P5.S3: stored generated `ST_Y`/`ST_X` of `location` (read by the app)        |
 | `search_text`              | text                  | P4.S1: `normalize_text(title ‖ description ‖ location_name)`, set by trigger |
 | `search_vector`            | tsvector              | P4.S1: generated from `search_text` (`simple` config)                        |
 | `resolved_at`              | timestamptz null      | set when status becomes `resolved`                                           |
@@ -916,8 +917,9 @@ MapLoading })`. Pages render it inside `MapFrame` (labelled region, size via
   short labels from `addressdetails`) and `LocationPicker`, which posts `lat`,
   `lng` (hidden) and an editable `locationName`.
 - Storage: forms send `lat`/`lng`; actions validate ranges and store
-  `ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography`. Reads return
-  `lat`/`lng` via `ST_Y/ST_X` (in the RPC or a view).
+  `ST_SetSRID(ST_MakePoint(lng, lat), 4326)::geography` (`private.item_point`
+  in `create_item`/`update_item`, P5.S3 ✓). Reads select the stored generated
+  columns `items.lat`/`items.lng` (`ST_Y/ST_X`); RPCs return them as well.
 - **Radius filter (P5.S5):** center from the map or "near me", radius 1/2/5/10/25/50 km.
 - **`/map` page (P5.S6):** `items_in_bounds(min_lat, min_lng, max_lat, max_lng,
 filters…)` limited to 300 results; the map reloads on `moveend` (debounced).
@@ -1528,11 +1530,14 @@ robots (P4.S6); `db:test` 7/7 and 286 unit tests pass.
 - **Changed during implementation:** interval 1.1 s instead of 1 s so requests also arrive at Nominatim at least a second apart (measured gaps 1.09 s: the timestamp is taken slightly before `fetch` runs).
 - **Verified:** 14 new unit tests (labels, URLs, throttle spacing and abort, short queries, cache, HTTP errors, reverse without address). Browser check (production build with `--webpack`, headless Edge, temporary `/picker-test` page with the picker in a form, removed afterwards; real Nominatim): 44/44 — no requests on load; click sets 6-decimal coordinates and reverse geocoding fills a Cyrillic address; dragging the pin moves the point and re-geocodes; manual address edits are posted with `lat`/`lng`; typing "Камен мост" makes a single search request, none under 3 characters; Enter picks the first result without submitting, centres the map and needs no reverse request; "no places" message; "My location" with granted permission sets the device point and re-geocodes, denied shows the message (en); English UI searches with `accept-language=en` and gets Latin labels; three rapid clicks → one reverse request for the last pin; every request ≥ 1 s apart (min 1.09 s, in page and on the network); edit mode shows the default pin, address and a validation error; no horizontal overflow at 375 px; no console errors.
 
-#### P5.S3 — Location in item forms; make location required
+#### P5.S3 — Location in item forms; make location required — `COMPLETED`
 
 - **Depends on:** P5.S2, Phase 3.
 - **Affects:** `item-form.tsx`, `src/actions/items.ts`, `src/lib/validation/items.ts`, migration `*_items_location_required.sql` (backfill or delete test rows, then `not null`), `create_item`.
 - **Verify:** item cannot be created without a location; edit keeps the location.
+- **Implemented:** migration `20260928210206_items_location_required.sql`: backfill of the 4 existing items (all the owner's real reports, named "Кавадарци", so not deleted) with the Kavadarci center from Nominatim (any other item without a point would make the migration fail instead of guessing); `items.location not null`; stored generated `lat`/`lng`; `private.item_point(lat, lng)` (raises `location_invalid`, `23514`, for missing or out-of-range values); `create_item()` and `update_item()` recreated with required `lat`/`lng` after `occurred_on` (the app calls them by name). Types regenerated. `itemSchema` requires both coordinates (`locationRequired` when blank, `locationInvalid` when out of range); `itemWriteFailure` maps `location_invalid` to the `lat` field. `ItemForm`: new "Location" card with `LocationPicker` in place of the `locationName` field (description per type; for found items it asks for a nearby public place, not a home address, since the pin is public); a failed submit keeps the pin. `getItem` selects `lat`/`lng`; the edit page passes them to the form. The picker hides its location error once a new point is chosen.
+- **Changed during implementation:** coordinates are read through generated columns instead of `ST_Y/ST_X` in an RPC or view (§13), so every query (item page, later radius filter and `/map`) can select `lat, lng` directly. SQL tests updated for the new signatures (positional calls get `lat, lng`; direct inserts get a `location`).
+- **Verified:** dry run in a rolled-back transaction (4 rows backfilled); `db:test` 7/7 with new cases (lat/lng generated, `POINT(lng lat)` stored, missing and out-of-range coordinates rejected, `location` cannot be cleared, `lat` not writable, `update_item` changes the location and rejects a missing latitude); advisors: only F-12/F-19; 301 unit tests. Browser check (production build with `--webpack`, headless Edge, temporary user `p5s3-a@findly.test` deleted afterwards): 23/23 — Location card, privacy note for found items; submit without a point → "Mark the place on the map", other values kept; clicking the map fills the coordinates and address and hides the error; a failed submit keeps the pin and address; create → item page; edit page shows the stored pin (zoom 17) and address; saving without touching the map keeps the location; moving the pin by search and saving stores the new point (`POINT(21.43325 41.997115)` in the database); a tampered edit without coordinates is rejected; English form; no horizontal overflow at 375 px; no console errors. Found F-24 (lost/found choice cleared by a failed submit, pre-existing).
 
 #### P5.S4 — Map on item detail page
 
@@ -1798,68 +1803,71 @@ started (no auth code or profile tables exist yet).
 | F-21 | Photos are uploaded before the item is saved (the item id is generated in the browser). If the user abandons the form, or the create action fails, the uploaded files stay in `item-images` without an `item_images` row. Removing a photo in the picker deletes its file; abandoned forms cannot. Noticed in P3.S4.                                                                        | Acceptable for now (files are small). The create action does **not** delete them on failure, because the form keeps the photos for the next attempt (P3.S5). Deleting an item now removes every file in its folder, including such uploads (P3.S7). Option for abandoned new items: a periodic clean-up of files older than a day without an `item_images` row (scheduled SQL job or admin action, P10/P11).                                                | Open          |
 | F-22 | Local `next build` (Turbopack) fails on the development machine: Windows Application Control blocks the native `@next/swc-win32-x64-msvc` binary, Next falls back to WASM bindings, and Turbopack requires native ones. Seen first in P3.S8 (earlier steps built normally). Lint, typecheck and tests are unaffected; Vercel builds on Linux.                                               | Code is unaffected. Locally, verify with `npx next build --webpack` until the policy allows the file (user: Windows Security → App & browser control, or reinstall `node_modules`). Scripts stay unchanged.                                                                                                                                                                                                                                                 | Open          |
 | F-23 | A `loading.tsx` or a Suspense fallback on a page streams the fallback first on a full page load; the real content is swapped in by inline JavaScript. Without JavaScript (and for crawlers that do not run it) the page stays on the fallback, and a `redirect()` after the fallback is a streamed client redirect instead of HTTP 307. Found in P4.S5 on `/items`.                         | Pages that must work without JavaScript or redirect canonically (`/items`, later public pages) render without a fallback; show pending state with `useLinkStatus`/`useFormStatus` markers instead (P4.S5). Keep this in mind for P11.S* ("`loading.tsx` per segment"): only on pages where that is acceptable (e.g. signed-in pages).                                                                                                                       | Documented    |
+| F-24 | Item form: a failed submit clears the lost/found choice in the browser. React resets the form after every action; the `type` radios are controlled by state that does not change, so the reset unchecks them while the card description still follows the old choice. The next submit then fails with "choose lost or found". Present since P3.S5 (found in P5.S3).                         | Fix in a small follow-up (e.g. make the radios uncontrolled with `defaultChecked` and remount them with a `key`, like the category radios).                                                                                                                                                                                                                                                                                                                 | Open          |
 | F-10 | No automated tests yet.                                                                                                                                                                                                                                                                                                                                                                     | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                                                                                                                                                                                                                                                                                                                                | Fixed         |
 
 ---
 
 ## 24. Changelog
 
-| Date       | Step      | Change                                                                                                                                                                                                                                   |
-| ---------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-09-28 | P5.S2     | Location picker: `@/lib/geocoding` (Nominatim search/reverse, shared 1.1 s throttle, cache, short labels; 14 unit tests), `LocationPicker` (search, my location, click/drag pin, editable address, hidden lat/lng); browser check 44/44. |
-| 2026-09-28 | P5.S1     | Leaflet base map: `leaflet` + `react-leaflet` 5, `BaseMap` (OSM tiles, attribution, bundled marker icons), client-only loading via `index.tsx`, `MapFrame`, `@/lib/map`; browser check 28/28. Phase 5 started.                           |
-| 2026-09-28 | P4.S7     | Home page: hero search, latest 4 lost/found (swipe row on phones), category links to the feed; browser check 34/34. Phase 4 done.                                                                                                        |
-| 2026-09-28 | P4.S6     | SEO: `@/lib/seo` helpers, item metadata (canonical, hreflang, OG/Twitter with cover photo), feed/home alternates, search `noindex`, `sitemap.ts` (active items, hourly), `robots.ts`; check 69/69.                                       |
-| 2026-09-28 | P4.S5     | Feed pagination (filters kept, past-the-end → last page), result range, empty states with actions, navigation-pending dimming instead of `loading.tsx` (keeps no-JS + 307s); browser check 48/48.                                        |
-| 2026-09-28 | P4.S4     | `/items` feed: `searchItems`, `next/form` filters (work without JS), canonical-URL redirect, header link; no sort without a query; browser check 43/43.                                                                                  |
-| 2026-09-28 | P4.S3     | Search params: `parseSearchParams` (per-field fallbacks), `searchQuery` (canonical URLs); 46 unit tests.                                                                                                                                 |
-| 2026-09-28 | P4.S2     | `search_items()`: text (full text + typos), type/category/status/date filters, newest/relevance, pagination capped at 50; SQL tests 7/7.                                                                                                 |
-| 2026-09-28 | P4.S1     | `normalize_text()` (Cyrillic/Latin/diacritics/digraphs), `search_text` trigger, `search_vector`, GIN indexes, backfill; SQL tests 6/6.                                                                                                   |
-| 2026-09-27 | P3.S8     | Dashboard: `getOwnItems`, `ItemCard`, status tabs, compact quick actions, empty state; sign-in lands on `/dashboard`; F-22; browser check 40/40. Phase 3 done.                                                                           |
-| 2026-09-27 | P3.S7     | Edit page (`ItemForm` edit mode), `update_item()` migration + SQL tests, `updateItem`/`setItemStatus`/`deleteItem`, owner actions with delete dialog; browser check 27/27.                                                               |
-| 2026-09-27 | P3.S6     | Item detail page: `getItem`, gallery, type badge, lost/found tokens, owner panel (edit link), 404 for hidden/invalid; browser check 25/25.                                                                                               |
-| 2026-09-27 | P3.S5     | Create item page: `ItemForm`, `createItem` (checks uploaded photos exist, `create_item`), `itemWriteFailure`, `getCategories`, `FormTextareaField`, user-menu link; browser check 27/27.                                                 |
-| 2026-09-26 | P3.S4     | `ImagePicker` (WebP ≤ 1600 px, upload with progress via XHR, reorder, remove, retry, limits) and `src/lib/item-images.ts`; verified in the browser (5.55 MB → 231 KB).                                                                   |
-| 2026-09-26 | P3.S3     | `itemSchema()` (Zod) mirroring the DB rules, `isOwnItemImagePath`, `todayInAppTimeZone()` (Europe/Skopje), 13 `Validation` messages in mk/en; 49 new unit tests.                                                                         |
-| 2026-09-26 | P3.S2     | Public `item-images` bucket (5 MB, WebP/JPEG) with owner/admin storage policies; SQL tests and a real Storage API check (own folder, other folder, overwrite, PNG, 6 MB).                                                                |
-| 2026-09-26 | P3.S1     | `items`, `item_images`, enums, triggers (resolved_at, no future date in Skopje time, 20 items/24 h), RLS + column grants incl. admin hide, `create_item()` RPC; SQL tests. Phase 3 started.                                              |
-| 2026-09-26 | P2.S10    | Deployed to https://findly-web-nine.vercel.app; production checks and profile suite 70/70; real registration, reset and Google sign-in confirmed → COMPLETED. Phase 2 completed.                                                         |
-| 2026-09-25 | P2.S10    | Deployment prep: templates link to `RedirectTo` (works for local + Vercel), site URL fallback to the Vercel domain, `fra1` region, README; Vercel import + template re-paste pending (NEEDS REVIEW).                                     |
-| 2026-09-25 | P2.S8 UI  | Profile page redesigned as a settings page (header card, personal information, account, security); functionality unchanged.                                                                                                              |
-| 2026-09-25 | P2.S8     | Profile page: name, email language (also for auth emails, F-18), avatar upload to the new `avatars` bucket, change password, profile link in the menu.                                                                                   |
-| 2026-09-24 | P1.S1–S8  | Project scaffold, i18n, Supabase clients, env validation, init migration, home page, project linked.                                                                                                                                     |
-| 2026-09-24 | —         | Fixed Supabase URL misconfiguration; URL validation; generated types committed.                                                                                                                                                          |
-| 2026-09-24 | P1.S9     | Phase 1 audit, master plan created, `CLAUDE.md` project guide, font variable fix.                                                                                                                                                        |
-| 2026-09-24 | P2.S10    | GitHub repository created and `main` pushed (Vercel part still open).                                                                                                                                                                    |
-| 2026-09-24 | P2.S1     | Vitest, `ActionResult` helpers, `safeRedirectPath`, translation parity tests, `Errors` messages.                                                                                                                                         |
-| 2026-09-24 | P2.S2     | `profiles`, sign-up trigger, `private.is_admin/can_write`, `current_profile()`, column-level privileges, SQL test runner.                                                                                                                |
-| 2026-09-24 | P2.S3     | `getCurrentUser`/`requireUser`/`requireAdmin` (server-only DAL), route rules in `auth-routes.ts`, proxy auth redirects.                                                                                                                  |
-| 2026-09-24 | P2.S4     | Login, register and verify-email pages, auth actions, form components, user menu; 3 bugs found in browser testing fixed.                                                                                                                 |
-| 2026-09-24 | P2.S9     | Custom SMTP (Brevo) configured by the user; verified with a real registration.                                                                                                                                                           |
-| 2026-09-24 | P2.S5     | Confirmation route, resend with cooldown, invalid-link page, bilingual confirm template; template paste pending (NEEDS REVIEW).                                                                                                          |
-| 2026-09-24 | P2.S5     | Confirm-signup template pasted by the user and verified with a real registration → COMPLETED.                                                                                                                                            |
-| 2026-09-24 | P2.S6/S7  | Manual parts done by the user (reset-password template, Google OAuth client + provider) and verified → COMPLETED.                                                                                                                        |
-| 2026-09-24 | P2.S7     | Google sign-in button, OAuth callback with cancel/failure messages; Google Cloud + Supabase provider setup pending (NEEDS REVIEW).                                                                                                       |
-| 2026-09-24 | F-17 fix  | Base UI "default value state of an uncontrolled FieldControl" warning: `FormField` remounts the input when `defaultValue` changes.                                                                                                       |
-| 2026-09-24 | P2.S6     | Forgot/reset password pages and actions, recovery link routing, other sessions signed out, bilingual template; template paste pending (NEEDS REVIEW).                                                                                    |
-| 2026-09-24 | P2.S5 fix | Stale session after account deletion locked users out of /login and /register (F-16); proxy verifies the user there. Full registration flow re-tested.                                                                                   |
-| 2026-09-24 | plan      | P2.S9 (SMTP) moved before P2.S5; email templates moved into P2.S5/P2.S6; Brevo chosen.                                                                                                                                                   |
-| 2026-09-24 | P2.S4 fix | Diagnosed sign-up 429 (project email quota, F-15); `email_rate_limited` error code; operational auth errors logged.                                                                                                                      |
+| Date       | Step      | Change                                                                                                                                                                                                                                           |
+| ---------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-09-28 | P5.S3     | Location required: migration (backfill of 4 items, `not null`, generated `lat`/`lng`, `create_item`/`update_item` with `lat`/`lng`), `LocationPicker` in the item form, edit keeps/changes the point; SQL 7/7, browser check 23/23; F-24 logged. |
+| 2026-09-28 | P5.S2     | Location picker: `@/lib/geocoding` (Nominatim search/reverse, shared 1.1 s throttle, cache, short labels; 14 unit tests), `LocationPicker` (search, my location, click/drag pin, editable address, hidden lat/lng); browser check 44/44.         |
+| 2026-09-28 | P5.S1     | Leaflet base map: `leaflet` + `react-leaflet` 5, `BaseMap` (OSM tiles, attribution, bundled marker icons), client-only loading via `index.tsx`, `MapFrame`, `@/lib/map`; browser check 28/28. Phase 5 started.                                   |
+| 2026-09-28 | P4.S7     | Home page: hero search, latest 4 lost/found (swipe row on phones), category links to the feed; browser check 34/34. Phase 4 done.                                                                                                                |
+| 2026-09-28 | P4.S6     | SEO: `@/lib/seo` helpers, item metadata (canonical, hreflang, OG/Twitter with cover photo), feed/home alternates, search `noindex`, `sitemap.ts` (active items, hourly), `robots.ts`; check 69/69.                                               |
+| 2026-09-28 | P4.S5     | Feed pagination (filters kept, past-the-end → last page), result range, empty states with actions, navigation-pending dimming instead of `loading.tsx` (keeps no-JS + 307s); browser check 48/48.                                                |
+| 2026-09-28 | P4.S4     | `/items` feed: `searchItems`, `next/form` filters (work without JS), canonical-URL redirect, header link; no sort without a query; browser check 43/43.                                                                                          |
+| 2026-09-28 | P4.S3     | Search params: `parseSearchParams` (per-field fallbacks), `searchQuery` (canonical URLs); 46 unit tests.                                                                                                                                         |
+| 2026-09-28 | P4.S2     | `search_items()`: text (full text + typos), type/category/status/date filters, newest/relevance, pagination capped at 50; SQL tests 7/7.                                                                                                         |
+| 2026-09-28 | P4.S1     | `normalize_text()` (Cyrillic/Latin/diacritics/digraphs), `search_text` trigger, `search_vector`, GIN indexes, backfill; SQL tests 6/6.                                                                                                           |
+| 2026-09-27 | P3.S8     | Dashboard: `getOwnItems`, `ItemCard`, status tabs, compact quick actions, empty state; sign-in lands on `/dashboard`; F-22; browser check 40/40. Phase 3 done.                                                                                   |
+| 2026-09-27 | P3.S7     | Edit page (`ItemForm` edit mode), `update_item()` migration + SQL tests, `updateItem`/`setItemStatus`/`deleteItem`, owner actions with delete dialog; browser check 27/27.                                                                       |
+| 2026-09-27 | P3.S6     | Item detail page: `getItem`, gallery, type badge, lost/found tokens, owner panel (edit link), 404 for hidden/invalid; browser check 25/25.                                                                                                       |
+| 2026-09-27 | P3.S5     | Create item page: `ItemForm`, `createItem` (checks uploaded photos exist, `create_item`), `itemWriteFailure`, `getCategories`, `FormTextareaField`, user-menu link; browser check 27/27.                                                         |
+| 2026-09-26 | P3.S4     | `ImagePicker` (WebP ≤ 1600 px, upload with progress via XHR, reorder, remove, retry, limits) and `src/lib/item-images.ts`; verified in the browser (5.55 MB → 231 KB).                                                                           |
+| 2026-09-26 | P3.S3     | `itemSchema()` (Zod) mirroring the DB rules, `isOwnItemImagePath`, `todayInAppTimeZone()` (Europe/Skopje), 13 `Validation` messages in mk/en; 49 new unit tests.                                                                                 |
+| 2026-09-26 | P3.S2     | Public `item-images` bucket (5 MB, WebP/JPEG) with owner/admin storage policies; SQL tests and a real Storage API check (own folder, other folder, overwrite, PNG, 6 MB).                                                                        |
+| 2026-09-26 | P3.S1     | `items`, `item_images`, enums, triggers (resolved_at, no future date in Skopje time, 20 items/24 h), RLS + column grants incl. admin hide, `create_item()` RPC; SQL tests. Phase 3 started.                                                      |
+| 2026-09-26 | P2.S10    | Deployed to https://findly-web-nine.vercel.app; production checks and profile suite 70/70; real registration, reset and Google sign-in confirmed → COMPLETED. Phase 2 completed.                                                                 |
+| 2026-09-25 | P2.S10    | Deployment prep: templates link to `RedirectTo` (works for local + Vercel), site URL fallback to the Vercel domain, `fra1` region, README; Vercel import + template re-paste pending (NEEDS REVIEW).                                             |
+| 2026-09-25 | P2.S8 UI  | Profile page redesigned as a settings page (header card, personal information, account, security); functionality unchanged.                                                                                                                      |
+| 2026-09-25 | P2.S8     | Profile page: name, email language (also for auth emails, F-18), avatar upload to the new `avatars` bucket, change password, profile link in the menu.                                                                                           |
+| 2026-09-24 | P1.S1–S8  | Project scaffold, i18n, Supabase clients, env validation, init migration, home page, project linked.                                                                                                                                             |
+| 2026-09-24 | —         | Fixed Supabase URL misconfiguration; URL validation; generated types committed.                                                                                                                                                                  |
+| 2026-09-24 | P1.S9     | Phase 1 audit, master plan created, `CLAUDE.md` project guide, font variable fix.                                                                                                                                                                |
+| 2026-09-24 | P2.S10    | GitHub repository created and `main` pushed (Vercel part still open).                                                                                                                                                                            |
+| 2026-09-24 | P2.S1     | Vitest, `ActionResult` helpers, `safeRedirectPath`, translation parity tests, `Errors` messages.                                                                                                                                                 |
+| 2026-09-24 | P2.S2     | `profiles`, sign-up trigger, `private.is_admin/can_write`, `current_profile()`, column-level privileges, SQL test runner.                                                                                                                        |
+| 2026-09-24 | P2.S3     | `getCurrentUser`/`requireUser`/`requireAdmin` (server-only DAL), route rules in `auth-routes.ts`, proxy auth redirects.                                                                                                                          |
+| 2026-09-24 | P2.S4     | Login, register and verify-email pages, auth actions, form components, user menu; 3 bugs found in browser testing fixed.                                                                                                                         |
+| 2026-09-24 | P2.S9     | Custom SMTP (Brevo) configured by the user; verified with a real registration.                                                                                                                                                                   |
+| 2026-09-24 | P2.S5     | Confirmation route, resend with cooldown, invalid-link page, bilingual confirm template; template paste pending (NEEDS REVIEW).                                                                                                                  |
+| 2026-09-24 | P2.S5     | Confirm-signup template pasted by the user and verified with a real registration → COMPLETED.                                                                                                                                                    |
+| 2026-09-24 | P2.S6/S7  | Manual parts done by the user (reset-password template, Google OAuth client + provider) and verified → COMPLETED.                                                                                                                                |
+| 2026-09-24 | P2.S7     | Google sign-in button, OAuth callback with cancel/failure messages; Google Cloud + Supabase provider setup pending (NEEDS REVIEW).                                                                                                               |
+| 2026-09-24 | F-17 fix  | Base UI "default value state of an uncontrolled FieldControl" warning: `FormField` remounts the input when `defaultValue` changes.                                                                                                               |
+| 2026-09-24 | P2.S6     | Forgot/reset password pages and actions, recovery link routing, other sessions signed out, bilingual template; template paste pending (NEEDS REVIEW).                                                                                            |
+| 2026-09-24 | P2.S5 fix | Stale session after account deletion locked users out of /login and /register (F-16); proxy verifies the user there. Full registration flow re-tested.                                                                                           |
+| 2026-09-24 | plan      | P2.S9 (SMTP) moved before P2.S5; email templates moved into P2.S5/P2.S6; Brevo chosen.                                                                                                                                                           |
+| 2026-09-24 | P2.S4 fix | Diagnosed sign-up 429 (project email quota, F-15); `email_rate_limited` error code; operational auth errors logged.                                                                                                                              |
 
 ---
 
 ## 25. Next Recommended Step
 
-**P5.S3 — Location in item forms; make location required** (see §22, Phase 5).
+**Fix F-24 first (small, recommended), then P5.S4 — Map on item detail page**
+(see §22, Phase 5, and §23).
 
-Why next: the picker exists (P5.S2) but no report stores coordinates yet, and
-the matching phase needs a location on every item. P5.S3 replaces the item
-form's `locationName` field with `LocationPicker` (with the privacy note for
-found items from §13), passes `lat`/`lng` from `itemSchema` to `create_item` /
-`update_item` (new migration: location parameters, `ST_MakePoint(lng, lat)`),
-returns the stored point for the edit page, and makes `items.location`
-`not null` after backfilling or deleting the existing test rows without one
-(check the owner's real items first).
+F-24: after any failed submit of the item form, the lost/found choice is
+cleared and the next submit fails; users hit this whenever validation fails.
+The fix is local to `item-form.tsx`.
+
+P5.S4: every item now has `lat`/`lng` (`getItem` already selects them). Add a
+browser-only `item-map.tsx` (read-only pin at the stored point, exported from
+`index.tsx`) and show it on `/items/[id]` in `MapFrame` next to the address;
+the page must still render if the map fails to load.
 
 Open manual items:
 

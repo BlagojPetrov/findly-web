@@ -24,8 +24,9 @@ status and the next step. Read it before any work.
 
 - Phases 1–4 completed (auth, profile, first deployment; items CRUD with photos, item
   page, `/dashboard`; search, `/items` feed with filters and pagination, SEO, home page
-  with latest items). Phase 5 in progress: base map and location picker done; next
-  P5.S3 (location in item forms, location required).
+  with latest items). Phase 5 in progress: base map, location picker, required
+  location in item forms done; next F-24 fix, then P5.S4 (map on item page).
+- Open bug: item form loses the lost/found choice after a failed submit (F-24).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19); local Turbopack build
   blocked by Windows Application Control (F-22).
@@ -101,7 +102,8 @@ status and the next step. Read it before any work.
   `rpc("current_profile")`. `preferred_locale` is mirrored to `user_metadata.locale`
   (the auth email templates read that) by `updateProfile`.
 - Items: create through `rpc("create_item")`, edit through `rpc("update_item")` (item + images in one
-  transaction; returns removed paths to delete). `deleteItem` removes the item's whole folder. Trigger
+  transaction; returns removed paths to delete; both require `lat`/`lng`). `items.location` is
+  required; read coordinates from the generated columns `lat, lng` (never parse `location`). `deleteItem` removes the item's whole folder. Trigger
   errors the app maps: `23514` `occurred_on_in_future` (today = `Europe/Skopje` date),
   `FL429` `daily_item_limit` (20 items / 24 h). Owners cannot hide or edit hidden items;
   admins hide/restore. Trigger functions go in schema `private`. Forms validate with

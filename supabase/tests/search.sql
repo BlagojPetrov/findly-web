@@ -46,17 +46,20 @@ select public.create_item(
   type => 'lost', title => 'Црн кожен паричник',
   description => 'Паричник со лична карта и картички.',
   category_id => 1::smallint, occurred_on => current_date - 1,
+  lat => 41.9981, lng => 21.4254,
   location_name => 'Градски парк, Скопје',
   item_id => '41000000-0000-4000-8000-000000000001');
 select public.create_item(
   type => 'found', title => 'Клучеви од стан',
   description => 'Три клуча на црвен привезок.',
   category_id => 1::smallint, occurred_on => current_date - 1,
+  lat => 41.9981, lng => 21.4254,
   item_id => '41000000-0000-4000-8000-000000000002');
 select public.create_item(
   type => 'lost', title => 'Samsung telefon',
   description => 'Crn Samsung Galaxy so pukanato staklo.',
   category_id => 1::smallint, occurred_on => current_date - 1,
+  lat => 41.9981, lng => 21.4254,
   item_id => '41000000-0000-4000-8000-000000000003');
 
 do $$
@@ -112,6 +115,7 @@ select public.update_item(
   item_id => '41000000-0000-4000-8000-000000000002', type => 'found',
   title => 'Клучеви од автомобил', description => 'Клуч од Škoda со привезок.',
   category_id => 1::smallint, occurred_on => current_date - 1,
+  lat => 41.9981, lng => 21.4254,
   location_name => 'Аеродром');
 
 update public.items set status = 'resolved'

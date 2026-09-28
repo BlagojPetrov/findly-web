@@ -62,6 +62,8 @@ export default async function EditItemPage({
           categoryId: String(item.category.id),
           occurredOn: item.occurred_on,
           locationName: item.location_name ?? "",
+          lat: item.lat === null ? "" : String(item.lat),
+          lng: item.lng === null ? "" : String(item.lng),
         }}
         initialImagePaths={item.images.map((image) => image.storage_path)}
         today={todayInAppTimeZone()}

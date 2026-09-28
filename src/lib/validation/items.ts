@@ -34,8 +34,8 @@ export function isOwnItemImagePath(
 // FormData values are strings or null; null (missing field) is "required".
 const text = () => z.string({ error: msg("required") }).trim();
 
-// Optional coordinate from a (hidden) form field: missing or blank means
-// "no location".
+// Required coordinate from a hidden form field (the location picker leaves
+// it blank until a point is chosen).
 const coordinate = (limit: number) =>
   z.preprocess(
     (value) =>
@@ -43,10 +43,14 @@ const coordinate = (limit: number) =>
         ? undefined
         : Number(value),
     z
-      .number({ error: msg("locationInvalid") })
+      .number({
+        error: (issue) =>
+          issue.input === undefined
+            ? msg("locationRequired")
+            : msg("locationInvalid"),
+      })
       .min(-limit, msg("locationInvalid"))
-      .max(limit, msg("locationInvalid"))
-      .optional(),
+      .max(limit, msg("locationInvalid")),
   );
 
 type ItemSchemaContext = {
@@ -93,13 +97,6 @@ export function itemSchema({ categoryIds, userId }: ItemSchemaContext) {
         .max(ITEM_LIMITS.images, msg("tooManyImages")),
     })
     .superRefine((item, ctx) => {
-      if ((item.lat === undefined) !== (item.lng === undefined)) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["lat"],
-          message: msg("locationInvalid"),
-        });
-      }
       const paths = item.imagePaths;
       if (
         new Set(paths).size !== paths.length ||

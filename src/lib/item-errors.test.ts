@@ -26,6 +26,14 @@ describe("itemWriteFailure", () => {
       },
     ],
     [
+      { code: "23514", message: "location_invalid" },
+      {
+        ok: false,
+        error: "validation",
+        fieldErrors: { lat: ["locationInvalid"] },
+      },
+    ],
+    [
       { code: "23503", message: "violates foreign key constraint" },
       {
         ok: false,

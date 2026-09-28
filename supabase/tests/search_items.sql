@@ -11,10 +11,12 @@ update public.profiles set role = 'admin' where id = '00000000-0000-4000-8000-00
 
 -- Inserted as the test runner (postgres), so status and created_at can be set.
 insert into public.items
-  (id, user_id, type, status, title, description, category_id, occurred_on, created_at)
+  (id, user_id, type, status, title, description, category_id, occurred_on, created_at,
+   location)
 select v.id::uuid, v.user_id::uuid, v.type::public.item_type, v.status::public.item_status,
   v.title, v.description, c.id, v.occurred_on::date,
-  timestamptz '2001-02-01 12:00+00' + v.minutes * interval '1 minute'
+  timestamptz '2001-02-01 12:00+00' + v.minutes * interval '1 minute',
+  extensions.st_setsrid(extensions.st_makepoint(21.4254, 41.9981), 4326)::extensions.geography
 from (values
   ('42000000-0000-4000-8000-000000000001', '00000000-0000-4000-8000-0000000000a5',
    'lost', 'active', 'Црн кожен паричник', 'Паричник со лична карта.',
@@ -46,10 +48,11 @@ insert into public.item_images (item_id, storage_path, position) values
 
 -- 55 more items in March 2001 for the page size cap.
 insert into public.items
-  (user_id, type, title, description, category_id, occurred_on, created_at)
+  (user_id, type, title, description, category_id, occurred_on, created_at, location)
 select '00000000-0000-4000-8000-0000000000a5', 'found', 'Bulk item ' || n,
   'Bulk item for the page size test.', 8, date '2001-03-01',
-  timestamptz '2001-03-02 12:00+00' + n * interval '1 minute'
+  timestamptz '2001-03-02 12:00+00' + n * interval '1 minute',
+  extensions.st_setsrid(extensions.st_makepoint(21.4254, 41.9981), 4326)::extensions.geography
 from generate_series(1, 55) as n;
 
 -- Titles of a January search, in result order.

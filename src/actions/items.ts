@@ -105,7 +105,6 @@ export async function createItem(
     return imageInvalid;
   }
 
-  // Coordinates are stored from P5.S3 (create_item has no location yet).
   const { data: id, error } = await supabase.rpc("create_item", {
     item_id: item.itemId,
     type: item.type,
@@ -113,6 +112,8 @@ export async function createItem(
     description: item.description,
     category_id: item.categoryId,
     occurred_on: item.occurredOn,
+    lat: item.lat,
+    lng: item.lng,
     location_name: item.locationName ?? undefined,
     image_paths: item.imagePaths,
   });
@@ -146,6 +147,8 @@ export async function updateItem(
     description: item.description,
     category_id: item.categoryId,
     occurred_on: item.occurredOn,
+    lat: item.lat,
+    lng: item.lng,
     location_name: item.locationName ?? undefined,
     image_paths: item.imagePaths,
   });
