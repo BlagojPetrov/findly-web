@@ -15,6 +15,11 @@ export const BaseMap = dynamic(() => import("./base-map"), {
   loading: MapLoading,
 });
 
+export const LocationPickerMap = dynamic(
+  () => import("./location-picker-map"),
+  { ssr: false, loading: MapLoading },
+);
+
 // Placeholder while a map's code loads.
 export function MapLoading() {
   const t = useTranslations("Map");

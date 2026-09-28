@@ -375,5 +375,29 @@
   },
   "Map": {
     "loading": "Loading map…"
+  },
+  "LocationPicker": {
+    "searchLabel": "Search for an address",
+    "searchPlaceholder": "Street, place or neighbourhood",
+    "searching": "Searching…",
+    "searchFailed": "Search is not available right now. Mark the place on the map.",
+    "resultCount": "{count, plural, =0 {No places found.} one {# place found.} other {# places found.}}",
+    "resultsLabel": "Places found",
+    "useMyLocation": "My location",
+    "locating": "Finding your location…",
+    "geo": {
+      "denied": "Location access was denied. Allow it in your browser or mark the place on the map.",
+      "unavailable": "Your location is not available. Mark the place on the map.",
+      "unsupported": "Your browser does not support location. Mark the place on the map."
+    },
+    "mapLabel": "Map for choosing the location",
+    "mapHint": "Click the map to place a pin, then drag it to the exact spot.",
+    "pinLabel": "Chosen location",
+    "pinAt": "Pin at {lat}, {lng}. Drag it to move it.",
+    "addressLabel": "Address or place",
+    "addressHint": "Filled in from the pin. You can edit it.",
+    "addressLoading": "Finding the address…",
+    "addressNotFound": "No address for this spot. Type it in.",
+    "addressFailed": "The address could not be found. Type it in."
   }
 }

@@ -24,8 +24,8 @@ status and the next step. Read it before any work.
 
 - Phases 1–4 completed (auth, profile, first deployment; items CRUD with photos, item
   page, `/dashboard`; search, `/items` feed with filters and pagination, SEO, home page
-  with latest items). Phase 5 in progress: P5.S1 (Leaflet base map) done; next P5.S2
-  (location picker and geocoding).
+  with latest items). Phase 5 in progress: base map and location picker done; next
+  P5.S3 (location in item forms, location required).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19); local Turbopack build
   blocked by Windows Application Control (F-22).
@@ -141,6 +141,10 @@ status and the next step. Read it before any work.
   pages never import react-leaflet. Render maps inside `MapFrame` (label, size via
   `className`; `isolate` keeps Leaflet's z-indexes under the header). Constants
   (`DEFAULT_CENTER`, OSM tile URL/attribution) in `@/lib/map`.
+  Geocoding only through `@/lib/geocoding` (`searchAddress`, `reverseGeocode`): it holds
+  the shared Nominatim throttle (≥ 1 s between requests, policy) and cache; never call
+  Nominatim directly. Location input: `LocationPicker` (`src/components/map/location-picker.tsx`)
+  posts `lat`, `lng`, `locationName`.
 - SEO: public pages set `alternates: localeAlternates(path, locale, query?)` (canonical +
   hreflang) and, when they set `openGraph`, spread `openGraphBase(locale)` (metadata merges
   shallowly); descriptions go through `metaDescription()` (`@/lib/seo`). `(app)`/`(auth)`
