@@ -194,7 +194,8 @@ status and the next step. Read it before any work.
   Windows Application Control blocks; F-22). Verify with `npx next build --webpack`
   until that is resolved; do not change the scripts (Vercel builds normally).
   webpack and Turbopack can differ (F-25): after pushing browser-facing changes (maps,
-  assets), re-run the browser check against the Vercel deployment.
+  assets), re-run the browser check against the Vercel deployment. There, wait for `load` and
+  specific elements, not `networkidle` (prefetches stay open on Vercel, F-26).
 - `npx supabase login` needs an interactive terminal: the user runs it in their own
   PowerShell window, not through the agent.
 - Never edit applied migrations; never run `supabase config push` (config.toml holds
