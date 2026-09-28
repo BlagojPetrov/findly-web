@@ -372,5 +372,8 @@
     "next": "Следна",
     "page": "Страница {page}",
     "pageOf": "Страница {page} од {totalPages}"
+  },
+  "Map": {
+    "loading": "Картата се вчитува…"
   }
 }

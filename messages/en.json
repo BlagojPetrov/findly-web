@@ -372,5 +372,8 @@
     "next": "Next",
     "page": "Page {page}",
     "pageOf": "Page {page} of {totalPages}"
+  },
+  "Map": {
+    "loading": "Loading map…"
   }
 }

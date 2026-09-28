@@ -24,7 +24,8 @@ status and the next step. Read it before any work.
 
 - Phases 1–4 completed (auth, profile, first deployment; items CRUD with photos, item
   page, `/dashboard`; search, `/items` feed with filters and pagination, SEO, home page
-  with latest items). Next: Phase 5, P5.S1 (Leaflet base map component).
+  with latest items). Phase 5 in progress: P5.S1 (Leaflet base map) done; next P5.S2
+  (location picker and geocoding).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19); local Turbopack build
   blocked by Windows Application Control (F-22).
@@ -134,6 +135,12 @@ status and the next step. Read it before any work.
   without JavaScript or redirect with 307 (F-23): show pending state with
   `LinkPendingMarker`/`FormPendingMarker` (`data-pending`) and style it with
   `group-has-[[data-pending]]/…:`. Sibling elements must not share a `key`.
+- Maps: Leaflet via `react-leaflet`. Any module importing `leaflet`/`react-leaflet`
+  (even `Marker`) is browser-only: it imports `./base-map` and is exported from
+  `@/components/map` (`index.tsx`) with `dynamic(..., { ssr: false, loading: MapLoading })`;
+  pages never import react-leaflet. Render maps inside `MapFrame` (label, size via
+  `className`; `isolate` keeps Leaflet's z-indexes under the header). Constants
+  (`DEFAULT_CENTER`, OSM tile URL/attribution) in `@/lib/map`.
 - SEO: public pages set `alternates: localeAlternates(path, locale, query?)` (canonical +
   hreflang) and, when they set `openGraph`, spread `openGraphBase(locale)` (metadata merges
   shallowly); descriptions go through `metaDescription()` (`@/lib/seo`). `(app)`/`(auth)`
