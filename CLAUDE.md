@@ -25,8 +25,7 @@ status and the next step. Read it before any work.
 - Phases 1–4 completed (auth, profile, first deployment; items CRUD with photos, item
   page, `/dashboard`; search, `/items` feed with filters and pagination, SEO, home page
   with latest items). Phase 5 in progress: base map, location picker, required
-  location in item forms done; next F-24 fix, then P5.S4 (map on item page).
-- Open bug: item form loses the lost/found choice after a failed submit (F-24).
+  location in item forms done; next P5.S4 (map on item page).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19); local Turbopack build
   blocked by Windows Application Control (F-22).
@@ -75,7 +74,13 @@ status and the next step. Read it before any work.
 - Combine `buttonVariants()` with conflicting classes via `cn(buttonVariants(), "…")`,
   not `buttonVariants({ className })` (no class merging there).
 - Unit tests: Vitest, colocated as `src/**/*.test.ts`; `vitest.config.mts` sets placeholder
-  env values so `@/lib/env` can be imported. Browser checks: headless Edge via
+  env values so `@/lib/env` can be imported. Component tests: `*.test.tsx` with
+  `// @vitest-environment jsdom`, rendered with `react-dom/client` + `act` inside
+  `NextIntlClientProvider` (mk messages); mock server actions, `@/i18n/navigation` and
+  browser-only parts (pickers, maps). Example: `src/components/items/item-form.test.tsx`.
+- Forms: React resets a form after every action. Controlled radios/checkboxes whose
+  state did not change get unchecked by that reset: remount them after each result
+  (`key` = result counter) so React writes the current value as the default (F-24). Browser checks: headless Edge via
   `playwright-core` installed in the scratchpad (not the project) against `next start`
   (another port if the user's dev server has 3000) with browser locale `mk-MK`
   (locale detection, F-13); stop that server by its node PID afterwards (stopping the

@@ -35,7 +35,12 @@ export type ItemFormValues = {
   lng: string;
 };
 type Values = ItemFormValues;
-type State = { result: ActionResult<{ id: string }>; values: Values } | null;
+type State = {
+  result: ActionResult<{ id: string }>;
+  values: Values;
+  // Counts action results; remounts the type radios (F-24).
+  attempt: number;
+} | null;
 
 export type CategoryOption = { id: number; name: string; icon: string };
 
@@ -101,7 +106,7 @@ export function ItemForm({
   const [type, setType] = useState<ItemType | null>(initialValues.type);
   const [uploading, setUploading] = useState(false);
   const [state, formAction, pending] = useActionState(
-    async (_prev: State, formData: FormData): Promise<State> => {
+    async (prev: State, formData: FormData): Promise<State> => {
       const save = mode === "edit" ? updateItem : createItem;
       const result = await save(formData);
       if (result.ok) {
@@ -109,7 +114,11 @@ export function ItemForm({
         router.push(`/items/${result.data.id}`);
       }
       // Keep the entered values after an error (React resets the form).
-      return { result, values: readValues(formData) };
+      return {
+        result,
+        values: readValues(formData),
+        attempt: (prev?.attempt ?? 0) + 1,
+      };
     },
     null,
   );
@@ -131,7 +140,11 @@ export function ItemForm({
         className="min-w-0"
       >
         <legend className="mb-2 text-sm font-medium">{t("typeLegend")}</legend>
-        <div className="grid gap-3 sm:grid-cols-2">
+        {/* React resets the form after every action, which unchecks these
+            controlled radios while `type` stays the same (F-24). Remounting
+            the group after each result makes React write the current choice
+            as their default (`defaultChecked`), so the reset keeps it. */}
+        <div key={state?.attempt ?? 0} className="grid gap-3 sm:grid-cols-2">
           {(["lost", "found"] as const).map((option) => {
             const Icon = typeIcons[option];
             return (
