@@ -27,7 +27,8 @@ import {
 } from "@/lib/validation/search";
 
 // Canonical URL with the canonical filter query (the page redirects every
-// other URL to it). Text searches are not indexed; their links are followed.
+// other URL to it). Text and distance searches are not indexed; their links
+// are followed.
 export async function generateMetadata({
   params,
   searchParams,
@@ -50,7 +51,8 @@ export async function generateMetadata({
     title: t("title"),
     description: t("description"),
     alternates,
-    robots: filters.q ? { index: false, follow: true } : undefined,
+    robots:
+      filters.q || filters.near ? { index: false, follow: true } : undefined,
     openGraph: {
       ...openGraphBase(locale),
       type: "website",

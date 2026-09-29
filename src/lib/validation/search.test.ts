@@ -29,6 +29,9 @@ describe("parseSearchParams", () => {
         status: "resolved",
         from: "2026-09-01",
         to: "2026-09-20",
+        lat: "41.99812",
+        lng: "21.4254",
+        radius: "5",
         sort: "newest",
         page: "3",
       }),
@@ -39,6 +42,8 @@ describe("parseSearchParams", () => {
       status: "resolved",
       from: "2026-09-01",
       to: "2026-09-20",
+      near: { lat: 41.9981, lng: 21.4254 },
+      radius: 5,
       sort: "newest",
       page: 3,
     } satisfies SearchFilters);
@@ -54,6 +59,8 @@ describe("parseSearchParams", () => {
     ["to", "yesterday", { to: null }],
     ["to", "2026-09-20T10:00:00Z", { to: null }],
     ["sort", "nearest", { sort: "newest" }],
+    ["sort", "bogus", { sort: "newest" }],
+    ["radius", "5", { radius: null }],
     ["page", "0", { page: 1 }],
     ["page", "-2", { page: 1 }],
     ["page", "2.5", { page: 1 }],
@@ -92,6 +99,61 @@ describe("parseSearchParams", () => {
     expect(parse({ q: "keys", sort: "bogus" }).sort).toBe("relevance");
     expect(parse({ q: "  " }).sort).toBe("newest");
     expect(parse({ sort: "relevance" }).sort).toBe("newest");
+  });
+
+  describe("location", () => {
+    const center = { lat: "41.9981", lng: "21.4254" };
+
+    it("reads the center, rounded to 4 decimals", () => {
+      expect(parse({ lat: "41.998149", lng: "-21.42545" }).near).toEqual({
+        lat: 41.9981,
+        lng: -21.4255,
+      });
+      expect(parse({ lat: "0", lng: "180" }).near).toEqual({
+        lat: 0,
+        lng: 180,
+      });
+    });
+
+    it.each([
+      [{ lat: "41.9981" }],
+      [{ lng: "21.4254" }],
+      [{ lat: "91", lng: "21.4254" }],
+      [{ lat: "41.9981", lng: "-180.5" }],
+      [{ lat: "", lng: "" }],
+      [{ lat: "4e1", lng: "21.4254" }],
+      [{ lat: "0x10", lng: "21.4254" }],
+      [{ lat: "41.9981", lng: "NaN" }],
+      [{ lat: "41,9981", lng: "21.4254" }],
+    ])("drops an incomplete or invalid center %j", (params) => {
+      expect(parse({ ...params, radius: "5" })).toMatchObject({
+        near: null,
+        radius: null,
+        sort: "newest",
+      });
+    });
+
+    it.each([
+      ["1", 1],
+      ["50", 50],
+      ["3", null],
+      ["100", null],
+      ["", null],
+      ["abc", null],
+    ])("radius %j → %j", (radius, expected) => {
+      expect(parse({ ...center, radius }).radius).toBe(expected);
+    });
+
+    it("sorts nearest first by default around a center", () => {
+      expect(parse(center).sort).toBe("nearest");
+      expect(parse({ ...center, q: "keys" }).sort).toBe("nearest");
+      expect(parse({ ...center, q: "keys", sort: "relevance" }).sort).toBe(
+        "relevance",
+      );
+      expect(parse({ ...center, sort: "relevance" }).sort).toBe("nearest");
+      expect(parse({ ...center, sort: "newest" }).sort).toBe("newest");
+      expect(parse({ q: "keys", sort: "nearest" }).sort).toBe("relevance");
+    });
   });
 
   describe("categories", () => {
@@ -189,6 +251,21 @@ describe("searchQuery", () => {
     expect(searchQuery({ sort: "relevance" })).toEqual({});
   });
 
+  it("writes the center (rounded) and radius, and a sort other than nearest", () => {
+    const near = { lat: 41.998149, lng: 21.4254 };
+    expect(searchQuery({ near, radius: 5, sort: "nearest" })).toEqual({
+      lat: "41.9981",
+      lng: "21.4254",
+      radius: "5",
+    });
+    expect(searchQuery({ near, sort: "newest" })).toEqual({
+      lat: "41.9981",
+      lng: "21.4254",
+      sort: "newest",
+    });
+    expect(searchQuery({ radius: 5, sort: "nearest" })).toEqual({});
+  });
+
   it("omits page 1 and status active", () => {
     expect(searchQuery({ page: 1, status: "active" })).toEqual({});
   });
@@ -206,10 +283,26 @@ describe("round trip", () => {
       status: "all",
       from: "2026-01-31",
       to: "2026-02-28",
+      near: null,
+      radius: null,
       sort: "relevance",
       page: 7,
     },
     { ...DEFAULT_SEARCH_FILTERS, type: "found", status: "resolved" },
+    {
+      ...DEFAULT_SEARCH_FILTERS,
+      near: { lat: 41.9981, lng: 21.4254 },
+      radius: 10,
+      sort: "nearest",
+    },
+    {
+      ...DEFAULT_SEARCH_FILTERS,
+      q: "keys",
+      near: { lat: -33.8688, lng: 151.2093 },
+      radius: null,
+      sort: "relevance",
+      page: 2,
+    },
   ];
 
   it.each(cases)("parse(serialize(%j)) returns the same filters", (filters) => {
@@ -222,6 +315,9 @@ describe("round trip", () => {
     "category=Keys,wallet,keys&type=lost&from=2026-09-20&to=2026-09-01",
     "status=bogus&page=x&q=",
     "sort=relevance&q=",
+    "lat=41.99812&lng=21.42540&radius=5&sort=nearest",
+    "radius=5&sort=nearest",
+    "lat=41.9981&lng=21.4254&q=keys&sort=relevance",
   ])("serialize(parse(%s)) is canonical", (search) => {
     const once = searchQuery(
       parseSearchParams(new URLSearchParams(search), { categorySlugs }),

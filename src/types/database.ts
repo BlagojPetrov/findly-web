@@ -230,9 +230,12 @@ export type Database = {
           date_to?: string
           item_status?: Database["public"]["Enums"]["item_status"]
           item_type?: Database["public"]["Enums"]["item_type"]
+          near_lat?: number
+          near_lng?: number
           page?: number
           page_size?: number
           q?: string
+          radius_km?: number
           sort?: string
         }
         Returns: {
@@ -243,6 +246,7 @@ export type Database = {
           category_slug: string
           cover_path: string
           created_at: string
+          distance_m: number
           id: string
           location_name: string
           occurred_on: string

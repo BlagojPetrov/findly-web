@@ -1,15 +1,21 @@
 import { z } from "zod";
+import type { LatLng } from "@/lib/map";
 import { ITEM_TYPES } from "./items";
 
 // Filters of the public feed (/items), kept in the URL (§12 URL contract):
 //   ?q=&type=lost|found&category=keys,wallet&status=active|resolved|all
-//    &from=YYYY-MM-DD&to=YYYY-MM-DD&sort=newest|relevance&page=2
+//    &from=YYYY-MM-DD&to=YYYY-MM-DD&lat=41.9981&lng=21.4254&radius=5
+//    &sort=newest|relevance|nearest&page=2
 // Every field falls back to its default when it is missing or invalid, so a
-// broken or hand-edited URL still shows a feed. Location (lat, lng, radius,
-// sort=nearest) is added in P5.S5.
+// broken or hand-edited URL still shows a feed.
 
 export const SEARCH_STATUSES = ["active", "resolved", "all"] as const;
-export const SEARCH_SORTS = ["newest", "relevance"] as const;
+export const SEARCH_SORTS = ["newest", "relevance", "nearest"] as const;
+// Radius choices in km (search_items() accepts up to 50).
+export const SEARCH_RADII = [1, 2, 5, 10, 25, 50] as const;
+// Decimals of the center in the URL (~11 m): enough for a 1 km radius, and a
+// device location is not put into links more precisely than needed.
+export const CENTER_DECIMALS = 4;
 export const SEARCH_LIMITS = {
   queryMax: 100,
   categoriesMax: 20,
@@ -20,6 +26,7 @@ export const SEARCH_LIMITS = {
 
 export type SearchStatus = (typeof SEARCH_STATUSES)[number];
 export type SearchSort = (typeof SEARCH_SORTS)[number];
+export type SearchRadius = (typeof SEARCH_RADII)[number];
 
 export type SearchFilters = {
   // Trimmed, whitespace collapsed; "" = no text search.
@@ -31,6 +38,10 @@ export type SearchFilters = {
   // Calendar days "YYYY-MM-DD" (occurred on), inclusive.
   from: string | null;
   to: string | null;
+  // Center for the distance (lat/lng in the URL, rounded to CENTER_DECIMALS)
+  // and the radius in km around it; the radius needs a center.
+  near: LatLng | null;
+  radius: SearchRadius | null;
   sort: SearchSort;
   page: number;
 };
@@ -38,9 +49,27 @@ export type SearchFilters = {
 // Search params as Next.js passes them to a page.
 export type RawSearchParams = Record<string, string | string[] | undefined>;
 
-// Without a query there is nothing to rank, so the list is newest first;
-// with one, the best matches come first.
-export function defaultSort(q: string): SearchSort {
+// Sorts that make sense for the filters: relevance needs a query, nearest a
+// center.
+export function availableSorts({
+  q,
+  near,
+}: Pick<SearchFilters, "q" | "near">): SearchSort[] {
+  return SEARCH_SORTS.filter(
+    (sort) =>
+      sort === "newest" ||
+      (sort === "relevance" && q !== "") ||
+      (sort === "nearest" && near !== null),
+  );
+}
+
+// With a center the nearest items come first; otherwise with a query the
+// best matches; otherwise (nothing to rank) the newest.
+export function defaultSort({
+  q,
+  near,
+}: Pick<SearchFilters, "q" | "near">): SearchSort {
+  if (near) return "nearest";
   return q ? "relevance" : "newest";
 }
 
@@ -51,7 +80,9 @@ export const DEFAULT_SEARCH_FILTERS: SearchFilters = {
   status: "active",
   from: null,
   to: null,
-  sort: defaultSort(""),
+  near: null,
+  radius: null,
+  sort: "newest",
   page: 1,
 };
 
@@ -59,6 +90,28 @@ const slugPattern = /^[a-z0-9-]+$/;
 
 // A repeated parameter (?type=lost&type=found) counts with its first value.
 const first = (value: unknown) => (Array.isArray(value) ? value[0] : value);
+
+const roundCoordinate = (value: number) =>
+  Number(value.toFixed(CENTER_DECIMALS));
+
+// A center coordinate as written to the URL ("41.9981", "21.4").
+export const centerParam = (value: number) => String(roundCoordinate(value));
+
+// A coordinate in the URL: a plain decimal number (no "", "1e2", "0x1").
+function coordinate(max: number) {
+  return z
+    .preprocess(
+      first,
+      z
+        .string()
+        .regex(/^-?\d{1,3}(\.\d+)?$/)
+        .transform(Number)
+        .pipe(z.number().min(-max).max(max))
+        .transform(roundCoordinate)
+        .nullable(),
+    )
+    .catch(null);
+}
 
 function cleanQuery(value: string) {
   return value
@@ -98,6 +151,19 @@ export function searchParamsSchema({
       status: z.preprocess(first, z.enum(SEARCH_STATUSES)).catch("active"),
       from: date,
       to: date,
+      lat: coordinate(90),
+      lng: coordinate(180),
+      radius: z
+        .preprocess(
+          first,
+          z.coerce
+            .number()
+            .refine((value): value is SearchRadius =>
+              (SEARCH_RADII as readonly number[]).includes(value),
+            )
+            .nullable(),
+        )
+        .catch(null),
       sort: z
         .preprocess(first, z.enum(SEARCH_SORTS).optional())
         .catch(undefined),
@@ -108,18 +174,36 @@ export function searchParamsSchema({
         )
         .catch(1),
     })
-    .transform(({ category, from, to, sort, ...rest }): SearchFilters => {
-      // A reversed range is most likely the two dates swapped.
-      const [start, end] = from && to && from > to ? [to, from] : [from, to];
-      return {
-        ...rest,
-        categories: category,
-        from: start,
-        to: end,
-        // Without a query there is nothing to rank.
-        sort: rest.q ? (sort ?? defaultSort(rest.q)) : "newest",
-      };
-    });
+    .transform(
+      ({
+        category,
+        from,
+        to,
+        lat,
+        lng,
+        radius,
+        sort,
+        ...rest
+      }): SearchFilters => {
+        // A reversed range is most likely the two dates swapped.
+        const [start, end] = from && to && from > to ? [to, from] : [from, to];
+        // Both coordinates or no center; a radius only around a center.
+        const near = lat !== null && lng !== null ? { lat, lng } : null;
+        const available = availableSorts({ q: rest.q, near });
+        return {
+          ...rest,
+          categories: category,
+          from: start,
+          to: end,
+          near,
+          radius: near ? radius : null,
+          sort:
+            sort && available.includes(sort)
+              ? sort
+              : defaultSort({ q: rest.q, near }),
+        };
+      },
+    );
 }
 
 // Parses a page's searchParams (or URLSearchParams) into filters. Never
@@ -151,7 +235,14 @@ export function searchQuery(
   if (f.status !== DEFAULT_SEARCH_FILTERS.status) query.status = f.status;
   if (f.from) query.from = f.from;
   if (f.to) query.to = f.to;
-  if (f.q && f.sort !== defaultSort(f.q)) query.sort = f.sort;
+  if (f.near) {
+    query.lat = centerParam(f.near.lat);
+    query.lng = centerParam(f.near.lng);
+    if (f.radius) query.radius = String(f.radius);
+  }
+  if (f.sort !== defaultSort(f) && availableSorts(f).includes(f.sort)) {
+    query.sort = f.sort;
+  }
   if (f.page > 1) query.page = String(f.page);
   return query;
 }

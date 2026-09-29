@@ -26,3 +26,23 @@ export function osmUrl({ lat, lng }: LatLng) {
   const lo = lng.toFixed(6);
   return `https://www.openstreetmap.org/?mlat=${la}&mlon=${lo}#map=17/${la}/${lo}`;
 }
+
+// How to show a distance: meters (rounded to 10) under 1 km, then km with
+// one decimal under 10 km, then whole km. Pass to Intl number formatting as
+// `{ style: "unit", unit, maximumFractionDigits }`.
+export function distanceDisplay(meters: number): {
+  value: number;
+  unit: "meter" | "kilometer";
+  maximumFractionDigits: number;
+} {
+  const rounded = Math.round(meters / 10) * 10;
+  if (rounded < 1000) {
+    return { value: rounded, unit: "meter", maximumFractionDigits: 0 };
+  }
+  const km = meters / 1000;
+  return {
+    value: km,
+    unit: "kilometer",
+    maximumFractionDigits: km < 9.95 ? 1 : 0,
+  };
+}

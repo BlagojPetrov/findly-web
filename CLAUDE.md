@@ -25,7 +25,7 @@ status and the next step. Read it before any work.
 - Phases 1–4 completed (auth, profile, first deployment; items CRUD with photos, item
   page, `/dashboard`; search, `/items` feed with filters and pagination, SEO, home page
   with latest items). Phase 5 in progress: base map, location picker, required
-  location in item forms, map on the item page done; next P5.S5 (radius filter).
+  location in item forms, map on the item page, radius filter done; next P5.S6 (`/map` page).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19); local Turbopack build
   blocked by Windows Application Control (F-22).
@@ -131,6 +131,9 @@ status and the next step. Read it before any work.
   through `rpc("search_items")` (§12): generated types claim non-null results, but
   `location_name` and `cover_path` can be null. A migration that puts a `pg_trgm.*`
   setting in a function's `SET` clause must first call `extensions.show_limit()`.
+  Distance: `search_items(near_lat, near_lng, radius_km, sort => 'nearest')` returns
+  `distance_m`; in the URL `lat`/`lng` (4 decimals, `centerParam()`) and `radius`
+  (`SEARCH_RADII`); sorts come from `availableSorts()`/`defaultSort({ q, near })`.
   Feed URL filters: `parseSearchParams()` / `searchQuery()` (`@/lib/validation/search`);
   build feed links from `searchQuery()` so URLs stay canonical (the feed redirects
   other URLs). Feed data: `searchItems(filters, { pageSize? })` (`@/lib/queries/items`), returning
@@ -152,7 +155,9 @@ status and the next step. Read it before any work.
   `node_modules` are `StaticImageData` in webpack but URL strings in Turbopack (Vercel) and
   Vitest: handle both (F-25). `MapFrame` wraps maps in `MapErrorBoundary`: a failing map shows
   a message instead of breaking the page. Read-only item map: `ItemMap`; link out with
-  `osmUrl()` (`@/lib/map`).
+  `osmUrl()` (`@/lib/map`). Leaflet workarounds go in `src/components/map/leaflet-fixes.ts`
+  (imported by `base-map`; F-27). Mount a map only when it is visible (Leaflet cannot
+  size a hidden one, e.g. in the collapsed filter panel). Distances: `distanceDisplay()`.
   Geocoding only through `@/lib/geocoding` (`searchAddress`, `reverseGeocode`): it holds
   the shared Nominatim throttle (≥ 1 s between requests, policy) and cache; never call
   Nominatim directly. Location input: `LocationPicker` (`src/components/map/location-picker.tsx`)

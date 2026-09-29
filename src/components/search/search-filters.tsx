@@ -3,6 +3,7 @@ import Form from "next/form";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { CategoryIcon } from "@/components/items/category-icon";
+import { NearFilter } from "@/components/search/near-filter";
 import { FormPendingMarker } from "@/components/search/pending-marker";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Link } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 import {
+  availableSorts,
   DEFAULT_SEARCH_FILTERS,
   SEARCH_LIMITS,
-  SEARCH_SORTS,
   SEARCH_STATUSES,
   type SearchFilters as Filters,
 } from "@/lib/validation/search";
@@ -27,6 +28,7 @@ export function activeFilterCount(filters: Filters) {
     filters.categories.length > 0,
     filters.status !== DEFAULT_SEARCH_FILTERS.status,
     filters.from !== null || filters.to !== null,
+    filters.near !== null,
   ].filter(Boolean).length;
 }
 
@@ -95,6 +97,7 @@ export function SearchFilters({
 }) {
   const t = useTranslations("Search");
   const active = activeFilterCount(filters);
+  const sorts = availableSorts(filters);
 
   return (
     <Form
@@ -213,6 +216,13 @@ export function SearchFilters({
           </div>
         </Group>
 
+        <Group legend={t("near.legend")}>
+          <NearFilter
+            defaultNear={filters.near}
+            defaultRadius={filters.radius}
+          />
+        </Group>
+
         <Group legend={t("status")}>
           <div className="flex flex-wrap gap-1.5">
             {SEARCH_STATUSES.map((status) => (
@@ -230,12 +240,13 @@ export function SearchFilters({
           </div>
         </Group>
 
-        {/* Only a search text can be ranked; without one the list is newest
-            first and there is nothing to choose. */}
-        {filters.q && (
+        {/* Only a search text can be ranked and only a center gives
+            distances; without either the list is newest first and there is
+            nothing to choose. */}
+        {sorts.length > 1 && (
           <Group legend={t("sort")}>
             <div className="flex flex-wrap gap-1.5">
-              {SEARCH_SORTS.map((sort) => (
+              {sorts.map((sort) => (
                 <Choice
                   key={sort}
                   type="radio"

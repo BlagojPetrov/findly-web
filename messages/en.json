@@ -274,6 +274,7 @@
         "found": "Found on"
       },
       "location": "Location",
+      "distance": "{distance} away",
       "mapLabel": {
         "lost": "Map: where the item was lost",
         "found": "Map: where the item was found"
@@ -336,7 +337,7 @@
   },
   "Search": {
     "title": "Lost and found items",
-    "description": "Browse reports of lost and found items. Search by words, type, category and date.",
+    "description": "Browse reports of lost and found items. Search by words, type, category, date and distance.",
     "searchLabel": "Search",
     "searchPlaceholder": "e.g. black wallet",
     "submitSearch": "Search",
@@ -361,7 +362,27 @@
     "sort": "Sort by",
     "sorts": {
       "relevance": "Best match",
-      "newest": "Newest"
+      "newest": "Newest",
+      "nearest": "Nearest"
+    },
+    "near": {
+      "legend": "Distance",
+      "anywhere": "Anywhere. Choose a point to see the items near it.",
+      "around": "Around the point {lat}, {lng}",
+      "nearMe": "Near me",
+      "onMap": "On the map",
+      "clear": "Remove",
+      "locating": "Finding your location…",
+      "geo": {
+        "denied": "Location access was denied. Allow it in your browser or choose a point on the map.",
+        "unavailable": "Your location is not available. Choose a point on the map.",
+        "unsupported": "Your browser does not support location. Choose a point on the map."
+      },
+      "mapLabel": "Map for choosing the search point",
+      "mapHint": "Click the map to move the point.",
+      "pinLabel": "Search point",
+      "radius": "Within",
+      "anyDistance": "Any distance"
     },
     "apply": "Apply filters",
     "clear": "Clear",

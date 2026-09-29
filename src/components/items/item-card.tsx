@@ -1,4 +1,4 @@
-import { CalendarDays, MapPin } from "lucide-react";
+import { CalendarDays, MapPin, Navigation } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { CategoryIcon } from "@/components/items/category-icon";
@@ -6,6 +6,7 @@ import { ItemTypeBadge } from "@/components/items/item-type-badge";
 import { Link } from "@/i18n/navigation";
 import { calendarDay } from "@/lib/dates";
 import { itemImageUrl } from "@/lib/item-images";
+import { distanceDisplay } from "@/lib/map";
 import { categoryName } from "@/lib/queries/categories";
 import type { ItemSummary } from "@/lib/queries/items";
 import { cn } from "@/lib/utils";
@@ -16,7 +17,7 @@ const statusStyles = {
 };
 
 // A report in a grid: cover photo (or the category icon), type and status,
-// title, category, date and place. The whole card links to the item page;
+// title, category, date, place and (in a search around a point) distance. The whole card links to the item page;
 // `actions` (e.g. the owner's quick actions) sit in a footer above the link.
 export function ItemCard({
   item,
@@ -28,6 +29,11 @@ export function ItemCard({
   const t = useTranslations("Items");
   const format = useFormatter();
   const locale = useLocale();
+
+  function formatDistance(meters: number) {
+    const { value, ...options } = distanceDisplay(meters);
+    return format.number(value, { style: "unit", ...options });
+  }
 
   return (
     <article className="relative flex flex-col overflow-hidden rounded-xl border bg-card shadow-xs transition-shadow focus-within:ring-3 focus-within:ring-ring/50 hover:shadow-md">
@@ -95,6 +101,14 @@ export function ItemCard({
               <MapPin className="size-4 shrink-0" aria-hidden />
               <span className="sr-only">{t("detail.location")}</span>
               <span className="truncate">{item.location_name}</span>
+            </li>
+          )}
+          {item.distance != null && (
+            <li className="flex items-center gap-2">
+              <Navigation className="size-4 shrink-0" aria-hidden />
+              {t("detail.distance", {
+                distance: formatDistance(item.distance),
+              })}
             </li>
           )}
         </ul>

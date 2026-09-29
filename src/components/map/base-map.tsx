@@ -3,6 +3,7 @@
 import "leaflet/dist/leaflet.css";
 // Sets the default marker icon for every map.
 import "./marker-icon";
+import "./leaflet-fixes";
 import type { ReactNode } from "react";
 import { MapContainer, TileLayer } from "react-leaflet";
 import {

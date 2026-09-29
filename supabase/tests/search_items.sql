@@ -78,7 +78,7 @@ as $$
   ) with ordinality as r
   (id, type, status, title, occurred_on, location_name, created_at, category_id,
    category_slug, category_name_mk, category_name_en, category_icon, cover_path,
-   rank, total_count, ord);
+   distance_m, rank, total_count, ord);
 $$;
 grant execute on function pg_temp.titles to anon, authenticated;
 
@@ -137,7 +137,7 @@ begin
   assert pg_temp.titles(sort => 'relevance') = pg_temp.titles(), 'relevance without q = newest';
   assert pg_temp.titles(sort => null) = pg_temp.titles(), 'sort null = newest';
   begin
-    perform pg_temp.titles(sort => 'nearest');
+    perform pg_temp.titles(sort => 'closest');
     assert false, 'unknown sort must fail';
   exception when invalid_parameter_value then
     null;
@@ -171,6 +171,7 @@ begin
   assert found and r.cover_path is null, 'no cover without photos';
   select * into r from public.search_items(date_from => '2001-01-01', date_to => '2001-01-31');
   assert r.rank = 0, 'rank 0 without a query';
+  assert r.distance_m is null, 'no distance without a center';
 end;
 $$;
 

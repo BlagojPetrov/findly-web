@@ -6,7 +6,7 @@ import type {
   Marker as LeafletMarker,
 } from "leaflet";
 import { useEffect, useMemo } from "react";
-import { Marker, useMap, useMapEvents } from "react-leaflet";
+import { Circle, Marker, useMap, useMapEvents } from "react-leaflet";
 import type { LatLng } from "@/lib/map";
 import BaseMap from "./base-map";
 import { markerIcon } from "./marker-icon";
@@ -21,6 +21,8 @@ export type LocationPickerMapProps = {
   onPick: (point: LatLng) => void;
   // Alternative text of the pin.
   pinLabel: string;
+  // Circle of this many meters around the pin (e.g. a search radius).
+  radius?: number | null;
   disabled?: boolean;
 };
 
@@ -52,13 +54,15 @@ function FollowView({ view }: { view: MapViewTarget }) {
   return null;
 }
 
-// Map part of the location picker: click to place the pin, drag it to adjust.
+// Map part of the location picker (and the feed's distance filter): click to
+// place the pin, drag it to adjust.
 // Browser only: loaded through `LocationPickerMap` from `@/components/map`.
 export default function LocationPickerMap({
   point,
   view,
   onPick,
   pinLabel,
+  radius,
   disabled,
 }: LocationPickerMapProps) {
   const markerHandlers = useMemo<LeafletEventHandlerFnMap>(
@@ -75,6 +79,16 @@ export default function LocationPickerMap({
     <BaseMap center={view.center} zoom={view.zoom}>
       <ClickToPick onPick={onPick} disabled={disabled} />
       <FollowView view={view} />
+      {point && radius ? (
+        <Circle
+          center={point}
+          radius={radius}
+          interactive={false}
+          // Colors from the theme: CSS beats Leaflet's stroke/fill attributes.
+          className="fill-primary stroke-primary"
+          pathOptions={{ weight: 2, fillOpacity: 0.1 }}
+        />
+      ) : null}
       {point && (
         <Marker
           position={point}

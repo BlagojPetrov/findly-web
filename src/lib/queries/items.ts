@@ -57,6 +57,8 @@ export type ItemSummary = {
   created_at: string;
   category: Category;
   coverPath: string | null;
+  // Meters from the feed's center (only feed searches around a point).
+  distance?: number | null;
 };
 
 // Columns of an item card for a table query: the photos only for the cover.
@@ -110,14 +112,17 @@ export async function searchItems(
       : filters.status) as ItemStatus,
     date_from: filters.from ?? undefined,
     date_to: filters.to ?? undefined,
+    near_lat: filters.near?.lat,
+    near_lng: filters.near?.lng,
+    radius_km: filters.radius ?? undefined,
     sort: filters.sort,
     page: filters.page,
     page_size: pageSize,
   });
   if (error) throw new Error(`Failed to search items: ${error.message}`);
   return {
-    // The generated types mark every column as non-null; location_name and
-    // cover_path can be null.
+    // The generated types mark every column as non-null; location_name,
+    // cover_path and distance_m (without a center) can be null.
     items: data.map((row) => ({
       id: row.id,
       type: row.type,
@@ -134,6 +139,7 @@ export async function searchItems(
         icon: row.category_icon,
       },
       coverPath: row.cover_path ?? null,
+      distance: row.distance_m ?? null,
     })),
     total: data[0]?.total_count ?? 0,
   };
