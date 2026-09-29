@@ -25,8 +25,7 @@ status and the next step. Read it before any work.
 - Phases 1–5 completed (auth, profile, first deployment; items CRUD with photos, item
   page, `/dashboard`; search, `/items` feed with filters and pagination, SEO, home page
   with latest items; maps: location picker, required location, item map, radius
-  filter, `/map` page). Next: Phase 6 (matching), P6.S1. P5.S6 is verified locally
-  only: after pushing, re-run the `/map` check on Vercel.
+  filter, `/map` page). Next: Phase 6 (matching), P6.S1.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19); local Turbopack build
   blocked by Windows Application Control (F-22).
