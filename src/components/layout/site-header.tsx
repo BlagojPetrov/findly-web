@@ -1,4 +1,4 @@
-import { Search, SearchCheck } from "lucide-react";
+import { Map as MapIcon, Search, SearchCheck } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { LocaleSwitcher } from "@/components/layout/locale-switcher";
@@ -29,6 +29,13 @@ export async function SiteHeader() {
             <Search aria-hidden />
             {/* Icon only on phones; the text stays for screen readers. */}
             <span className="max-sm:sr-only">{t("browse")}</span>
+          </Link>
+          <Link
+            href="/map"
+            className={cn(buttonVariants({ variant: "ghost" }), "px-2")}
+          >
+            <MapIcon aria-hidden />
+            <span className="max-sm:sr-only">{t("map")}</span>
           </Link>
           <Suspense>
             <LocaleSwitcher />

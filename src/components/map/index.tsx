@@ -22,6 +22,11 @@ export const ItemMap = dynamic(() => import("./item-map"), {
   loading: MapLoading,
 });
 
+export const ItemsMap = dynamic(() => import("./items-map"), {
+  ssr: false,
+  loading: MapLoading,
+});
+
 export const LocationPickerMap = dynamic(
   () => import("./location-picker-map"),
   { ssr: false, loading: MapLoading },

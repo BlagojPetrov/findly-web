@@ -22,10 +22,11 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phases 1–4 completed (auth, profile, first deployment; items CRUD with photos, item
+- Phases 1–5 completed (auth, profile, first deployment; items CRUD with photos, item
   page, `/dashboard`; search, `/items` feed with filters and pagination, SEO, home page
-  with latest items). Phase 5 in progress: base map, location picker, required
-  location in item forms, map on the item page, radius filter done; next P5.S6 (`/map` page).
+  with latest items; maps: location picker, required location, item map, radius
+  filter, `/map` page). Next: Phase 6 (matching), P6.S1. P5.S6 is verified locally
+  only: after pushing, re-run the `/map` check on Vercel.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19); local Turbopack build
   blocked by Windows Application Control (F-22).
@@ -158,6 +159,10 @@ status and the next step. Read it before any work.
   `osmUrl()` (`@/lib/map`). Leaflet workarounds go in `src/components/map/leaflet-fixes.ts`
   (imported by `base-map`; F-27). Mount a map only when it is visible (Leaflet cannot
   size a hidden one, e.g. in the collapsed filter panel). Distances: `distanceDisplay()`.
+  `/map`: `MapExplorer` loads `rpc("items_in_bounds")` from the browser (`fetchMapItems()`
+  in `@/lib/map-items`, client-safe; debounced, aborting) and passes grouped items to
+  `ItemsMap`; its type filter is `?type=` (`@/lib/validation/map`). Pages that redirect to
+  a canonical query compare it with `requestQuery()` (`@/lib/validation/search`).
   Geocoding only through `@/lib/geocoding` (`searchAddress`, `reverseGeocode`): it holds
   the shared Nominatim throttle (≥ 1 s between requests, policy) and cache; never call
   Nominatim directly. Location input: `LocationPicker` (`src/components/map/location-picker.tsx`)

@@ -49,6 +49,18 @@ export type SearchFilters = {
 // Search params as Next.js passes them to a page.
 export type RawSearchParams = Record<string, string | string[] | undefined>;
 
+// The query string exactly as requested (keys and values in URL order), to
+// compare with a page's canonical query.
+export function requestQuery(params: RawSearchParams) {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    for (const v of Array.isArray(value) ? value : [value ?? ""]) {
+      query.append(key, v);
+    }
+  }
+  return query.toString();
+}
+
 // Sorts that make sense for the filters: relevance needs a query, nearest a
 // center.
 export function availableSorts({

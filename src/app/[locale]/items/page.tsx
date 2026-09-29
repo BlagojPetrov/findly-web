@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 import {
   type SearchFilters as Filters,
   parseSearchParams,
-  type RawSearchParams,
+  requestQuery,
   searchQuery,
 } from "@/lib/validation/search";
 
@@ -61,17 +61,6 @@ export async function generateMetadata({
       url: alternates.canonical,
     },
   };
-}
-
-// The query string exactly as requested (keys and values in URL order).
-function requestQuery(params: RawSearchParams) {
-  const query = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    for (const v of Array.isArray(value) ? value : [value ?? ""]) {
-      query.append(key, v);
-    }
-  }
-  return query.toString();
 }
 
 // Public feed of lost and found items with search and filters in the URL

@@ -12,7 +12,8 @@
     "profile": "Profile",
     "reportItem": "Report an item",
     "dashboard": "My reports",
-    "browse": "Browse"
+    "browse": "Browse",
+    "map": "Map"
   },
   "Home": {
     "title": "Find what was lost, return what was found",
@@ -407,6 +408,20 @@
   "Map": {
     "loading": "Loading map…",
     "unavailable": "The map could not be shown."
+  },
+  "MapPage": {
+    "title": "Map of reports",
+    "description": "Active reports of lost and found items on the map. Move and zoom the map to see the reports in an area.",
+    "mapLabel": "Map of the reports",
+    "typeFilter": "Report type",
+    "asList": "Show as a list",
+    "noScript": "The map needs JavaScript. Use the list of reports instead.",
+    "loading": "Loading reports…",
+    "loadFailed": "The reports could not be loaded.",
+    "retry": "Try again",
+    "count": "{count, plural, =0 {No reports in this area.} one {# report in this area.} other {# reports in this area.}}",
+    "partial": "Showing the {shown} newest of {count} reports in this area. Zoom in to see all of them.",
+    "groupLabel": "{count, plural, one {# report} other {# reports}} at this place"
   },
   "LocationPicker": {
     "searchLabel": "Search for an address",
