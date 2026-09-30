@@ -150,7 +150,7 @@ to these IDs. "Next step" always means the step named in
 | P5.S5  | Radius filter                                  | `COMPLETED`   |
 | P5.S6  | `/map` page                                    | `COMPLETED`   |
 | P6.S1  | Matches schema                                 | `COMPLETED`   |
-| P6.S2  | Scoring functions                              | `NOT STARTED` |
+| P6.S2  | Scoring functions                              | `COMPLETED`   |
 | P6.S3  | `compute_matches` and triggers                 | `NOT STARTED` |
 | P6.S4  | Matches UI with explanation                    | `NOT STARTED` |
 | P6.S5  | Dismiss / confirm matches                      | `NOT STARTED` |
@@ -493,20 +493,20 @@ Legend: **PK** primary key, **FK** foreign key, ✓ implemented.
 
 ### Helper functions
 
-| Function                   | Purpose                                                                                | Phase |
-| -------------------------- | -------------------------------------------------------------------------------------- | ----- |
-| `set_updated_at()`         | Trigger function that sets `updated_at = now()`.                                       | 2     |
-| `private.is_admin()`       | `true` if the current user's profile has role `admin`. `security definer`, `stable`. ✓ | 2     |
-| `private.can_write()`      | `true` if signed in and not banned. Used in every insert/update policy. ✓              | 2     |
-| `current_profile()`        | The signed-in user's full profile row (API-callable). ✓                                | 2     |
-| `create_item(...)`         | Creates an item and its image rows in one transaction (`security invoker`). ✓          | 3     |
-| `private.items_*()`        | Item triggers: `resolved_at`, no future `occurred_on`, 20 items / 24 h. ✓              | 3     |
-| `handle_new_user()`        | Trigger on `auth.users` insert → creates the `profiles` row.                           | 2     |
-| `normalize_text(text)`     | lowercase + unaccent + Cyrillic→Latin transliteration, `immutable`.                    | 4     |
-| `search_items(...)`        | Filtered, paginated search (see §12).                                                  | 4     |
-| `items_in_bounds(...)`     | Active items inside a map bounding box (see §13). ✓                                    | 5     |
-| `match_score(lost, found)` | Returns score + breakdown jsonb (see §14).                                             | 6     |
-| `compute_matches(item_id)` | Recomputes matches for one item.                                                       | 6     |
+| Function                           | Purpose                                                                                | Phase |
+| ---------------------------------- | -------------------------------------------------------------------------------------- | ----- |
+| `set_updated_at()`                 | Trigger function that sets `updated_at = now()`.                                       | 2     |
+| `private.is_admin()`               | `true` if the current user's profile has role `admin`. `security definer`, `stable`. ✓ | 2     |
+| `private.can_write()`              | `true` if signed in and not banned. Used in every insert/update policy. ✓              | 2     |
+| `current_profile()`                | The signed-in user's full profile row (API-callable). ✓                                | 2     |
+| `create_item(...)`                 | Creates an item and its image rows in one transaction (`security invoker`). ✓          | 3     |
+| `private.items_*()`                | Item triggers: `resolved_at`, no future `occurred_on`, 20 items / 24 h. ✓              | 3     |
+| `handle_new_user()`                | Trigger on `auth.users` insert → creates the `profiles` row.                           | 2     |
+| `normalize_text(text)`             | lowercase + unaccent + Cyrillic→Latin transliteration, `immutable`.                    | 4     |
+| `search_items(...)`                | Filtered, paginated search (see §12).                                                  | 4     |
+| `items_in_bounds(...)`             | Active items inside a map bounding box (see §13). ✓                                    | 5     |
+| `private.match_score(lost, found)` | Candidate rules + score and breakdown jsonb of a lost/found pair (see §14). ✓          | 6     |
+| `compute_matches(item_id)`         | Recomputes matches for one item.                                                       | 6     |
 
 ### Enums
 
@@ -1006,7 +1006,7 @@ location, title, description, status` → `compute_matches(new.id)`.
 - Same category, **or** either item in category `other`.
 - Date: `found.occurred_on >= lost.occurred_on - 2 days` (something cannot be found
   long before it was lost) and difference ≤ 90 days.
-- Distance ≤ 50 km (when both have a location).
+- Distance ≤ 50 km (every item has a location since P5.S3).
 
 ### Score (weights version `v1`, tuned in P6.S6)
 
@@ -1019,6 +1019,34 @@ location, title, description, status` → `compute_matches(new.id)`.
 
 `score = Σ weight × component`. Stored when `score ≥ 0.55`; at most the top 10
 matches per item are kept.
+
+Implemented in P6.S2 (`20260930182118_match_scoring.sql`):
+`private.match_score(lost items, found items) returns table (score, breakdown)`
+(`stable`, internal: no API role can execute it). It applies the candidate rules
+above and returns **no row** for a pair that breaks one, so `compute_matches` can use
+it in a lateral join; a first argument that is not `lost` or a second that is not
+`found` raises `match_score_types` (`22023`). Details fixed while implementing:
+
+- Category: 0.5 whenever `other` is involved, also when both items are `other`
+  (two "other" reports are not really the same kind of thing).
+- Date: `days_between` is the absolute difference and the component is
+  `exp(-days_between / 14)` (with `max(0, found − lost)` a find reported two days
+  before the loss would score a perfect 1).
+- Text works on `private.match_words(title, description)`: normalized
+  (`normalize_text`, so Cyrillic and Latin spellings meet), distinct, sorted, ≥ 3
+  characters, without common Macedonian/English words and the words for
+  lost/found. The place name is left out (the distance already counts it). Text =
+  `greatest(similarity(words_a, words_b), shared / size of the smaller word set)`.
+- Score rounded to 3 decimals; breakdown components to 3 decimals, `distance_km`
+  to 1, `shared_words` at most 10, alphabetical.
+
+Fixture results (`supabase/tests/matching.sql`, same keys described in Cyrillic and
+Latin, 1 day and ~1 km apart unless noted): clear match 0.905; 2 days before the
+loss 0.892; ~5 km 0.792; category `other` 0.755; 90 days 0.719; different keys at
+the same place and day 0.711; ~20 km 0.705; another category, 3 days before the
+loss, 91 days, ~60 km, same owner and a resolved item give no row. Weights v1 give
+0.69 for category + distance + date alone, so unrelated items of the same category
+found nearby on the same day pass the 0.55 threshold (F-29, for P6.S6).
 
 ### Breakdown (stored in `matches.breakdown`)
 
@@ -1640,11 +1668,14 @@ correct (SQL tests) · map page usable on mobile · Nominatim/OSM policies respe
 - **Implemented:** migration `20260930174554_matches.sql`: enum `match_status`, table `matches` with constraints, `found_item_id` index, `updated_at` trigger, privileges and two policies (details in §9 `matches`). Types regenerated (`matches`, `match_status`). SQL tests `supabase/tests/matches.sql`.
 - **Verified:** dry run in a rolled-back transaction, then pushed; `db:test` 10/10 — `matches.sql`: defaults, 3-decimal score, duplicate pair / same item / score > 1 / negative score / non-object breakdown rejected; anon cannot read; the lost-side owner sees the matches of both lost items, changes the status (`updated_at` refreshed), cannot change score/breakdown/pair, insert or delete; the found-side owner sees only its item's matches (also while the item is hidden), changes their status, cannot change another pair's (0 rows); a banned owner reads but cannot update; a stranger and an admin see nothing and update 0 rows; deleting an item removes its matches and keeps others. Advisors: only F-12/F-19. Lint, typecheck, 388 unit tests, `npm run build` (Turbopack — now works locally, F-22) and `--webpack`. No UI change, so no browser check.
 
-#### P6.S2 — Scoring functions
+#### P6.S2 — Scoring functions — `COMPLETED`
 
 - **Depends on:** P6.S1, P4.S1, P5.S3.
 - **Affects:** migration `*_match_scoring.sql` (`match_score(lost, found)` returning score + breakdown), `supabase/tests/matching.sql`.
 - **Verify:** fixture tests from §14 give the expected ordering and component values.
+- **Implemented:** migration `20260930182118_match_scoring.sql`: `private.match_words()` and `private.match_score()` (§14; both internal, execute revoked from API roles). No change to generated types (schema `private`).
+- **Changed during implementation:** the function returns no row for non-candidates instead of a zero score, so the hard rules live in one tested place; date component uses the absolute difference; `other` on both sides counts 0.5; the place name is excluded from text matching (§14).
+- **Verified:** migration and tests dry-run together in a rolled-back transaction first (and a deliberately wrong assert fails the run); `db:test` 11/11 — `matching.sql`: `match_words` (Cyrillic report → sorted normalized words, English common words dropped, empty result); the candidate set (another category, 3 days before the loss, 91 days, ~60 km, same owner, resolved excluded; 2 days before, 90 days, `other`, 20 km included); clear-match breakdown (version, category 1, distance ~1.0 km and exp(−1/5), 1 day and 0.931, six shared words across scripts without lost/found words, text 0.857, score = weighted sum ≈ 0.905); `other` = 0.5 and 0.15 lower; `days_between` absolute (0.867 at 2 days, 0.002 at 90); distance 5 km → 0.368, 20 km → 0.018; different keys: no shared words, text 0.082; full fixture ordering; swapped arguments raise `match_score_types`; users cannot execute the functions. Advisors: only F-12/F-19. Lint, typecheck, 388 unit tests, `npm run build`. Found F-29.
 
 #### P6.S3 — `compute_matches` and triggers
 
@@ -1879,6 +1910,7 @@ started (no auth code or profile tables exist yet).
 | F-26 | On Vercel, Macedonian (no-prefix) pages leave one or two prefetch `fetch` requests open indefinitely: prefetches of links that the proxy answers with 307 (the locale switcher's `/mk/…`, a guest's "Report" link to `/login?next=…`) are followed to the target and never finish. `/en/…` pages are not affected; seen on `/`, `/items` and item pages. Not visible to users so far, but prefetching those links does not complete and headless checks cannot wait for "network idle". Present before P5.S4 (found while checking it). | Investigate later (e.g. link the current locale without the `/mk` prefix, or no prefetch on links that redirect). Browser checks wait for `load` and specific elements instead of `networkidle`.                                                                                                                                                                                                                                                                                                                                       | Open          |
 | F-27 | A Leaflet map removed during a zoom animation threw "Cannot read properties of undefined (reading '_leaflet_pos')": Leaflet 1.9 ends the animation from a 250 ms timer that `map.remove()` does not cancel. Seen in P5.S5 when the feed's filter form (with the distance map) remounted right after a radius change; any map unmounted while zooming was affected.                                                                                                                                                                      | Fixed in P5.S5: `src/components/map/leaflet-fixes.ts` (imported by `base-map`) skips the timer's call when the map has no pane any more; unit tests (the first fails without the fix); browser repro clean.                                                                                                                                                                                                                                                                                                                            | Fixed         |
 | F-28 | Leaflet popups (and its controls) have their own white styling. The `/map` popups use the theme's text colors, which would be light on white once dark mode exists. Found in P5.S6 (dark mode is not active yet).                                                                                                                                                                                                                                                                                                                       | Style `.leaflet-popup-content-wrapper`, `.leaflet-popup-tip` and the zoom/attribution controls with the theme tokens in P11.S1 (dark mode).                                                                                                                                                                                                                                                                                                                                                                                            | Open          |
+| F-29 | With weights v1, category + distance + date alone give 0.69, above the 0.55 threshold: unrelated items of the same category found nearby on the same day become matches (fixture: different keys at the same place, 0.711, text 0.082). Found in P6.S2.                                                                                                                                                                                                                                                                                 | Tune in P6.S6 on the demo dataset (e.g. more weight on text, a minimum text score, or a higher threshold) and document the result.                                                                                                                                                                                                                                                                                                                                                                                                     | Open          |
 | F-10 | No automated tests yet.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Fixed         |
 
 ---
@@ -1887,6 +1919,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step       | Change                                                                                                                                                                                                                                                                                                       |
 | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-09-30 | P6.S2      | Scoring: `private.match_score(lost, found)` (candidate rules, weighted components, breakdown; no row for non-candidates) and `private.match_words()`; fixture tests `matching.sql` (clear match 0.905 … 20 km 0.705); F-29.                                                                                  |
 | 2026-09-30 | P6.S1      | Matches schema: `match_status` enum, `matches` table (unique pair, score 0–1, breakdown object), owners of either item read it and change only `status`, no direct inserts/deletes; SQL tests; types. Local Turbopack build works again (F-22 resolved). Fixed a broken P3.S7 row in the §2 step table.      |
 | 2026-09-29 | P5.S6 prod | Verified on Vercel (`ba3f626`): `/map` 43/43, radius 41/41, apply race 5/5, item map 24/24, location picker 20/20.                                                                                                                                                                                           |
 | 2026-09-29 | P5.S6      | `/map` page: `items_in_bounds()` (active items in a rectangle, planar index, 300 cap with total; SQL tests), browser loading per visible area (debounced, aborting), grouped markers in type colors with item popups, type filter keeping the view, header/sitemap; F-28; browser check 43/43. Phase 5 done. |
@@ -1940,14 +1973,14 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P6.S2 — Scoring functions** (see §22, Phase 6; design in §14).
+**P6.S3 — `compute_matches` and triggers** (see §22, Phase 6; design in §14).
 
-Why next: P6.S1 added the `matches` table. P6.S2 adds
-`match_score(lost, found)` (migration `*_match_scoring.sql`), which returns the
-score and breakdown from §14 (category, distance, date and text components,
-weights version `v1`), and fixture tests in `supabase/tests/matching.sql` (clear
-match, category mismatch, date contradiction, distance decay, Cyrillic vs Latin
-text). It does not write matches yet; `compute_matches` and the triggers come in P6.S3.
+Why next: P6.S2 added `private.match_score()`. P6.S3 adds `compute_matches(item_id)`
+(`security definer`): for one item it finds candidates of the opposite type (with an
+index-friendly prefilter), scores them with `match_score`, deletes and re-inserts that
+item's `suggested` matches with `score ≥ 0.55` (top 10), and keeps `dismissed` /
+`confirmed` rows. Triggers on item insert and on updates of the matching columns call
+it; a one-time backfill computes matches for existing items.
 
 Open manual items:
 
