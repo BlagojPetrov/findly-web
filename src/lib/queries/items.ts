@@ -81,13 +81,21 @@ export async function getOwnItems(userId: string): Promise<ItemSummary[]> {
   if (error) throw new Error(`Failed to load own items: ${error.message}`);
   return data.map(({ images, ...item }) => ({
     ...item,
-    coverPath:
-      images.reduce<(typeof images)[number] | null>(
-        (cover, image) =>
-          !cover || image.position < cover.position ? image : cover,
-        null,
-      )?.storage_path ?? null,
+    coverPath: coverPath(images),
   }));
+}
+
+// Storage path of an item's cover (the photo with the lowest position).
+export function coverPath(
+  images: { storage_path: string; position: number }[],
+): string | null {
+  return (
+    images.reduce<(typeof images)[number] | null>(
+      (cover, image) =>
+        !cover || image.position < cover.position ? image : cover,
+      null,
+    )?.storage_path ?? null
+  );
 }
 
 // Page size of the public feed.

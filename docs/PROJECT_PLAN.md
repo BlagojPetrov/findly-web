@@ -152,8 +152,8 @@ to these IDs. "Next step" always means the step named in
 | P6.S1  | Matches schema                                 | `COMPLETED`   |
 | P6.S2  | Scoring functions                              | `COMPLETED`   |
 | P6.S3  | `compute_matches` and triggers                 | `COMPLETED`   |
-| P6.S4  | Matches UI with explanation                    | `NOT STARTED` |
-| P6.S5  | Dismiss / confirm matches                      | `NOT STARTED` |
+| P6.S4  | Matches UI with explanation                    | `COMPLETED`   |
+| P6.S5  | Dismiss / confirm matches (merged into P6.S4)  | `COMPLETED`   |
 | P6.S6  | Demo dataset and weight tuning                 | `NOT STARTED` |
 | P7.S1  | Notifications schema                           | `NOT STARTED` |
 | P7.S2  | Match notification trigger                     | `NOT STARTED` |
@@ -1091,12 +1091,26 @@ found nearby on the same day pass the 0.55 threshold (F-29, for P6.S6).
 The UI translates this into an explanation, for example: _"Same category ·
 1.0 km apart · 1 day apart · Common words: crn, paricnik, koza"_.
 
-### User actions (P6.S5)
+Implemented in P6.S4 (`@/lib/matches`, `MatchExplanation`): one chip per reason —
+same category / category "Other" (may be related), distance (`distanceDisplay`),
+same day / _n_ days apart, up to 5 shared words (+ "and _n_ more"), or without
+shared words "Similar descriptions" (text ≥ 0.3) / "little in common". The score is
+shown as a word and a percentage: strong ≥ 0.8, good ≥ 0.7, otherwise possible.
 
-- Owners of either item see its matches on the item page and dashboard.
-- **Dismiss** (either owner) → `dismissed`, hidden for both.
-- **Confirm** (either owner) → `confirmed`; the UI suggests contacting the other
-  user and marking the item resolved.
+### User actions (P6.S4, planned as P6.S5)
+
+- Owners of either item see its matches on the item page (owner only) and the
+  dashboard; guests and other users never get the section.
+- **Dismiss** (either owner) → `dismissed`, hidden for both; the toast offers
+  **Undo**, and the item page lists dismissed matches behind a disclosure with
+  **Restore** (→ `suggested`, allowed by the column grant).
+- **Confirm** (either owner) → `confirmed`; the card shows a hint to mark the
+  report resolved once the item is back, and **Undo** (→ `suggested`). A
+  "Contact" call to action arrives with messaging (P8.S2).
+- Visibility (`toMatchViews`): suggested/dismissed only while both items are
+  active; confirmed while neither is hidden (so it stays after resolving). At most
+  10 suggested per own report are shown (the cap from P6.S3). Only place names are
+  shown, never coordinates (the distance comes from the breakdown).
 
 ### Testing
 
@@ -1711,15 +1725,19 @@ correct (SQL tests) · map page usable on mobile · Nominatim/OSM policies respe
 - **Changed during implementation:** suggested matches are upserted instead of deleted and re-inserted (stable id/`created_at` for P7); details in §14.
 - **Verified:** migration and tests dry-run together in a rolled-back transaction (a deliberately wrong assert fails the run), then pushed; `db:test` 12/12 — `compute_matches.sql`: a lost report through `create_item()` alone has no match; the found report creates exactly one suggested lost ↔ found row (score ≈ 0.9, breakdown from `match_score`), visible to both owners; another category, the same owner and ~66 km away give none; a `location_name` change or an unchanged title does not touch the row; a new description keeps id/`created_at`, lowers the score, changes the shared words and refreshes `updated_at`; another category removes the row, changing back recreates it; a dismissed match is neither recreated nor rescored after edits on both sides; a confirmed match is kept; a lost report matches an earlier found one; resolving keeps the row, recomputing the other side drops it, reopening restores it; 12 found reports give 12 rows, recomputing the lost report keeps the 10 best, a dismissed one does not take a place (the 11th moves up); API roles cannot execute the functions. Advisors: only F-12/F-19. Lint, typecheck, 388 unit tests, `npm run build`. No UI change, so no browser check.
 
-#### P6.S4 — Matches UI with explanation
+#### P6.S4 — Matches UI with explanation — `COMPLETED`
 
 - **Affects:** `src/lib/queries/matches.ts`, `src/components/matches/{match-list,match-card,match-explanation}.tsx`, item page (owner only), dashboard, `messages/*.json` (`Matches`).
 - **Verify:** explanation text correct in both languages (unit test for the formatter).
+- **Plan change:** P6.S5 (dismiss / confirm) was done in this step at the user's request, together with restoring dismissed and undoing confirmed matches (§14).
+- **Implemented:** `@/lib/matches` (client-safe: `parseBreakdown`, `matchReasons`, `matchStrength`, `toMatchViews`, `groupMatches`, `MATCHES_PER_ITEM`), `@/lib/queries/matches` (`getItemMatches`, `getUserMatches`; both items embedded through their foreign keys, no coordinates; `coverPath()` shared with `getOwnItems`), `setMatchStatus` (`src/actions/matches.ts`, `matchStatusSchema` in `@/lib/validation/matches`; updates only `status`, RLS rejection → `forbidden`, 0 rows → `not_found`), components `MatchList` (sections, empty/error/resolved states, dismissed disclosure), `MatchCard`, `MatchExplanation` + `MatchScore`, `MatchActions` (client; confirm, dismiss with Undo toast, restore, undo). Item page: section for the owner (not for hidden items); dashboard: section above the tabs. A failed matches query shows an error message instead of breaking the page. Translations `Matches` (mk/en).
+- **Verified:** 37 new unit/component tests (388 → 425): breakdown parsing (malformed fields dropped), reasons and strength, viewer-side mapping (unrelated and invisible rows dropped, visibility per status), grouping and the 10-per-report cap, the action (only `status` sent, validation, not found, forbidden, database), the component in mk and en (explanation texts, percentages, empty/error/resolved states, own-report line on the dashboard only, groups, actions per status, confirm/dismiss/undo/restore calls with refresh and toasts, error toast without refresh). Lint, typecheck, format, `npm run build` and `--webpack`. Browser check (production build, headless Edge `mk-MK`, three temporary `@findly.test` users with reports in Bitola, deleted afterwards): 41/41 — A's dashboard lists 2 matches best first (97 % strong, 67 % possible) with explanation, other report's category/date/place and own-report link, nothing of C's report and no coordinates; confirm (toast, "Confirmed" group, hint, stored), dismiss (stored, disclosure, empty note), Undo from the toast, Restore from the list, undo confirm, keyboard confirm; empty state on a report without matches; a resolved report keeps its confirmed match; English dashboard; B sees A's confirmation and its matches with C, no section on A's report, B's dismissal hides the pair for A; C sees only its 2 matches; guests see no section; no overflow at 360 px; no browser errors. Found and fixed during the check: the Macedonian word list repeated "и" before "и уште N".
 
-#### P6.S5 — Dismiss / confirm
+#### P6.S5 — Dismiss / confirm — `COMPLETED` (in P6.S4)
 
 - **Affects:** `src/actions/matches.ts`.
 - **Verify:** dismissed match disappears for both users; confirmed match shows a "Contact" call to action.
+- Done in P6.S4. The "Contact" call to action needs messaging and is added in P8.S2; until then the confirmed card shows the hint and a link to the other report.
 
 #### P6.S6 — Demo dataset and weight tuning
 
@@ -1947,6 +1965,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step       | Change                                                                                                                                                                                                                                                                                                       |
 | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-09-30 | P6.S4      | Matches UI: item page (owner) and dashboard sections with explanation chips, strength + percentage, confirm/dismiss/undo/restore (`setMatchStatus`), empty/error/resolved states; P6.S5 merged in; 37 new tests; browser check 41/41.                                                                        |
 | 2026-09-30 | P6.S3      | Automatic matching: `private.compute_matches(item)` (indexed prefilter, `match_score`, top 10 ≥ 0.55, upsert of suggested rows, dismissed/confirmed kept), insert/update triggers on `items`, backfill (0 matches on dev); SQL tests `compute_matches.sql`.                                                  |
 | 2026-09-30 | P6.S2      | Scoring: `private.match_score(lost, found)` (candidate rules, weighted components, breakdown; no row for non-candidates) and `private.match_words()`; fixture tests `matching.sql` (clear match 0.905 … 20 km 0.705); F-29.                                                                                  |
 | 2026-09-30 | P6.S1      | Matches schema: `match_status` enum, `matches` table (unique pair, score 0–1, breakdown object), owners of either item read it and change only `status`, no direct inserts/deletes; SQL tests; types. Local Turbopack build works again (F-22 resolved). Fixed a broken P3.S7 row in the §2 step table.      |
@@ -2002,13 +2021,14 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P6.S4 — Matches UI with explanation** (see §22, Phase 6; design in §14).
+**P6.S6 — Demo dataset and weight tuning** (see §22, Phase 6; design in §14).
 
-Why next: P6.S3 fills `matches` automatically. P6.S4 shows them to the owners:
-`src/lib/queries/matches.ts` (matches of an item / of the user's items, only where
-both items are active and the status is not `dismissed`, best score first), a match
-card with the other item and a translated explanation built from `breakdown`
-(unit-tested formatter, mk/en), on the item page (owner only) and the dashboard.
+Why next: matching and its UI work end to end (P6.S3–P6.S5). P6.S6 adds realistic
+Macedonian demo reports on the dev project, checks that true pairs rank in the top 3,
+documents false positives and tunes the weights/threshold (F-29: category + distance
+
+- date alone pass 0.55). Changing weights needs a new migration and updated fixture
+  expectations in `supabase/tests/matching.sql`.
 
 Open manual items:
 

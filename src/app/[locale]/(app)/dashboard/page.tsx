@@ -4,10 +4,12 @@ import type { Locale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ItemCard } from "@/components/items/item-card";
 import { ItemOwnerActions } from "@/components/items/item-owner-actions";
+import { MatchList } from "@/components/matches/match-list";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/auth";
 import { getOwnItems } from "@/lib/queries/items";
+import { getUserMatches } from "@/lib/queries/matches";
 import { cn } from "@/lib/utils";
 
 export async function generateMetadata({
@@ -40,8 +42,13 @@ export default async function DashboardPage({
   const user = await requireUser(
     status === "active" ? "/dashboard" : `/dashboard?status=${status}`,
   );
-  const [items, t] = await Promise.all([
+  const [items, matches, t] = await Promise.all([
     getOwnItems(user.id),
+    // A failed query shows a message instead of breaking the page.
+    getUserMatches(user.id).catch((error) => {
+      console.error(error);
+      return null;
+    }),
     getTranslations("Dashboard"),
   ]);
 
@@ -102,6 +109,8 @@ export default async function DashboardPage({
         </section>
       ) : (
         <>
+          <MatchList context="dashboard" matches={matches} />
+
           <nav
             aria-label={t("tabsLabel")}
             className="flex overflow-x-auto border-b sm:gap-1"

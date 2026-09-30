@@ -336,6 +336,56 @@
       "hidden": "You have no hidden reports."
     }
   },
+  "Matches": {
+    "title": "Possible matches",
+    "itemDescription": "Reports of the opposite type that may be about the same item. Confirm the right one and dismiss the ones that are not.",
+    "dashboardDescription": "Findly compares your active reports with reports of the opposite type and suggests likely pairs.",
+    "empty": {
+      "item": "No matches yet. Every new report is checked automatically, so look again later.",
+      "dashboard": "No matches for your active reports yet. Every new report is checked automatically."
+    },
+    "error": "Matches could not be loaded. Refresh the page to try again.",
+    "resolvedNote": "Matches are only looked for while a report is active.",
+    "suggestedTitle": "Suggested",
+    "confirmedTitle": "Confirmed",
+    "forYourReport": "For your report: <link>{title}</link>",
+    "strength": {
+      "strong": "Strong match",
+      "good": "Good match",
+      "possible": "Possible match"
+    },
+    "scoreLabel": "Match score: {percent}",
+    "reasonsLabel": "Why it was suggested",
+    "reasons": {
+      "sameCategory": "Same category",
+      "otherCategory": "Category “Other”, may be related",
+      "distance": "{distance} apart",
+      "sameDay": "Same day",
+      "days": "{count, plural, one {# day apart} other {# days apart}}",
+      "words": "Common words: {words}",
+      "moreWords": "{words} and {count} more",
+      "similarText": "Similar descriptions",
+      "differentText": "The descriptions have little in common"
+    },
+    "status": {
+      "confirmed": "Confirmed",
+      "dismissed": "Dismissed"
+    },
+    "actions": {
+      "confirm": "Confirm match",
+      "dismiss": "Not a match",
+      "restore": "Restore",
+      "undo": "Undo"
+    },
+    "toasts": {
+      "confirmed": "Match confirmed.",
+      "dismissed": "Match dismissed.",
+      "restored": "Match moved back to the suggestions."
+    },
+    "confirmedHint": "You confirmed this match. When the item is back with its owner, mark your report as resolved.",
+    "dismissedTitle": "Dismissed ({count})",
+    "dismissedHint": "Dismissed matches are hidden for both people. Restore one if you dismissed it by mistake."
+  },
   "Search": {
     "title": "Lost and found items",
     "description": "Browse reports of lost and found items. Search by words, type, category, date and distance.",

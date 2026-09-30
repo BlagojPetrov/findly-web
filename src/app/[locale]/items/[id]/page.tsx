@@ -19,6 +19,7 @@ import { ImageGallery } from "@/components/items/image-gallery";
 import { ItemOwnerActions } from "@/components/items/item-owner-actions";
 import { ItemTypeBadge } from "@/components/items/item-type-badge";
 import { ItemMap, MapFrame } from "@/components/map";
+import { MatchList } from "@/components/matches/match-list";
 import { UserAvatar } from "@/components/profile/user-avatar";
 import { getCurrentUser } from "@/lib/auth";
 import { calendarDay } from "@/lib/dates";
@@ -26,6 +27,7 @@ import { itemImageUrl } from "@/lib/item-images";
 import { osmUrl } from "@/lib/map";
 import { categoryName } from "@/lib/queries/categories";
 import { getItem } from "@/lib/queries/items";
+import { getItemMatches, type ItemMatches } from "@/lib/queries/matches";
 import { localeAlternates, metaDescription, openGraphBase } from "@/lib/seo";
 
 // "Lost: <title>", a description from the category, place, date and the
@@ -122,6 +124,16 @@ export default async function ItemPage({
     getFormatter(),
   ]);
   const isOwner = viewer?.id === item.user_id;
+  // Matches only for the owner (RLS would return none to anyone else), not
+  // for a hidden report. A failed query shows a message instead of breaking
+  // the page.
+  let matches: ItemMatches | null | undefined;
+  if (viewer && isOwner && item.status !== "hidden") {
+    matches = await getItemMatches(item.id, viewer.id).catch((error) => {
+      console.error(error);
+      return null;
+    });
+  }
   // Always set since P5.S3 (generated columns are typed as nullable).
   const point =
     item.lat !== null && item.lng !== null
@@ -246,6 +258,16 @@ export default async function ItemPage({
           )}
         </div>
       </div>
+
+      {matches !== undefined && (
+        <div className="mt-10 max-w-3xl">
+          <MatchList
+            context="item"
+            matches={matches}
+            inactive={item.status !== "active"}
+          />
+        </div>
+      )}
 
       <section className="mt-10 max-w-3xl">
         <h2 className="text-lg font-semibold">{t("detail.description")}</h2>
