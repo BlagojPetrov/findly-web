@@ -151,6 +151,54 @@ export type Database = {
           },
         ]
       }
+      matches: {
+        Row: {
+          breakdown: Json
+          created_at: string
+          found_item_id: string
+          id: string
+          lost_item_id: string
+          score: number
+          status: Database["public"]["Enums"]["match_status"]
+          updated_at: string
+        }
+        Insert: {
+          breakdown?: Json
+          created_at?: string
+          found_item_id: string
+          id?: string
+          lost_item_id: string
+          score: number
+          status?: Database["public"]["Enums"]["match_status"]
+          updated_at?: string
+        }
+        Update: {
+          breakdown?: Json
+          created_at?: string
+          found_item_id?: string
+          id?: string
+          lost_item_id?: string
+          score?: number
+          status?: Database["public"]["Enums"]["match_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "matches_found_item_id_fkey"
+            columns: ["found_item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "matches_lost_item_id_fkey"
+            columns: ["lost_item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_path: string | null
@@ -301,6 +349,7 @@ export type Database = {
     Enums: {
       item_status: "active" | "resolved" | "hidden"
       item_type: "lost" | "found"
+      match_status: "suggested" | "dismissed" | "confirmed"
       user_role: "user" | "admin"
     }
     CompositeTypes: {
@@ -431,6 +480,7 @@ export const Constants = {
     Enums: {
       item_status: ["active", "resolved", "hidden"],
       item_type: ["lost", "found"],
+      match_status: ["suggested", "dismissed", "confirmed"],
       user_role: ["user", "admin"],
     },
   },

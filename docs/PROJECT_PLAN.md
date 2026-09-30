@@ -98,7 +98,7 @@ to these IDs. "Next step" always means the step named in
 | 3     | Items CRUD and image upload           | `COMPLETED`   |
 | 4     | Feed, search and advanced filters     | `COMPLETED`   |
 | 5     | Map and location                      | `COMPLETED`   |
-| 6     | Automatic matching                    | `NOT STARTED` |
+| 6     | Automatic matching                    | `IN PROGRESS` |
 | 7     | Notifications                         | `NOT STARTED` |
 | 8     | Messaging                             | `NOT STARTED` |
 | 9     | Favorites                             | `NOT STARTED` |
@@ -107,80 +107,80 @@ to these IDs. "Next step" always means the step named in
 
 ### Step status
 
-| Step   | Title                                          | Status                      |
-| ------ | ---------------------------------------------- | --------------------------- |
-| P1.S1  | Scaffold Next.js project                       | `COMPLETED`                 |
-| P1.S2  | Tooling (shadcn/ui, Prettier, scripts)         | `COMPLETED`                 |
-| P1.S3  | Internationalization (next-intl, mk/en)        | `COMPLETED`                 |
-| P1.S4  | Supabase clients and proxy session refresh     | `COMPLETED`                 |
-| P1.S5  | Environment validation                         | `COMPLETED`                 |
-| P1.S6  | Initial migration (extensions, categories)     | `COMPLETED`                 |
-| P1.S7  | Base layout and home page                      | `COMPLETED`                 |
-| P1.S8  | Link Supabase project, push migration, types   | `COMPLETED`                 |
-| P1.S9  | Phase 1 audit and master plan                  | `COMPLETED`                 |
-| P2.S1  | Test tooling and action conventions            | `COMPLETED`                 |
-| P2.S2  | Profiles table, helper functions, RLS          | `COMPLETED`                 |
-| P2.S3  | Auth helpers and route protection              | `COMPLETED`                 |
-| P2.S4  | Register and login (email/password)            | `COMPLETED`                 |
-| P2.S5  | Email verification                             | `COMPLETED`                 |
-| P2.S6  | Forgot / reset password                        | `COMPLETED`                 |
-| P2.S7  | Google OAuth                                   | `COMPLETED`                 |
-| P2.S8  | Profile page and avatar upload                 | `COMPLETED`                 |
-| P2.S9  | SMTP setup (manual) — done before P2.S5        | `COMPLETED`                 |
-| P2.S10 | GitHub remote and first Vercel deployment      | `COMPLETED`                 |
-| P3.S1  | Items and images schema                        | `COMPLETED`                 |
-| P3.S2  | Item images storage bucket                     | `COMPLETED`                 |
-| P3.S3  | Item validation schemas                        | `COMPLETED`                 |
-| P3.S4  | Image picker and upload component              | `COMPLETED`                 |
-| P3.S5  | Create item page                               | `COMPLETED`                 |
-| P3.S6  | Item detail page (basic)                       | `COMPLETED`                 |
-| npm    | P3.S7                                          | Edit, delete, mark resolved | `COMPLETED` |
-| P3.S8  | Dashboard ("My reports")                       | `COMPLETED`                 |
-| P4.S1  | Search normalization and indexes               | `COMPLETED`                 |
-| P4.S2  | `search_items` SQL function                    | `COMPLETED`                 |
-| P4.S3  | Search params schema and parsing               | `COMPLETED`                 |
-| P4.S4  | Items feed page with filters                   | `COMPLETED`                 |
-| P4.S5  | Item cards, pagination, empty/loading states   | `COMPLETED`                 |
-| P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `COMPLETED`                 |
-| P4.S7  | Home page latest items                         | `COMPLETED`                 |
-| P5.S1  | Leaflet base map component                     | `COMPLETED`                 |
-| P5.S2  | Location picker and geocoding                  | `COMPLETED`                 |
-| P5.S3  | Location in item forms, make location required | `COMPLETED`                 |
-| P5.S4  | Map on item detail page                        | `COMPLETED`                 |
-| P5.S5  | Radius filter                                  | `COMPLETED`                 |
-| P5.S6  | `/map` page                                    | `COMPLETED`                 |
-| P6.S1  | Matches schema                                 | `NOT STARTED`               |
-| P6.S2  | Scoring functions                              | `NOT STARTED`               |
-| P6.S3  | `compute_matches` and triggers                 | `NOT STARTED`               |
-| P6.S4  | Matches UI with explanation                    | `NOT STARTED`               |
-| P6.S5  | Dismiss / confirm matches                      | `NOT STARTED`               |
-| P6.S6  | Demo dataset and weight tuning                 | `NOT STARTED`               |
-| P7.S1  | Notifications schema                           | `NOT STARTED`               |
-| P7.S2  | Match notification trigger                     | `NOT STARTED`               |
-| P7.S3  | Notification bell with Realtime                | `NOT STARTED`               |
-| P7.S4  | Notifications page                             | `NOT STARTED`               |
-| P7.S5  | (Optional) Email for new matches               | `NOT STARTED`               |
-| P8.S1  | Conversations and messages schema              | `NOT STARTED`               |
-| P8.S2  | Start conversation from item                   | `NOT STARTED`               |
-| P8.S3  | Conversation list                              | `NOT STARTED`               |
-| P8.S4  | Chat view with Realtime                        | `NOT STARTED`               |
-| P8.S5  | Read state and unread badge                    | `NOT STARTED`               |
-| P8.S6  | Message notifications                          | `NOT STARTED`               |
-| P9.S1  | Favorites schema                               | `NOT STARTED`               |
-| P9.S2  | Favorite toggle                                | `NOT STARTED`               |
-| P9.S3  | Favorites page                                 | `NOT STARTED`               |
-| P10.S1 | Reports schema and admin policies              | `NOT STARTED`               |
-| P10.S2 | Report item UI                                 | `NOT STARTED`               |
-| P10.S3 | Admin area layout and dashboard                | `NOT STARTED`               |
-| P10.S4 | Reports queue and item moderation              | `NOT STARTED`               |
-| P10.S5 | User management (ban/unban)                    | `NOT STARTED`               |
-| P10.S6 | Category management                            | `NOT STARTED`               |
-| P11.S1 | Dark mode                                      | `NOT STARTED`               |
-| P11.S2 | Responsive, accessibility, error boundaries    | `NOT STARTED`               |
-| P11.S3 | Performance pass                               | `NOT STARTED`               |
-| P11.S4 | End-to-end tests and CI                        | `NOT STARTED`               |
-| P11.S5 | Production environment                         | `NOT STARTED`               |
-| P11.S6 | Demo data and defense preparation              | `NOT STARTED`               |
+| Step   | Title                                          | Status        |
+| ------ | ---------------------------------------------- | ------------- |
+| P1.S1  | Scaffold Next.js project                       | `COMPLETED`   |
+| P1.S2  | Tooling (shadcn/ui, Prettier, scripts)         | `COMPLETED`   |
+| P1.S3  | Internationalization (next-intl, mk/en)        | `COMPLETED`   |
+| P1.S4  | Supabase clients and proxy session refresh     | `COMPLETED`   |
+| P1.S5  | Environment validation                         | `COMPLETED`   |
+| P1.S6  | Initial migration (extensions, categories)     | `COMPLETED`   |
+| P1.S7  | Base layout and home page                      | `COMPLETED`   |
+| P1.S8  | Link Supabase project, push migration, types   | `COMPLETED`   |
+| P1.S9  | Phase 1 audit and master plan                  | `COMPLETED`   |
+| P2.S1  | Test tooling and action conventions            | `COMPLETED`   |
+| P2.S2  | Profiles table, helper functions, RLS          | `COMPLETED`   |
+| P2.S3  | Auth helpers and route protection              | `COMPLETED`   |
+| P2.S4  | Register and login (email/password)            | `COMPLETED`   |
+| P2.S5  | Email verification                             | `COMPLETED`   |
+| P2.S6  | Forgot / reset password                        | `COMPLETED`   |
+| P2.S7  | Google OAuth                                   | `COMPLETED`   |
+| P2.S8  | Profile page and avatar upload                 | `COMPLETED`   |
+| P2.S9  | SMTP setup (manual) — done before P2.S5        | `COMPLETED`   |
+| P2.S10 | GitHub remote and first Vercel deployment      | `COMPLETED`   |
+| P3.S1  | Items and images schema                        | `COMPLETED`   |
+| P3.S2  | Item images storage bucket                     | `COMPLETED`   |
+| P3.S3  | Item validation schemas                        | `COMPLETED`   |
+| P3.S4  | Image picker and upload component              | `COMPLETED`   |
+| P3.S5  | Create item page                               | `COMPLETED`   |
+| P3.S6  | Item detail page (basic)                       | `COMPLETED`   |
+| P3.S7  | Edit, delete, mark resolved                    | `COMPLETED`   |
+| P3.S8  | Dashboard ("My reports")                       | `COMPLETED`   |
+| P4.S1  | Search normalization and indexes               | `COMPLETED`   |
+| P4.S2  | `search_items` SQL function                    | `COMPLETED`   |
+| P4.S3  | Search params schema and parsing               | `COMPLETED`   |
+| P4.S4  | Items feed page with filters                   | `COMPLETED`   |
+| P4.S5  | Item cards, pagination, empty/loading states   | `COMPLETED`   |
+| P4.S6  | SEO: metadata, Open Graph, sitemap, robots     | `COMPLETED`   |
+| P4.S7  | Home page latest items                         | `COMPLETED`   |
+| P5.S1  | Leaflet base map component                     | `COMPLETED`   |
+| P5.S2  | Location picker and geocoding                  | `COMPLETED`   |
+| P5.S3  | Location in item forms, make location required | `COMPLETED`   |
+| P5.S4  | Map on item detail page                        | `COMPLETED`   |
+| P5.S5  | Radius filter                                  | `COMPLETED`   |
+| P5.S6  | `/map` page                                    | `COMPLETED`   |
+| P6.S1  | Matches schema                                 | `COMPLETED`   |
+| P6.S2  | Scoring functions                              | `NOT STARTED` |
+| P6.S3  | `compute_matches` and triggers                 | `NOT STARTED` |
+| P6.S4  | Matches UI with explanation                    | `NOT STARTED` |
+| P6.S5  | Dismiss / confirm matches                      | `NOT STARTED` |
+| P6.S6  | Demo dataset and weight tuning                 | `NOT STARTED` |
+| P7.S1  | Notifications schema                           | `NOT STARTED` |
+| P7.S2  | Match notification trigger                     | `NOT STARTED` |
+| P7.S3  | Notification bell with Realtime                | `NOT STARTED` |
+| P7.S4  | Notifications page                             | `NOT STARTED` |
+| P7.S5  | (Optional) Email for new matches               | `NOT STARTED` |
+| P8.S1  | Conversations and messages schema              | `NOT STARTED` |
+| P8.S2  | Start conversation from item                   | `NOT STARTED` |
+| P8.S3  | Conversation list                              | `NOT STARTED` |
+| P8.S4  | Chat view with Realtime                        | `NOT STARTED` |
+| P8.S5  | Read state and unread badge                    | `NOT STARTED` |
+| P8.S6  | Message notifications                          | `NOT STARTED` |
+| P9.S1  | Favorites schema                               | `NOT STARTED` |
+| P9.S2  | Favorite toggle                                | `NOT STARTED` |
+| P9.S3  | Favorites page                                 | `NOT STARTED` |
+| P10.S1 | Reports schema and admin policies              | `NOT STARTED` |
+| P10.S2 | Report item UI                                 | `NOT STARTED` |
+| P10.S3 | Admin area layout and dashboard                | `NOT STARTED` |
+| P10.S4 | Reports queue and item moderation              | `NOT STARTED` |
+| P10.S5 | User management (ban/unban)                    | `NOT STARTED` |
+| P10.S6 | Category management                            | `NOT STARTED` |
+| P11.S1 | Dark mode                                      | `NOT STARTED` |
+| P11.S2 | Responsive, accessibility, error boundaries    | `NOT STARTED` |
+| P11.S3 | Performance pass                               | `NOT STARTED` |
+| P11.S4 | End-to-end tests and CI                        | `NOT STARTED` |
+| P11.S5 | Production environment                         | `NOT STARTED` |
+| P11.S6 | Demo data and defense preparation              | `NOT STARTED` |
 
 ---
 
@@ -515,7 +515,7 @@ Legend: **PK** primary key, **FK** foreign key, ✓ implemented.
 | `user_role`         | `user`, `admin`                                        | 2     |
 | `item_type`         | `lost`, `found`                                        | 3     |
 | `item_status`       | `active`, `resolved`, `hidden`                         | 3     |
-| `match_status`      | `suggested`, `dismissed`, `confirmed`                  | 6     |
+| `match_status` ✓    | `suggested`, `dismissed`, `confirmed`                  | 6     |
 | `notification_type` | `match`, `message`, `moderation`                       | 7     |
 | `report_reason`     | `spam`, `inappropriate`, `fraud`, `duplicate`, `other` | 10    |
 | `report_status`     | `open`, `resolved`, `dismissed`                        | 10    |
@@ -618,6 +618,18 @@ only `position`.
 | `created_at`, `updated_at` | timestamptz  |                                                                              |
 
 Unique `(lost_item_id, found_item_id)`; indexes on both FKs.
+
+Implemented in P6.S1 (`20260930174554_matches.sql`): the unique constraint is the
+index for `lost_item_id`, plus `matches_found_item_id_idx`; checks `score between 0
+and 1`, `lost_item_id <> found_item_id`, `breakdown` is a JSON object (default `{}`);
+`updated_at` trigger. That the pair is really lost ↔ found is guaranteed by the
+matching functions (the only writers). Privileges: `authenticated` selects and
+updates only `status` (any value, so an owner may also undo a dismissal); `anon` has
+none; no insert/delete grants (rows go with their items through the cascade).
+Policies: select and update when the caller owns either item (subquery on `items`,
+which always shows users their own items, also hidden ones); update also requires
+`can_write()`, so banned owners can read but not change matches. Admins have no
+access (moderation works on items, not matches).
 
 ### `notifications` (P7.S1)
 
@@ -791,18 +803,18 @@ password" always reports success, so emails cannot be enumerated).
 
 ### Policy matrix
 
-| Table         | select                                                                                                              | insert                                          | update                                                       | delete                   |
-| ------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------ | ------------------------ |
-| categories ✓  | everyone                                                                                                            | admin (P10.S6)                                  | admin (P10.S6)                                               | admin (P10.S6)           |
-| profiles      | everyone, public columns only (`id, display_name, avatar_path, created_at`); own full row via `current_profile()` ✓ | trigger only                                    | own row, allowed columns; admin: `role`, `is_banned` via RPC | none (cascade from auth) |
-| items ✓       | `status in (active, resolved)` or own or admin                                                                      | own `user_id` and `can_write()`                 | own, not hidden, `can_write()`; admin any (hide/restore)     | own or admin             |
-| item_images ✓ | if parent item visible                                                                                              | parent owned, not hidden, own folder, can_write | `position` only; parent owned, not hidden, `can_write()`     | parent owned or admin    |
-| matches       | owner of either item                                                                                                | definer functions only                          | owner of either item, only `status`                          | none                     |
-| notifications | own                                                                                                                 | definer functions only                          | own, only `read_at`                                          | own                      |
-| conversations | participant                                                                                                         | requester = self, not item owner, `can_write()` | none (trigger updates `last_message_at`)                     | none                     |
-| messages      | participant                                                                                                         | participant, `sender_id = self`, `can_write()`  | recipient, only `read_at`                                    | none                     |
-| favorites     | own                                                                                                                 | own                                             | —                                                            | own                      |
-| reports       | own or admin                                                                                                        | self, `can_write()`                             | admin                                                        | none                     |
+| Table         | select                                                                                                              | insert                                          | update                                                       | delete                    |
+| ------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------ | ------------------------- |
+| categories ✓  | everyone                                                                                                            | admin (P10.S6)                                  | admin (P10.S6)                                               | admin (P10.S6)            |
+| profiles      | everyone, public columns only (`id, display_name, avatar_path, created_at`); own full row via `current_profile()` ✓ | trigger only                                    | own row, allowed columns; admin: `role`, `is_banned` via RPC | none (cascade from auth)  |
+| items ✓       | `status in (active, resolved)` or own or admin                                                                      | own `user_id` and `can_write()`                 | own, not hidden, `can_write()`; admin any (hide/restore)     | own or admin              |
+| item_images ✓ | if parent item visible                                                                                              | parent owned, not hidden, own folder, can_write | `position` only; parent owned, not hidden, `can_write()`     | parent owned or admin     |
+| matches ✓     | owner of either item (not admins, not anon)                                                                         | definer functions only                          | owner of either item, only `status`, `can_write()`           | none (cascade from items) |
+| notifications | own                                                                                                                 | definer functions only                          | own, only `read_at`                                          | own                       |
+| conversations | participant                                                                                                         | requester = self, not item owner, `can_write()` | none (trigger updates `last_message_at`)                     | none                      |
+| messages      | participant                                                                                                         | participant, `sender_id = self`, `can_write()`  | recipient, only `read_at`                                    | none                      |
+| favorites     | own                                                                                                                 | own                                             | —                                                            | own                       |
+| reports       | own or admin                                                                                                        | self, `can_write()`                             | admin                                                        | none                      |
 
 ### Security verification per step
 
@@ -1617,14 +1629,16 @@ correct (SQL tests) · map page usable on mobile · Nominatim/OSM policies respe
 
 ---
 
-### Phase 6 — Automatic matching — `NOT STARTED`
+### Phase 6 — Automatic matching — `IN PROGRESS`
 
 **Goal:** the system suggests likely lost↔found pairs with a score and a human-readable explanation.
 
-#### P6.S1 — Matches schema
+#### P6.S1 — Matches schema — `COMPLETED`
 
 - **Affects:** migration `*_matches.sql` (enum, table, RLS, column grant on `status`), types.
 - **Verify:** SQL tests: only owners of either item can see/update a match; nobody can insert directly.
+- **Implemented:** migration `20260930174554_matches.sql`: enum `match_status`, table `matches` with constraints, `found_item_id` index, `updated_at` trigger, privileges and two policies (details in §9 `matches`). Types regenerated (`matches`, `match_status`). SQL tests `supabase/tests/matches.sql`.
+- **Verified:** dry run in a rolled-back transaction, then pushed; `db:test` 10/10 — `matches.sql`: defaults, 3-decimal score, duplicate pair / same item / score > 1 / negative score / non-object breakdown rejected; anon cannot read; the lost-side owner sees the matches of both lost items, changes the status (`updated_at` refreshed), cannot change score/breakdown/pair, insert or delete; the found-side owner sees only its item's matches (also while the item is hidden), changes their status, cannot change another pair's (0 rows); a banned owner reads but cannot update; a stranger and an admin see nothing and update 0 rows; deleting an item removes its matches and keeps others. Advisors: only F-12/F-19. Lint, typecheck, 388 unit tests, `npm run build` (Turbopack — now works locally, F-22) and `--webpack`. No UI change, so no browser check.
 
 #### P6.S2 — Scoring functions
 
@@ -1858,7 +1872,7 @@ started (no auth code or profile tables exist yet).
 | F-19 | Advisors warn "Leaked password protection disabled" (HaveIBeenPwned check of new passwords). Noticed during P2.S8.                                                                                                                                                                                                                                                                                                                                                                                                                      | Optional: enable it in Supabase → Authentication (password security) if the plan allows it; rejected passwords already show `weak_password`.                                                                                                                                                                                                                                                                                                                                                                                           | Open          |
 | F-20 | Deleting an auth user (dashboard or SQL) removes the profile but not the user's files in Storage: the owner's old avatar stayed in `avatars` as an orphan after the account was recreated (2026-09-26).                                                                                                                                                                                                                                                                                                                                 | Clean up files when account deletion is implemented (admin user management, P10.S5, or a self-service delete); the orphan was left in place (user data).                                                                                                                                                                                                                                                                                                                                                                               | Open          |
 | F-21 | Photos are uploaded before the item is saved (the item id is generated in the browser). If the user abandons the form, or the create action fails, the uploaded files stay in `item-images` without an `item_images` row. Removing a photo in the picker deletes its file; abandoned forms cannot. Noticed in P3.S4.                                                                                                                                                                                                                    | Acceptable for now (files are small). The create action does **not** delete them on failure, because the form keeps the photos for the next attempt (P3.S5). Deleting an item now removes every file in its folder, including such uploads (P3.S7). Option for abandoned new items: a periodic clean-up of files older than a day without an `item_images` row (scheduled SQL job or admin action, P10/P11).                                                                                                                           | Open          |
-| F-22 | Local `next build` (Turbopack) fails on the development machine: Windows Application Control blocks the native `@next/swc-win32-x64-msvc` binary, Next falls back to WASM bindings, and Turbopack requires native ones. Seen first in P3.S8 (earlier steps built normally). Lint, typecheck and tests are unaffected; Vercel builds on Linux.                                                                                                                                                                                           | Code is unaffected. Locally, verify with `npx next build --webpack` until the policy allows the file (user: Windows Security → App & browser control, or reinstall `node_modules`). Scripts stay unchanged.                                                                                                                                                                                                                                                                                                                            | Open          |
+| F-22 | Local `next build` (Turbopack) fails on the development machine: Windows Application Control blocks the native `@next/swc-win32-x64-msvc` binary, Next falls back to WASM bindings, and Turbopack requires native ones. Seen first in P3.S8 (earlier steps built normally). Lint, typecheck and tests are unaffected; Vercel builds on Linux.                                                                                                                                                                                           | Code is unaffected. Locally, verify with `npx next build --webpack` until the policy allows the file (user: Windows Security → App & browser control, or reinstall `node_modules`). Scripts stay unchanged. 2026-09-30 (P6.S1): `npm run build` runs with Turbopack locally again; nothing was changed in the project.                                                                                                                                                                                                                 | Resolved      |
 | F-23 | A `loading.tsx` or a Suspense fallback on a page streams the fallback first on a full page load; the real content is swapped in by inline JavaScript. Without JavaScript (and for crawlers that do not run it) the page stays on the fallback, and a `redirect()` after the fallback is a streamed client redirect instead of HTTP 307. Found in P4.S5 on `/items`.                                                                                                                                                                     | Pages that must work without JavaScript or redirect canonically (`/items`, later public pages) render without a fallback; show pending state with `useLinkStatus`/`useFormStatus` markers instead (P4.S5). Keep this in mind for P11.S* ("`loading.tsx` per segment"): only on pages where that is acceptable (e.g. signed-in pages).                                                                                                                                                                                                  | Documented    |
 | F-24 | Item form: a failed submit clears the lost/found choice in the browser. React resets the form after every action; the `type` radios are controlled by state that does not change, so the reset unchecks them while the card description still follows the old choice. The next submit then fails with "choose lost or found". Present since P3.S5 (found in P5.S3).                                                                                                                                                                     | Fixed in `item-form.tsx`: the radios stay controlled (React writes `.checked` on every update, so a later choice sticks) and their group is remounted after every action result (`State.attempt` as `key`), which makes React write the current choice as `defaultChecked` before it resets the form. Making them uncontrolled was not enough: after the reset, the re-render on a new choice rewrote the old radio's `defaultChecked` and re-checked it (seen in jsdom). Covered by `item-form.test.tsx` (jsdom) and a browser check. | Fixed         |
 | F-25 | Production (Vercel) crashed the item form when a pin was placed: "iconUrl not set in Icon options". Turbopack turns an image imported from `node_modules` into a URL string, webpack into `StaticImageData`, so `markerIcon.src` was `undefined` on Vercel only. Local checks build with webpack (F-22), which hid it. Found after P5.S3.                                                                                                                                                                                               | Fixed: `marker-icon.ts` accepts both shapes, `LocationPickerMap` passes the icon explicitly, `BaseMap` imports it for the default. Regression test `marker-icon.test.tsx` (Vitest also yields strings, like Turbopack; the old code fails it). Map/asset changes are also checked on the Vercel deployment until F-22 is resolved.                                                                                                                                                                                                     | Fixed         |
@@ -1873,6 +1887,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step       | Change                                                                                                                                                                                                                                                                                                       |
 | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-09-30 | P6.S1      | Matches schema: `match_status` enum, `matches` table (unique pair, score 0–1, breakdown object), owners of either item read it and change only `status`, no direct inserts/deletes; SQL tests; types. Local Turbopack build works again (F-22 resolved). Fixed a broken P3.S7 row in the §2 step table.      |
 | 2026-09-29 | P5.S6 prod | Verified on Vercel (`ba3f626`): `/map` 43/43, radius 41/41, apply race 5/5, item map 24/24, location picker 20/20.                                                                                                                                                                                           |
 | 2026-09-29 | P5.S6      | `/map` page: `items_in_bounds()` (active items in a rectangle, planar index, 300 cap with total; SQL tests), browser loading per visible area (debounced, aborting), grouped markers in type colors with item popups, type filter keeping the view, header/sitemap; F-28; browser check 43/43. Phase 5 done. |
 | 2026-09-29 | P5.S5 prod | Verified on Vercel (`b48dfcd`): migration active, new `search_items()` signature only; radius 41/41, apply-after-radius race 3/3 + 5/5, item map 24/24, location picker 20/20.                                                                                                                               |
@@ -1925,18 +1940,17 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P6.S1 — Matches schema** (see §22, Phase 6; design in §14 and §9 `matches`).
+**P6.S2 — Scoring functions** (see §22, Phase 6; design in §14).
 
-Why next: Phase 5 is complete, so every item has a location, category, date
-and normalized text, which is everything matching needs. P6.S1 adds the
-`matches` table (lost/found pair, score, breakdown, status) with its enum, RLS
-(only the owners of either item can read a match and change its `status`
-through a column grant; nobody inserts directly), regenerated types and SQL
-tests. Scoring (P6.S2) and computing matches (P6.S3) build on it.
+Why next: P6.S1 added the `matches` table. P6.S2 adds
+`match_score(lost, found)` (migration `*_match_scoring.sql`), which returns the
+score and breakdown from §14 (category, distance, date and text components,
+weights version `v1`), and fixture tests in `supabase/tests/matching.sql` (clear
+match, category mismatch, date contradiction, distance decay, Cyrillic vs Latin
+text). It does not write matches yet; `compute_matches` and the triggers come in P6.S3.
 
 Open manual items:
 
 - Set the minimum password length to 8 in the Supabase dashboard (F-07).
 - Decide on locale detection (F-13).
 - Optional: leaked password protection (F-19).
-- Local Turbopack build blocked by Windows Application Control (F-22).

@@ -25,10 +25,10 @@ status and the next step. Read it before any work.
 - Phases 1–5 completed (auth, profile, first deployment; items CRUD with photos, item
   page, `/dashboard`; search, `/items` feed with filters and pagination, SEO, home page
   with latest items; maps: location picker, required location, item map, radius
-  filter, `/map` page). Next: Phase 6 (matching), P6.S1.
+  filter, `/map` page). Phase 6 (matching) in progress: P6.S1 `matches` schema done;
+  next P6.S2.
 - Open manual items: minimum password length 8 (F-07); decision on locale
-  detection (F-13); optional leaked password protection (F-19); local Turbopack build
-  blocked by Windows Application Control (F-22).
+  detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
   must delete only test users by their own email pattern (`…@findly.test`,
   `findly-e2e-…@mailinator.com`).
@@ -89,6 +89,8 @@ status and the next step. Read it before any work.
   never sign up with `@findly.test` (it bounces) — use a disposable inbox
   (`…@mailinator.com`) and read the confirmation `token_hash` from
   `auth.one_time_tokens` instead of the email.
+- Matches (§14): rows are written only by `security definer` matching functions; owners
+  of either item select them and update only `status` (column grant, `can_write()`).
 - Security: RLS on every table in the same migration that creates it (Supabase grants
   table privileges to anon/authenticated by default). `private.can_write()` in write
   policies, `private.is_admin()` for admin access. Policy helpers go in schema
@@ -199,11 +201,11 @@ status and the next step. Read it before any work.
 ## Environment notes
 
 - Windows; Bash and PowerShell both available. No Docker, so no local Supabase stack.
-- Local `npm run build` currently fails (Turbopack needs the native SWC binary, which
-  Windows Application Control blocks; F-22). Verify with `npx next build --webpack`
-  until that is resolved; do not change the scripts (Vercel builds normally).
-  webpack and Turbopack can differ (F-25): after pushing browser-facing changes (maps,
-  assets), re-run the browser check against the Vercel deployment. There, wait for `load` and
+- Local `npm run build` (Turbopack) works again since 2026-09-30; it failed earlier when
+  Windows Application Control blocked the native SWC binary (F-22). If that happens again,
+  verify with `npx next build --webpack`; do not change the scripts. webpack and Turbopack
+  can differ (F-25): after pushing browser-facing changes (maps, assets), re-run the
+  browser check against the Vercel deployment. There, wait for `load` and
   specific elements, not `networkidle` (prefetches stay open on Vercel, F-26).
 - `npx supabase login` needs an interactive terminal: the user runs it in their own
   PowerShell window, not through the agent.
