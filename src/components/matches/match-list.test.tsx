@@ -293,6 +293,7 @@ describe("MatchActions", () => {
     expect(sentStatus()).toEqual({ matchId: "m01", status: "dismissed" });
     const [message, options] = toast.success.mock.calls[0];
     expect(message).toBe("Match dismissed.");
+    expect(options.duration).toBe(8000);
 
     await act(async () => options.action.onClick());
     expect(sentStatus(1)).toEqual({ matchId: "m01", status: "suggested" });

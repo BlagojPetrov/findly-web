@@ -43,7 +43,10 @@ export function MatchActions({
     startTransition(async () => {
       if (!(await update(next))) return;
       if (next === "dismissed") {
+        // Twice the default time: long enough to notice and undo it
+        // after the page has refreshed.
         toast.success(t("toasts.dismissed"), {
+          duration: 8000,
           action: {
             label: t("actions.undo"),
             onClick: () => {
