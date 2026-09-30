@@ -22,12 +22,11 @@ status and the next step. Read it before any work.
 
 ## Current state
 
-- Phases 1–5 completed (auth, profile, first deployment; items CRUD with photos, item
+- Phases 1–6 completed (auth, profile, first deployment; items CRUD with photos, item
   page, `/dashboard`; search, `/items` feed with filters and pagination, SEO, home page
   with latest items; maps: location picker, required location, item map, radius
-  filter, `/map` page). Phase 6 (matching) in progress: P6.S1 `matches` schema,
-  P6.S2 scoring, P6.S3 automatic `compute_matches` triggers, P6.S4 matches UI with
-  dismiss/confirm (P6.S5 merged in) done; next P6.S6.
+  filter, `/map` page; automatic matching with explanation, confirm/dismiss and
+  weights v2 tuned on a demo dataset). Next: P7.S1 (notifications).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -93,8 +92,12 @@ status and the next step. Read it before any work.
 - Matches (§14): rows are written only by `security definer` matching functions; owners
   of either item select them and update only `status` (column grant, `can_write()`).
   `private.match_score(lost, found)` holds all candidate rules and returns no row for a
-  non-candidate; `private.match_words()` gives the words used for text matching. Weight
-  or rule changes update the fixture expectations in `supabase/tests/matching.sql`.
+  non-candidate; `private.match_words()` gives the words used for text matching. Weights v2
+  (0.15/0.15/0.15/0.55, stored at ≥ 0.60) were tuned on `supabase/seed/demo.sql` (§14).
+  Weight or rule changes go in a new migration and update the expectations in
+  `supabase/tests/matching.sql`, `compute_matches.sql` and `matching_demo.sql`; evaluate
+  with `supabase/seed/demo-evaluation.sql` in a rolled-back transaction. The demo data is
+  not loaded on the dev project (it would show on the public site).
   Triggers on `items` run `private.compute_matches(id)` after insert and after changes
   of matching columns (it upserts `suggested` rows, keeps dismissed/confirmed): SQL
   tests that insert matching items get match rows automatically. UI: reads through
@@ -190,6 +193,7 @@ status and the next step. Read it before any work.
   `max-w-5xl` for the dashboard); the layout only adds padding. Signed-in users land on
   `AFTER_SIGN_IN_PATH` (`/dashboard`).
 - SQL tests: `supabase/tests/<name>.sql` using helpers from `_helpers.sql`
+  (`-- @include <path>` inserts another file, e.g. `../seed/demo.sql`)
   (`pg_temp.create_user`, `login_as`, `login_as_anon`, `logout`) and `assert`.
   The runner wraps each file in `begin … rollback`.
 - UI: shadcn/ui (Base UI primitives; `cn` from `@/lib/utils`), Tailwind 4 tokens in

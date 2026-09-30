@@ -72,7 +72,7 @@ begin
     'candidates: same or "other" category, date window, ≤ 50 km, active, other owner';
 
   -- Clear match: the breakdown in detail.
-  assert b ->> 'version' = 'v1', 'weights version';
+  assert b ->> 'version' = 'v2', 'weights version';
   assert (b ->> 'category')::numeric = 1, 'same category = 1';
   assert (b ->> 'distance_km')::numeric = 1.0, 'distance ~1 km';
   assert (b ->> 'distance')::numeric between 0.817 and 0.820, 'distance = exp(-1/5)';
@@ -81,15 +81,15 @@ begin
   assert b -> 'shared_words' = '["crn", "dalecinski", "dva", "kluca", "klucevi", "privezok"]',
     'shared words across Cyrillic and Latin, sorted, without "lost"/"found" words';
   assert (b ->> 'text')::numeric = 0.857, 'text = 6 shared of the 7 found words';
-  assert abs(s - (0.30 * 1 + 0.25 * (b ->> 'distance')::numeric + 0.20 * 0.931
-    + 0.25 * 0.857)) <= 0.002, 'score is the weighted sum of the components';
-  assert s between 0.90 and 0.91, 'clear match scores ~0.905';
+  assert abs(s - (0.15 * 1 + 0.15 * (b ->> 'distance')::numeric + 0.15 * 0.931
+    + 0.55 * 0.857)) <= 0.002, 'score is the weighted sum of the components (v2)';
+  assert s between 0.88 and 0.89, 'clear match scores ~0.884';
 
   -- "other" halves the category component; everything else equal.
   assert (select (breakdown ->> 'category')::numeric from scores where n = '13') = 0.5,
     '"other" category = 0.5';
-  assert s - (select score from scores where n = '13') between 0.149 and 0.151,
-    '"other" costs 0.30 × 0.5';
+  assert s - (select score from scores where n = '13') between 0.074 and 0.076,
+    '"other" costs 0.15 × 0.5';
 
   -- Dates: 2 days before the loss is tolerated; 90 days is the limit.
   assert (select (breakdown ->> 'days_between')::int from scores where n = '15') = 2,
@@ -115,15 +115,17 @@ begin
   assert (select breakdown -> 'shared_words' from scores where n = '23') = '[]',
     'different keys: no shared words';
 
-  -- Ordering: the clear match first, then 2 days apart, 5 km, "other".
-  -- 90 days, different keys and 20 km end within 0.015 of each other
-  -- (0.719, 0.711, 0.705 with weights v1; tuned in P6.S6).
+  -- Ordering (weights v2, P6.S6): the clear match first, then 2 days apart,
+  -- 5 km, "other", 20 km, 90 days; the different keys last.
   assert (select array_agg(n order by score desc) from scores)
-    = array['11', '15', '18', '13', '16', '23', '19'],
+    = array['11', '15', '18', '13', '19', '16', '23'],
     'fixture ordering';
-  assert (select score from scores where n = '13')
-    > (select max(score) from scores where n in ('16', '19', '23')),
-    'the weak variants rank below the ones that differ in one mild way';
+  -- F-29: the same description passes the 0.60 threshold even with one
+  -- weak component; different keys at the same place and day do not.
+  assert (select min(score) from scores where n <> '23') >= 0.60,
+    'variants with the same description are stored';
+  assert (select score from scores where n = '23') < 0.60,
+    'different keys at the same place and day are not stored';
   assert (select bool_and(score between 0 and 1) from scores), 'scores within 0–1';
 
   -- Wrong item types are a programming error.

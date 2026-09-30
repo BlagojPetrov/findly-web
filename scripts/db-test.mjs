@@ -2,7 +2,9 @@
 //
 // Each test file is prefixed with _helpers.sql and wrapped in
 // "begin; ... rollback;", so no test data is ever committed. A failing
-// "assert" aborts the file and the error message is printed.
+// "assert" aborts the file and the error message is printed. A line
+// "-- @include <path>" is replaced by that file (path relative to
+// supabase/tests), e.g. to load a seed file.
 //
 // Usage: npm run db:test [-- <name>]   e.g. npm run db:test -- profiles
 
@@ -29,7 +31,10 @@ const workDir = mkdtempSync(join(tmpdir(), "findly-db-test-"));
 let failed = 0;
 
 for (const file of files) {
-  const sql = readFileSync(join(testsDir, file), "utf8");
+  const sql = readFileSync(join(testsDir, file), "utf8").replace(
+    /^-- @include (.+)$/gm,
+    (_, path) => readFileSync(join(testsDir, path.trim()), "utf8"),
+  );
   const wrapped = join(workDir, file);
   writeFileSync(wrapped, `begin;\n${helpers}\n${sql}\nrollback;\n`);
 

@@ -47,8 +47,8 @@ begin
   assert m.lost_item_id = '47000000-0000-4000-8000-000000000001'
     and m.found_item_id = '47000000-0000-4000-8000-000000000002', 'the pair is lost ↔ found';
   assert m.status = 'suggested', 'a new match is suggested';
-  assert m.score between 0.85 and 0.95, 'the clear match scores high: ' || m.score;
-  assert m.breakdown ->> 'version' = 'v1' and (m.breakdown ->> 'days_between')::int = 1,
+  assert m.score between 0.9 and 1, 'the clear match scores high: ' || m.score;
+  assert m.breakdown ->> 'version' = 'v2' and (m.breakdown ->> 'days_between')::int = 1,
     'the breakdown comes from match_score()';
 end;
 $$;

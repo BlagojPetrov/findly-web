@@ -98,7 +98,7 @@ to these IDs. "Next step" always means the step named in
 | 3     | Items CRUD and image upload           | `COMPLETED`   |
 | 4     | Feed, search and advanced filters     | `COMPLETED`   |
 | 5     | Map and location                      | `COMPLETED`   |
-| 6     | Automatic matching                    | `IN PROGRESS` |
+| 6     | Automatic matching                    | `COMPLETED`   |
 | 7     | Notifications                         | `NOT STARTED` |
 | 8     | Messaging                             | `NOT STARTED` |
 | 9     | Favorites                             | `NOT STARTED` |
@@ -154,7 +154,7 @@ to these IDs. "Next step" always means the step named in
 | P6.S3  | `compute_matches` and triggers                 | `COMPLETED`   |
 | P6.S4  | Matches UI with explanation                    | `COMPLETED`   |
 | P6.S5  | Dismiss / confirm matches (merged into P6.S4)  | `COMPLETED`   |
-| P6.S6  | Demo dataset and weight tuning                 | `NOT STARTED` |
+| P6.S6  | Demo dataset and weight tuning                 | `COMPLETED`   |
 | P7.S1  | Notifications schema                           | `NOT STARTED` |
 | P7.S2  | Match notification trigger                     | `NOT STARTED` |
 | P7.S3  | Notification bell with Realtime                | `NOT STARTED` |
@@ -1033,17 +1033,17 @@ lat, lng, title, description, status`, so saving unchanged values does nothing.
   long before it was lost) and difference ≤ 90 days.
 - Distance ≤ 50 km (every item has a location since P5.S3).
 
-### Score (weights version `v1`, tuned in P6.S6)
+### Score (weights version `v2` since P6.S6)
 
-| Component | Weight | Formula (0–1)                                                                                |
-| --------- | ------ | -------------------------------------------------------------------------------------------- |
-| Category  | 0.30   | 1 if same category, 0.5 if one is `other`                                                    |
-| Distance  | 0.25   | `exp(-d_km / 5)`; 0.5 if a location is missing                                               |
-| Date      | 0.20   | `exp(-max(0, days_between) / 14)`                                                            |
-| Text      | 0.25   | `greatest(similarity(search_text_a, search_text_b), token overlap ratio)` on normalized text |
+| Component | Weight v2 (v1) | Formula (0–1)                                                                                |
+| --------- | -------------- | -------------------------------------------------------------------------------------------- |
+| Category  | 0.15 (0.30)    | 1 if same category, 0.5 if one is `other`                                                    |
+| Distance  | 0.15 (0.25)    | `exp(-d_km / 5)` (every item has a location)                                                 |
+| Date      | 0.15 (0.20)    | `exp(-days_between / 14)`                                                                    |
+| Text      | 0.55 (0.25)    | `greatest(similarity(search_text_a, search_text_b), token overlap ratio)` on normalized text |
 
-`score = Σ weight × component`. Stored when `score ≥ 0.55`; at most the top 10
-matches per item are kept.
+`score = Σ weight × component`. Stored when `score ≥ 0.60` (v1: 0.55); at most the
+top 10 matches per item are kept.
 
 Implemented in P6.S2 (`20260930182118_match_scoring.sql`):
 `private.match_score(lost items, found items) returns table (score, breakdown)`
@@ -1065,13 +1065,68 @@ it in a lateral join; a first argument that is not `lost` or a second that is no
 - Score rounded to 3 decimals; breakdown components to 3 decimals, `distance_km`
   to 1, `shared_words` at most 10, alphabetical.
 
-Fixture results (`supabase/tests/matching.sql`, same keys described in Cyrillic and
-Latin, 1 day and ~1 km apart unless noted): clear match 0.905; 2 days before the
-loss 0.892; ~5 km 0.792; category `other` 0.755; 90 days 0.719; different keys at
-the same place and day 0.711; ~20 km 0.705; another category, 3 days before the
-loss, 91 days, ~60 km, same owner and a resolved item give no row. Weights v1 give
-0.69 for category + distance + date alone, so unrelated items of the same category
-found nearby on the same day pass the 0.55 threshold (F-29, for P6.S6).
+Fixture results with v1 (`supabase/tests/matching.sql`, same keys described in
+Cyrillic and Latin, 1 day and ~1 km apart unless noted): clear match 0.905; 2 days
+before the loss 0.892; ~5 km 0.792; category `other` 0.755; 90 days 0.719; different
+keys at the same place and day 0.711; ~20 km 0.705; another category, 3 days before
+the loss, 91 days, ~60 km, same owner and a resolved item give no row. Weights v1
+give 0.69 for category + distance + date alone, so unrelated items of the same
+category found nearby on the same day pass the 0.55 threshold (F-29).
+
+With v2 (P6.S6): clear match 0.884; 2 days before 0.874; ~5 km 0.816; `other`
+0.809; ~20 km 0.764; 90 days 0.744; different keys at the same place and day
+**0.458** (below 0.60, so not stored).
+
+### Tuning on the demo dataset (P6.S6)
+
+**Dataset** (`supabase/seed/demo.sql`): 44 realistic reports by 14 demo users in
+Skopje, Bitola, Ohrid/Struga, Kumanovo and Tetovo (more than 50 km from the real
+reports), dates relative to today. 14 true pairs, written the way people write:
+Cyrillic vs Latin, different words for the same thing ("паричник" / "paricnik",
+"Фолксваген" / "VW Volkswagen"), a finder who chose `other` for a backpack, a ring
+found 28 days later, a laptop found ~27 km away in Kumanovo, a cat found ~3 km away.
+Distractors are the hard case: same category, a few hundred metres to a few km away,
+same days (other wallets, phones and headphones, flat keys, a cat and a large dog,
+a student card and an ID card, a scarf, a handbag, a watch and glasses in Bitola
+that are each other's distractors), plus lost reports without a true pair (umbrella
+in `other`, parrot, a brown wallet in Kumanovo). 67 candidate pairs pass the hard
+rules.
+
+**Method:** the dataset and `supabase/seed/demo-evaluation.sql` run in a rolled-back
+transaction (score, components and rank from both sides of every candidate pair).
+Weights (steps of 0.05, each ≥ 0.10) and thresholds were compared on the stored
+components. Criterion: every true pair stored and in the top 3 from both sides;
+then the widest gap between the weakest true pair and the strongest false pair.
+
+| Weights (cat / dist / date / text), threshold | True pairs stored | True pairs ranked 1st (both sides) | False positives stored | Weakest true | Strongest false |
+| --------------------------------------------- | ----------------- | ---------------------------------- | ---------------------- | ------------ | --------------- |
+| v1: 0.30 / 0.25 / 0.20 / 0.25, 0.55           | 14 / 14           | 14                                 | 26                     | 0.660        | 0.772           |
+| v2: 0.15 / 0.15 / 0.15 / 0.55, 0.60           | 14 / 14           | 14                                 | 0                      | 0.651        | 0.524           |
+
+Text is what separates the pairs: true pairs have a text score of 0.42–0.88,
+false ones at most 0.22 (one plausible exception at 0.43, below). v2 is not the
+single best set on this data: 0.10 / 0.15 / 0.10 / 0.65 gives a slightly wider gap
+(0.148 vs 0.126) but leaves category and date almost without effect, so the
+balanced round weights were chosen to avoid fitting 14 pairs too closely.
+
+**False positives:** none stored with v2 (26 with v1: every distractor above).
+Closest non-matches with v2 (0.52): the red wallet near the black one, flat keys
+2 km from the car keys, Sony headphones next to the lost iPhone, and the brown
+wallet lost in Kumanovo vs a brown wallet found in Skopje 26 km away (0.517; a
+reasonable suggestion that just misses the threshold).
+
+**Limitations:** a pair now needs a text score of about 0.27 even when category,
+place and date are perfect, so two reports that describe the same item with
+entirely different words (synonyms, only a brand vs only a type) are missed; the
+weakest true pairs are the iPhone described as "мобилен телефон" (0.675, text 0.42)
+and the laptop found 27 km away (0.651). The set is small and written by the
+developer; the weights should be revisited with real reports. The UI strength
+labels (strong ≥ 0.8, good ≥ 0.7, possible below) fit v2: 5 true pairs are strong,
+7 good, 2 possible.
+
+`supabase/tests/matching_demo.sql` loads the dataset (via `-- @include`) and
+asserts the result: all 14 true pairs stored and in the top 3 from both sides, no
+other demo pair stored (it fails on v1 with the 26 false positives).
 
 ### Breakdown (stored in `matches.breakdown`)
 
@@ -1226,7 +1281,9 @@ decay, Cyrillic vs Latin text.
 | CI             | GitHub Actions: lint, typecheck, unit tests, build                                                                                        | On every push                                                                                                                   | P11.S4 |
 
 SQL tests use `do $$ begin assert …; end $$;` blocks so a failure aborts the
-script with a clear message; no pgTAP/Docker needed. They never commit data.
+script with a clear message; no pgTAP/Docker needed. They never commit data. A line
+`-- @include <path>` (relative to `supabase/tests`) is replaced by that file, e.g.
+the demo dataset in `matching_demo.sql` (P6.S6).
 
 ---
 
@@ -1696,7 +1753,7 @@ correct (SQL tests) · map page usable on mobile · Nominatim/OSM policies respe
 
 ---
 
-### Phase 6 — Automatic matching — `IN PROGRESS`
+### Phase 6 — Automatic matching — `COMPLETED`
 
 **Goal:** the system suggests likely lost↔found pairs with a score and a human-readable explanation.
 
@@ -1739,10 +1796,13 @@ correct (SQL tests) · map page usable on mobile · Nominatim/OSM policies respe
 - **Verify:** dismissed match disappears for both users; confirmed match shows a "Contact" call to action.
 - Done in P6.S4. The "Contact" call to action needs messaging and is added in P8.S2; until then the confirmed card shows the hint and a link to the other report.
 
-#### P6.S6 — Demo dataset and weight tuning
+#### P6.S6 — Demo dataset and weight tuning — `COMPLETED`
 
 - **Affects:** `supabase/seed/demo.sql` (realistic Macedonian examples; dev project only), weights documented in §14 and in the thesis.
 - **Verify:** on the demo dataset the true pairs are in the top 3 for their items; false positives documented.
+- **Implemented:** `supabase/seed/demo.sql` (14 demo users `demo-…@findly.test` without a password, 44 reports, 14 true pairs; re-runnable, removable), `supabase/seed/demo-evaluation.sql`, migration `20260930215042_match_weights_v2.sql` (`match_score` weights v2, `compute_matches` threshold 0.60, recompute of all active items), `supabase/tests/matching_demo.sql`, `-- @include` in `scripts/db-test.mjs`; fixture expectations in `matching.sql` and `compute_matches.sql` updated to v2. Results, method and limitations in §14. F-29 fixed.
+- **Not done:** the demo data is **not** loaded on the dev project, because the same project serves the public Vercel site and the reports would appear there. It was evaluated only in rolled-back transactions; loading it (`npx supabase db query --linked -f supabase/seed/demo.sql`) is left to the project owner, or to P11.S6 (demo accounts on the production project).
+- **Verified:** v1 and v2 evaluated in rolled-back transactions (v1: 26 false positives; v2: 0, all 14 true pairs ranked first from both sides); migration, demo data and evaluation dry-run together, every SQL test dry-run on v2, then pushed; `db:test` 13/13 (`matching_demo.sql` fails on v1 with the 26 false positives and passes on v2); advisors: only F-12/F-19; after the push the one real match on the dev project was rescored with v2 (0.980). Lint, typecheck, 425 unit tests, `npm run build`. No UI change, so no browser check.
 
 **Definition of done — Phase 6:** matches appear automatically after creating a
 report · score + explanation shown · owners can dismiss/confirm · SQL tests pass ·
@@ -1956,7 +2016,7 @@ started (no auth code or profile tables exist yet).
 | F-26 | On Vercel, Macedonian (no-prefix) pages leave one or two prefetch `fetch` requests open indefinitely: prefetches of links that the proxy answers with 307 (the locale switcher's `/mk/…`, a guest's "Report" link to `/login?next=…`) are followed to the target and never finish. `/en/…` pages are not affected; seen on `/`, `/items` and item pages. Not visible to users so far, but prefetching those links does not complete and headless checks cannot wait for "network idle". Present before P5.S4 (found while checking it). | Investigate later (e.g. link the current locale without the `/mk` prefix, or no prefetch on links that redirect). Browser checks wait for `load` and specific elements instead of `networkidle`.                                                                                                                                                                                                                                                                                                                                       | Open          |
 | F-27 | A Leaflet map removed during a zoom animation threw "Cannot read properties of undefined (reading '_leaflet_pos')": Leaflet 1.9 ends the animation from a 250 ms timer that `map.remove()` does not cancel. Seen in P5.S5 when the feed's filter form (with the distance map) remounted right after a radius change; any map unmounted while zooming was affected.                                                                                                                                                                      | Fixed in P5.S5: `src/components/map/leaflet-fixes.ts` (imported by `base-map`) skips the timer's call when the map has no pane any more; unit tests (the first fails without the fix); browser repro clean.                                                                                                                                                                                                                                                                                                                            | Fixed         |
 | F-28 | Leaflet popups (and its controls) have their own white styling. The `/map` popups use the theme's text colors, which would be light on white once dark mode exists. Found in P5.S6 (dark mode is not active yet).                                                                                                                                                                                                                                                                                                                       | Style `.leaflet-popup-content-wrapper`, `.leaflet-popup-tip` and the zoom/attribution controls with the theme tokens in P11.S1 (dark mode).                                                                                                                                                                                                                                                                                                                                                                                            | Open          |
-| F-29 | With weights v1, category + distance + date alone give 0.69, above the 0.55 threshold: unrelated items of the same category found nearby on the same day become matches (fixture: different keys at the same place, 0.711, text 0.082). Found in P6.S2.                                                                                                                                                                                                                                                                                 | Tune in P6.S6 on the demo dataset (e.g. more weight on text, a minimum text score, or a higher threshold) and document the result.                                                                                                                                                                                                                                                                                                                                                                                                     | Open          |
+| F-29 | With weights v1, category + distance + date alone give 0.69, above the 0.55 threshold: unrelated items of the same category found nearby on the same day become matches (fixture: different keys at the same place, 0.711, text 0.082). Found in P6.S2.                                                                                                                                                                                                                                                                                 | Fixed in P6.S6: weights v2 (category 0.15, distance 0.15, date 0.15, text 0.55) and threshold 0.60, tuned on the demo dataset (§14): 0 false positives instead of 26, all true pairs still first; the fixture now scores 0.458.                                                                                                                                                                                                                                                                                                        | Fixed         |
 | F-10 | No automated tests yet.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Fixed         |
 
 ---
@@ -1965,6 +2025,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step       | Change                                                                                                                                                                                                                                                                                                       |
 | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-09-30 | P6.S6      | Demo dataset (44 reports, 14 true pairs) and evaluation; weights v2 (0.15/0.15/0.15/0.55, threshold 0.60): false positives 26 → 0, true pairs all first; `matching_demo.sql` with `-- @include`; F-29 fixed. Phase 6 done.                                                                                   |
 | 2026-09-30 | P6.S4 prod | Verified on Vercel (`a00451d`): matches browser suite 41/41 (after the 8 s Undo toast fix).                                                                                                                                                                                                                  |
 | 2026-09-30 | P6.S4      | Matches UI: item page (owner) and dashboard sections with explanation chips, strength + percentage, confirm/dismiss/undo/restore (`setMatchStatus`), empty/error/resolved states; P6.S5 merged in; 37 new tests; browser check 41/41.                                                                        |
 | 2026-09-30 | P6.S3      | Automatic matching: `private.compute_matches(item)` (indexed prefilter, `match_score`, top 10 ≥ 0.55, upsert of suggested rows, dismissed/confirmed kept), insert/update triggers on `items`, backfill (0 matches on dev); SQL tests `compute_matches.sql`.                                                  |
@@ -2022,17 +2083,19 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P6.S6 — Demo dataset and weight tuning** (see §22, Phase 6; design in §14).
+**P7.S1 — Notifications schema** (see §22, Phase 7; design in §15).
 
-Why next: matching and its UI work end to end (P6.S3–P6.S5). P6.S6 adds realistic
-Macedonian demo reports on the dev project, checks that true pairs rank in the top 3,
-documents false positives and tunes the weights/threshold (F-29: category + distance
-
-- date alone pass 0.55). Changing weights needs a new migration and updated fixture
-  expectations in `supabase/tests/matching.sql`.
+Why next: Phase 6 is done — matches are created automatically, explained and
+confirmed/dismissed by the owners. Phase 7 tells users about new matches: P7.S1 adds
+the `notifications` table (enum, RLS: users see only their own, no inserts by users,
+`read_at` column grant, indexes, Realtime publication) with SQL tests. P7.S2 then
+creates a notification for both owners when a match row is inserted (`compute_matches`
+keeps existing rows, so only new pairs notify).
 
 Open manual items:
 
 - Set the minimum password length to 8 in the Supabase dashboard (F-07).
 - Decide on locale detection (F-13).
 - Optional: leaked password protection (F-19).
+- Optional: load the matching demo data on the dev project (it would appear on the
+  public site; P6.S6).
