@@ -25,8 +25,8 @@ status and the next step. Read it before any work.
 - Phases 1–5 completed (auth, profile, first deployment; items CRUD with photos, item
   page, `/dashboard`; search, `/items` feed with filters and pagination, SEO, home page
   with latest items; maps: location picker, required location, item map, radius
-  filter, `/map` page). Phase 6 (matching) in progress: P6.S1 `matches` schema and
-  P6.S2 scoring done; next P6.S3.
+  filter, `/map` page). Phase 6 (matching) in progress: P6.S1 `matches` schema,
+  P6.S2 scoring and P6.S3 automatic `compute_matches` triggers done; next P6.S4.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -94,6 +94,9 @@ status and the next step. Read it before any work.
   `private.match_score(lost, found)` holds all candidate rules and returns no row for a
   non-candidate; `private.match_words()` gives the words used for text matching. Weight
   or rule changes update the fixture expectations in `supabase/tests/matching.sql`.
+  Triggers on `items` run `private.compute_matches(id)` after insert and after changes
+  of matching columns (it upserts `suggested` rows, keeps dismissed/confirmed): SQL
+  tests that insert matching items get match rows automatically.
 - Security: RLS on every table in the same migration that creates it (Supabase grants
   table privileges to anon/authenticated by default). `private.can_write()` in write
   policies, `private.is_admin()` for admin access. Policy helpers go in schema

@@ -25,6 +25,11 @@ from (values
   ('45000000-0000-4000-8000-000000000004', '00000000-0000-4000-8000-0000000000d8', 'found', 'Found two')
 ) as v (id, user_id, type, title);
 
+-- The insert trigger (P6.S3) already matched these items; this file tests the
+-- table with its own rows.
+delete from public.matches
+where lost_item_id in ('45000000-0000-4000-8000-000000000001', '45000000-0000-4000-8000-000000000002');
+
 -- M1: L1 ↔ F1 (A, B); M2: L1 ↔ F2 (A, D); M3: L2 ↔ F1 (A, B).
 insert into public.matches
   (id, lost_item_id, found_item_id, score, breakdown, created_at, updated_at)

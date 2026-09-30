@@ -151,7 +151,7 @@ to these IDs. "Next step" always means the step named in
 | P5.S6  | `/map` page                                    | `COMPLETED`   |
 | P6.S1  | Matches schema                                 | `COMPLETED`   |
 | P6.S2  | Scoring functions                              | `COMPLETED`   |
-| P6.S3  | `compute_matches` and triggers                 | `NOT STARTED` |
+| P6.S3  | `compute_matches` and triggers                 | `COMPLETED`   |
 | P6.S4  | Matches UI with explanation                    | `NOT STARTED` |
 | P6.S5  | Dismiss / confirm matches                      | `NOT STARTED` |
 | P6.S6  | Demo dataset and weight tuning                 | `NOT STARTED` |
@@ -1000,6 +1000,31 @@ location, title, description, status` → `compute_matches(new.id)`.
   write match rows for both owners), deletes and recomputes that item's
   `suggested` matches, and keeps `dismissed`/`confirmed` rows.
 
+Implemented in P6.S3 (`20260930203111_compute_matches.sql`):
+`private.compute_matches(item_id)` (internal, not executable by API roles) and the
+trigger function `private.items_compute_matches()` (also `security definer`, because
+the trigger fires as the user who changed the item). Details:
+
+- Candidates are prefiltered with indexes (opposite type, active, other owner, same
+  or `other` category, ±90 days, `st_dwithin` 50 km); `match_score()` applies the
+  exact rules and scores them.
+- Pairs that already have a `dismissed`/`confirmed` row are skipped and do not take
+  one of the 10 places.
+- **Upsert instead of delete + insert:** new pairs are inserted, existing
+  `suggested` rows get the new score/breakdown only when it changed, and the item's
+  other `suggested` rows are deleted. A match keeps its id and `created_at` while it
+  stays suggested, so P7 can notify on new rows only.
+- A resolved/hidden item is not computed (its matches stay). When the other item of
+  such a pair is recomputed, the pair is no longer a candidate and its `suggested`
+  row is deleted; reopening the item matches it again.
+- The top-10 cap applies to the item being computed; the other item of a pair can
+  collect more rows from other items' runs until it is recomputed itself (the UI
+  limits what it shows).
+- The update trigger has a `when` clause comparing `type, category_id, occurred_on,
+lat, lng, title, description, status`, so saving unchanged values does nothing.
+- Backfill in the migration (active items, oldest first): 0 matches on the dev
+  project (only lost items exist).
+
 ### Candidate filter (hard rules)
 
 - Opposite `type`, both `status = active`, different `user_id`.
@@ -1677,11 +1702,14 @@ correct (SQL tests) · map page usable on mobile · Nominatim/OSM policies respe
 - **Changed during implementation:** the function returns no row for non-candidates instead of a zero score, so the hard rules live in one tested place; date component uses the absolute difference; `other` on both sides counts 0.5; the place name is excluded from text matching (§14).
 - **Verified:** migration and tests dry-run together in a rolled-back transaction first (and a deliberately wrong assert fails the run); `db:test` 11/11 — `matching.sql`: `match_words` (Cyrillic report → sorted normalized words, English common words dropped, empty result); the candidate set (another category, 3 days before the loss, 91 days, ~60 km, same owner, resolved excluded; 2 days before, 90 days, `other`, 20 km included); clear-match breakdown (version, category 1, distance ~1.0 km and exp(−1/5), 1 day and 0.931, six shared words across scripts without lost/found words, text 0.857, score = weighted sum ≈ 0.905); `other` = 0.5 and 0.15 lower; `days_between` absolute (0.867 at 2 days, 0.002 at 90); distance 5 km → 0.368, 20 km → 0.018; different keys: no shared words, text 0.082; full fixture ordering; swapped arguments raise `match_score_types`; users cannot execute the functions. Advisors: only F-12/F-19. Lint, typecheck, 388 unit tests, `npm run build`. Found F-29.
 
-#### P6.S3 — `compute_matches` and triggers
+#### P6.S3 — `compute_matches` and triggers — `COMPLETED`
 
 - **Depends on:** P6.S2.
 - **Affects:** migration `*_compute_matches.sql`; one-time backfill for existing items.
 - **Verify:** creating a matching pair produces one match row; editing the description recomputes; dismissed matches are not recreated; unrelated items produce none.
+- **Implemented:** migration `20260930203111_compute_matches.sql`: `private.compute_matches()`, trigger function `private.items_compute_matches()`, triggers `items_compute_matches` (after insert) and `items_recompute_matches` (after update of the matching columns, only when they changed), backfill. SQL tests `supabase/tests/compute_matches.sql`; `matches.sql` now removes the rows the insert trigger creates for its fixture items. No change to generated types.
+- **Changed during implementation:** suggested matches are upserted instead of deleted and re-inserted (stable id/`created_at` for P7); details in §14.
+- **Verified:** migration and tests dry-run together in a rolled-back transaction (a deliberately wrong assert fails the run), then pushed; `db:test` 12/12 — `compute_matches.sql`: a lost report through `create_item()` alone has no match; the found report creates exactly one suggested lost ↔ found row (score ≈ 0.9, breakdown from `match_score`), visible to both owners; another category, the same owner and ~66 km away give none; a `location_name` change or an unchanged title does not touch the row; a new description keeps id/`created_at`, lowers the score, changes the shared words and refreshes `updated_at`; another category removes the row, changing back recreates it; a dismissed match is neither recreated nor rescored after edits on both sides; a confirmed match is kept; a lost report matches an earlier found one; resolving keeps the row, recomputing the other side drops it, reopening restores it; 12 found reports give 12 rows, recomputing the lost report keeps the 10 best, a dismissed one does not take a place (the 11th moves up); API roles cannot execute the functions. Advisors: only F-12/F-19. Lint, typecheck, 388 unit tests, `npm run build`. No UI change, so no browser check.
 
 #### P6.S4 — Matches UI with explanation
 
@@ -1919,6 +1947,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step       | Change                                                                                                                                                                                                                                                                                                       |
 | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-09-30 | P6.S3      | Automatic matching: `private.compute_matches(item)` (indexed prefilter, `match_score`, top 10 ≥ 0.55, upsert of suggested rows, dismissed/confirmed kept), insert/update triggers on `items`, backfill (0 matches on dev); SQL tests `compute_matches.sql`.                                                  |
 | 2026-09-30 | P6.S2      | Scoring: `private.match_score(lost, found)` (candidate rules, weighted components, breakdown; no row for non-candidates) and `private.match_words()`; fixture tests `matching.sql` (clear match 0.905 … 20 km 0.705); F-29.                                                                                  |
 | 2026-09-30 | P6.S1      | Matches schema: `match_status` enum, `matches` table (unique pair, score 0–1, breakdown object), owners of either item read it and change only `status`, no direct inserts/deletes; SQL tests; types. Local Turbopack build works again (F-22 resolved). Fixed a broken P3.S7 row in the §2 step table.      |
 | 2026-09-29 | P5.S6 prod | Verified on Vercel (`ba3f626`): `/map` 43/43, radius 41/41, apply race 5/5, item map 24/24, location picker 20/20.                                                                                                                                                                                           |
@@ -1973,14 +2002,13 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P6.S3 — `compute_matches` and triggers** (see §22, Phase 6; design in §14).
+**P6.S4 — Matches UI with explanation** (see §22, Phase 6; design in §14).
 
-Why next: P6.S2 added `private.match_score()`. P6.S3 adds `compute_matches(item_id)`
-(`security definer`): for one item it finds candidates of the opposite type (with an
-index-friendly prefilter), scores them with `match_score`, deletes and re-inserts that
-item's `suggested` matches with `score ≥ 0.55` (top 10), and keeps `dismissed` /
-`confirmed` rows. Triggers on item insert and on updates of the matching columns call
-it; a one-time backfill computes matches for existing items.
+Why next: P6.S3 fills `matches` automatically. P6.S4 shows them to the owners:
+`src/lib/queries/matches.ts` (matches of an item / of the user's items, only where
+both items are active and the status is not `dismissed`, best score first), a match
+card with the other item and a translated explanation built from `breakdown`
+(unit-tested formatter, mk/en), on the item page (owner only) and the dashboard.
 
 Open manual items:
 
