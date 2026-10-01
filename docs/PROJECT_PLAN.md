@@ -162,7 +162,7 @@ to these IDs. "Next step" always means the step named in
 | P7.S5  | (Optional) Email for new matches — deferred    | `NOT STARTED` |
 | P8.S1  | Conversations and messages schema              | `COMPLETED`   |
 | P8.S2  | Start conversation from item                   | `COMPLETED`   |
-| P8.S3  | Conversation list                              | `NOT STARTED` |
+| P8.S3  | Conversation list                              | `COMPLETED`   |
 | P8.S4  | Chat view with Realtime                        | `NOT STARTED` |
 | P8.S5  | Read state and unread badge                    | `NOT STARTED` |
 | P8.S6  | Message notifications                          | `NOT STARTED` |
@@ -340,7 +340,7 @@ Route groups `(auth)` and `(app)` do not change URLs; they only share layouts.
 | `/map`                                                          | public          | 5     |
 | `/notifications` ✓ (`?page=` from 2)                            | signed in       | 7     |
 | `/messages/[id]` ✓ (minimal header in P8.S2, chat in P8.S4)     | participants    | 8     |
-| `/messages`                                                     | signed in       | 8     |
+| `/messages` ✓                                                   | signed in       | 8     |
 | `/favorites`                                                    | signed in       | 9     |
 | `/admin`, `/admin/reports`, `/admin/users`, `/admin/categories` | admin           | 10    |
 
@@ -1372,6 +1372,22 @@ decay, Cyrillic vs Latin text.
 - Conversation list (`/messages`): RPC `my_conversations()` returns the other
   participant, item title/cover, last message, unread count, ordered by
   `last_message_at`.
+  - Implemented in P8.S3 ✓: `(app)/messages/page.tsx` (`requireUser("/messages")`)
+    loads `getMyConversations(userId)` (`@/lib/queries/conversations`), which maps
+    the RPC rows with `toConversationSummaries` (`@/lib/conversations`, client-safe:
+    item null when deleted or hidden from the viewer, last message null before the
+    first one, `fromMe`, one-line `messagePreview`, `activityAt` = last message or
+    start). `ConversationList` (`src/components/chat/conversation-list.tsx`, no
+    client state) renders one row per conversation in the RPC's order: avatar and
+    name (the row is a stretched link to `/messages/[id]`), relative time worded with
+    messages (`elapsedSince`, no `Intl`, F-30), the report (type badge and title, "Your
+    report" when the viewer owns it, or "not available"), the last message ("You: …"
+    for one's own, "No messages yet"), and unread rows highlighted with a count badge
+    (`badgeCount`, 99+, screen-reader text). The page shows "N conversations · M with
+    unread messages", an empty state with a link to `/items`, and an error message
+    when the query fails. No paging (a user starts at most 20 conversations a day).
+    The header has a messages icon link next to the bell for signed-in users; its
+    unread badge and live updates come in P8.S5.
 - Chat (`/messages/[id]`): server loads the last 50 messages; a Client Component
   subscribes to `INSERT` on `messages` filtered by `conversation_id`, appends new
   messages, and loads older ones on scroll.
@@ -2050,10 +2066,12 @@ weights and results documented.
 - **Verified:** 29 new unit/component tests (488 → 517): the action (owner from the item, never from the form; existing conversation opened without insert, also for resolved/hidden reports and banned users; invalid id before auth; guests sent to login with `next`; not found; own item; resolved/hidden; banned; `FL429` → `conversation_limit`; `23505` → the other request's conversation; `42501` → forbidden; database errors hidden and logged) and `ContactButton` (posts only `itemId`, disabled with spinner while pending, every error in mk, the limit in en, retry after an error). Lint, typecheck, Prettier, `npm run build` and `--webpack`, `db:test` 17/17. Browser check (production build on port 3100, headless Edge `mk-MK`, desktop 1280 px and mobile 390 px, temporary `chat-*@findly.test` users and 3 reports in Struga with no matches, all deleted afterwards): 45/45 — guest card and link to login with `next`, back on the item after sign-in; "Контактирај" opens `/messages/<id>` (button disabled while pending, one row in the database); the item page then shows "Отвори разговор" to the same chat; two tabs clicking at once open the same conversation (one row); resolved report without conversation has no card; English link and heading; owner sees no card and opens the chat as participant; the limit user gets the Macedonian and English limit messages, stays on the page, no raw database text, still 20 rows; banned user gets the permission message and no row; another user's chat and an invalid id are 404, guests are redirected to login with `next`; a hidden report is 404 but its chat opens with "no longer available"; full-width buttons and no horizontal overflow on mobile, auto width on desktop; `noindex`; no browser errors.
 - **Production (2026-10-01):** `614b79d`, `c8d666b`, `575ddff`, `e449c06` pushed to `main` as a fast-forward (`e136060..e449c06`, no rewrite). Deployment confirmed by the served code, not only HTTP 200: a fresh render (`X-Vercel-Cache: MISS`) of a real active report shows the P8.S2 contact card and login link, which exist only from `e449c06` (the Vercel CLI is logged out and the private repo's GitHub API is not readable without a token, so the deployment's commit is inferred from that markup; no newer commit exists). The same browser check against https://findly-web-nine.vercel.app: 45/45 (desktop 1280 px, mobile 390 px, mk/en). Extra stale-page check: 10/10 — the requester opens an active report, it is resolved or hidden in the database afterwards, and the still-visible Contact button gets "no longer active" / "not found" (mk desktop, en mobile), stays on the page, no row created, no browser errors. Temporary `chat-*@findly.test` users and reports (Struga, no matches) deleted afterwards; 0 conversations/messages left, no matches or notifications changed. No problems found.
 
-#### P8.S3 — Conversation list
+#### P8.S3 — Conversation list — `COMPLETED`
 
 - **Affects:** `(app)/messages/page.tsx`, `src/components/chat/conversation-list.tsx`, `messages/*.json` (`Messages`).
 - **Verify:** ordered by latest message; unread counts correct.
+- **Implemented:** `src/app/[locale]/(app)/messages/page.tsx`, `src/components/chat/conversation-list.tsx`, `src/lib/conversations.ts` (`toConversationSummaries`, `messagePreview`, `unreadConversationCount`), `getMyConversations` in `src/lib/queries/conversations.ts`, messages icon link in `src/components/layout/site-header.tsx`, translations `Messages.list`, `Header.messages` (mk/en). No database change (`my_conversations()` from P8.S1 orders and counts). `/messages` was already protected and disallowed in `robots.ts`. Design in §16.
+- **Verified:** 20 new unit/component tests (517 → 537): the mapper (fields, order kept, own last message, no messages yet → start time, deleted and hidden reports, the owner's hidden report, numeric unread count), the preview, the unread conversation count, and `ConversationList` in jsdom (order and links, report, last message and time, unread highlight with badge and screen-reader text, 99+, "Вие:", no messages, unavailable report, "Ваша пријава", times now/hours/days/date without Intl, English). Lint, typecheck, Prettier, `npm run build` and `--webpack`. Browser check (production build on port 3100, headless Edge `mk-MK`, desktop 1280 px and mobile 390 px, temporary `list-*@findly.test` users, 4 reports in Struga with no matches and 5 conversations, all deleted afterwards): 35/35 — guests are sent to login with `next` and have no header link; the header link opens `/messages`; heading, title, `noindex`, summary "4 разговори · 2 со непрочитани пораки"; order by latest activity (a conversation without messages by its start time), and the owner's conversation without messages is not listed; unread counts 2/1/0/0 with highlight, badge and screen-reader text; own last message prefixed; "my report"; a hidden and a deleted report shown as not available; relative times (Macedonian plural "пред 31 минута") and a date for 12 days; clicking anywhere on a row opens the chat; a new message moves its conversation to the top with 1 unread and updates the summary; English texts and `/en` links; the other participant and a requester before the first message see only their own; empty state with a link to the reports; no overflow on mobile; no browser errors.
 
 #### P8.S4 — Chat view with Realtime
 
@@ -2220,6 +2238,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ---------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-01 | P8.S3       | `/messages`: the user's conversations from `my_conversations()` (latest activity first, other participant, report or "not available", last message with "You:", unread highlight and badge), summary, empty and error states, header messages link; 20 new tests; browser check 35/35 (desktop + mobile).                                                                                                           |
 | 2026-10-01 | P8.S2 prod  | Pushed `614b79d`…`e449c06` (fast-forward); deployment confirmed by served P8.S2 markup; Vercel browser check 45/45 + stale-page check 10/10 (resolved/hidden refused, mk/en, desktop/mobile); temporary data deleted.                                                                                                                                                                                               |
 | 2026-10-01 | P8.S2       | Start conversation from an item: `startConversation` (opens an existing conversation, starts one only for active reports of others, owner from the item, `conversation_limit`/`conversation_item_inactive`/`conversation_own_item` errors), contact card on the item page (guest link to login, Open conversation when one exists), minimal `/messages/[id]`; 29 new tests; browser check 45/45 (desktop + mobile). |
 | 2026-10-01 | P8.S1 limit | Daily conversation limit: at most 20 new conversations per requester in 24 hours (`FL429` `daily_conversation_limit`), per-requester advisory lock so concurrent requests cannot exceed it, re-opening exempt; `conversation_limit.sql`; concurrency checked with two live sessions.                                                                                                                                |
@@ -2287,18 +2306,20 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P8.S3 — Conversation list** (see §22, Phase 8; design in §16).
+**P8.S4 — Chat view with Realtime** (see §22, Phase 8; design in §16).
 
-Why next: P8.S2 lets users contact the author of a report and opens
-`/messages/[id]` (minimal page). P8.S3 adds `/messages`: the user's conversations
-from `rpc("my_conversations")` (other participant, report, last message, unread
-count, newest activity first; the owner sees a conversation after its first
-message), with empty and error states and a header link. The chat itself (sending,
-Realtime, older messages) is P8.S4.
+Why next: users can start conversations (P8.S2) and see them in `/messages`
+(P8.S3), but `/messages/[id]` still only shows who and what the conversation is
+about. P8.S4 replaces its "messages coming soon" note with the chat: the last 50
+messages from the server, `sendMessage(conversationId, body)` (Zod 1–2000 characters,
+trimmed; `FL429` `message_rate_limit` → readable error), a Client Component that
+subscribes to `INSERT` on `messages` filtered by `conversation_id` and appends new
+messages, older messages on scroll, and wrapping of long text. Read state and the
+header badge are P8.S5.
 
-Deployed: `e449c06` is on `main` and verified on Vercel (P8.S2 browser check 45/45,
-stale-page check 10/10). Until P8.S4, `/messages/[id]` in production only shows the
-participants, the report and a "messages coming soon" note.
+Deployed: `e449c06` (P8.S2) is on Vercel. Local, not pushed: `7baa745` (P8.S2
+deployment record) and P8.S3; push when approved, then re-run the P8.S3 browser
+check on Vercel.
 
 Open manual items:
 

@@ -1,6 +1,19 @@
 import "server-only";
 import { z } from "zod";
+import { toConversationSummaries } from "@/lib/conversations";
 import { createClient } from "@/lib/supabase/server";
+
+// The signed-in user's conversations for /messages, newest activity first
+// (order, unread counts and the owner's "only after the first message" rule
+// come from my_conversations(), §9).
+export async function getMyConversations(userId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("my_conversations");
+  if (error) {
+    throw new Error(`Failed to load conversations: ${error.message}`);
+  }
+  return toConversationSummaries(data, userId);
+}
 
 // The conversation the user started about an item (one per item and
 // requester), or null. Conversations where the user is the owner are not

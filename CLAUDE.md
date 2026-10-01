@@ -31,7 +31,8 @@ status and the next step. Read it before any work.
   page (P7.S4); Phase 7 completed, optional match email (P7.S5) deferred. Phase 8 started:
   messaging schema with a daily conversation limit (P8.S1), contact from the item page
   with a minimal `/messages/[id]` (P8.S2, deployed and verified on Vercel at `e449c06`).
-  Next: P8.S3 (conversation list).
+  Conversation list `/messages` with a header link (P8.S3). Next: P8.S4 (chat view with
+  Realtime).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -155,7 +156,11 @@ status and the next step. Read it before any work.
   owner id always comes from the item. Item page: `ContactButton`
   (`src/components/chat/`), "Open conversation" when `getOwnConversationId` finds one,
   login link for guests, nothing for owners. Reads: `@/lib/queries/conversations`
-  (`getConversation` returns the other participant; null → 404).
+  (`getConversation` returns the other participant; null → 404; `getMyConversations`
+  maps `rpc("my_conversations")` with `toConversationSummaries` from `@/lib/conversations`,
+  client-safe: item null when deleted/hidden, last message null before the first).
+  `/messages` renders `ConversationList` (`src/components/chat/`) in the RPC's order;
+  times via `elapsedSince` + `Messages.list.time` (no `Intl`, F-30).
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
   (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals) or render on the server.

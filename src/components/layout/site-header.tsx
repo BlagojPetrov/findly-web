@@ -1,4 +1,9 @@
-import { Map as MapIcon, Search, SearchCheck } from "lucide-react";
+import {
+  Map as MapIcon,
+  MessageCircle,
+  Search,
+  SearchCheck,
+} from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { LocaleSwitcher } from "@/components/layout/locale-switcher";
@@ -47,6 +52,15 @@ export async function SiteHeader() {
             <>
               {/* A new key per account: no state or subscription of the
                   previous user survives an account switch. */}
+              {/* The unread badge comes with read state (P8.S5). */}
+              <Link
+                href="/messages"
+                aria-label={t("messages")}
+                title={t("messages")}
+                className={buttonVariants({ variant: "ghost", size: "icon" })}
+              >
+                <MessageCircle aria-hidden />
+              </Link>
               <NotificationBell
                 key={user.id}
                 userId={user.id}

@@ -13,7 +13,8 @@
     "reportItem": "Report an item",
     "dashboard": "My reports",
     "browse": "Browse",
-    "map": "Map"
+    "map": "Map",
+    "messages": "Messages"
   },
   "Home": {
     "title": "Find what was lost, return what was found",
@@ -457,6 +458,29 @@
     }
   },
   "Messages": {
+    "list": {
+      "title": "Messages",
+      "summary": "{count, plural, one {# conversation} other {# conversations}}",
+      "unreadSummary": "{count} with unread messages",
+      "you": "You: {text}",
+      "noMessages": "No messages yet.",
+      "itemUnavailable": "Report not available",
+      "ownReport": "Your report",
+      "unread": "{count, plural, one {# unread message} other {# unread messages}}",
+      "error": "Your conversations could not be loaded. Please try again later.",
+      "empty": {
+        "title": "You have no conversations yet",
+        "hint": "When you contact someone about a report, or someone contacts you, the conversation appears here.",
+        "browse": "Browse reports"
+      },
+      "time": {
+        "now": "now",
+        "minutes": "{count, plural, one {# minute ago} other {# minutes ago}}",
+        "hours": "{count, plural, one {# hour ago} other {# hours ago}}",
+        "days": "{count, plural, one {# day ago} other {# days ago}}",
+        "date": "{month}/{day}/{year}"
+      }
+    },
     "conversation": {
       "title": "Conversation",
       "with": "Conversation with {name}",
