@@ -19,13 +19,17 @@ join public.items f on l.type = 'lost' and f.type = 'found'
 cross join lateral private.match_score(l, f) as s
 where l.id::text like 'de100000-%' and f.id::text like 'de100000-%';
 
--- Demo matches stored by the insert triggers.
+-- Demo matches stored by the insert triggers. The triggers also pair demo
+-- reports with real reports on the linked project (e.g. a real found wallet
+-- with demo wallet 101, F-31); only pairs of two demo reports are evaluated.
 create temporary table demo_stored as
 select m.lost_item_id, m.found_item_id,
   right(m.lost_item_id::text, 3) like '1__'
     and right(m.found_item_id::text, 3) = '2' || right(m.lost_item_id::text, 2) as true_pair
 from public.matches m
-where m.status = 'suggested' and m.lost_item_id::text like 'de100000-%';
+where m.status = 'suggested'
+  and m.lost_item_id::text like 'de100000-%'
+  and m.found_item_id::text like 'de100000-%';
 
 do $$
 declare
