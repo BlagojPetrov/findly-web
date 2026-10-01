@@ -199,6 +199,41 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          read_at: string | null
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          read_at?: string | null
+          type: Database["public"]["Enums"]["notification_type"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          read_at?: string | null
+          type?: Database["public"]["Enums"]["notification_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_path: string | null
@@ -350,6 +385,7 @@ export type Database = {
       item_status: "active" | "resolved" | "hidden"
       item_type: "lost" | "found"
       match_status: "suggested" | "dismissed" | "confirmed"
+      notification_type: "match" | "message" | "moderation"
       user_role: "user" | "admin"
     }
     CompositeTypes: {
@@ -481,6 +517,7 @@ export const Constants = {
       item_status: ["active", "resolved", "hidden"],
       item_type: ["lost", "found"],
       match_status: ["suggested", "dismissed", "confirmed"],
+      notification_type: ["match", "message", "moderation"],
       user_role: ["user", "admin"],
     },
   },

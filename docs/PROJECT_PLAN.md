@@ -6,9 +6,9 @@
 > progress of the Findly web project. Every step starts by reading it and ends by
 > updating it.
 
-- **Last updated:** 2026-09-29
-- **Current phase:** Phase 6 — Automatic matching (not started)
-- **Next step:** P6.S1 (§22, §25)
+- **Last updated:** 2026-10-01
+- **Current phase:** Phase 7 — Notifications (in progress)
+- **Next step:** P7.S2 (§22, §25)
 
 ---
 
@@ -99,7 +99,7 @@ to these IDs. "Next step" always means the step named in
 | 4     | Feed, search and advanced filters     | `COMPLETED`   |
 | 5     | Map and location                      | `COMPLETED`   |
 | 6     | Automatic matching                    | `COMPLETED`   |
-| 7     | Notifications                         | `NOT STARTED` |
+| 7     | Notifications                         | `IN PROGRESS` |
 | 8     | Messaging                             | `NOT STARTED` |
 | 9     | Favorites                             | `NOT STARTED` |
 | 10    | Admin and moderation                  | `NOT STARTED` |
@@ -155,7 +155,7 @@ to these IDs. "Next step" always means the step named in
 | P6.S4  | Matches UI with explanation                    | `COMPLETED`   |
 | P6.S5  | Dismiss / confirm matches (merged into P6.S4)  | `COMPLETED`   |
 | P6.S6  | Demo dataset and weight tuning                 | `COMPLETED`   |
-| P7.S1  | Notifications schema                           | `NOT STARTED` |
+| P7.S1  | Notifications schema                           | `COMPLETED`   |
 | P7.S2  | Match notification trigger                     | `NOT STARTED` |
 | P7.S3  | Notification bell with Realtime                | `NOT STARTED` |
 | P7.S4  | Notifications page                             | `NOT STARTED` |
@@ -482,7 +482,7 @@ remain reachable by direct URL (known limitation, documented for the thesis).
 
 ### Realtime
 
-`messages` and `notifications` are added to the `supabase_realtime` publication.
+`messages` (P8.S1) and `notifications` (✓ P7.S1) are added to the `supabase_realtime` publication.
 Realtime respects RLS, so clients only receive their own rows.
 
 ---
@@ -510,15 +510,15 @@ Legend: **PK** primary key, **FK** foreign key, ✓ implemented.
 
 ### Enums
 
-| Enum                | Values                                                 | Phase |
-| ------------------- | ------------------------------------------------------ | ----- |
-| `user_role`         | `user`, `admin`                                        | 2     |
-| `item_type`         | `lost`, `found`                                        | 3     |
-| `item_status`       | `active`, `resolved`, `hidden`                         | 3     |
-| `match_status` ✓    | `suggested`, `dismissed`, `confirmed`                  | 6     |
-| `notification_type` | `match`, `message`, `moderation`                       | 7     |
-| `report_reason`     | `spam`, `inappropriate`, `fraud`, `duplicate`, `other` | 10    |
-| `report_status`     | `open`, `resolved`, `dismissed`                        | 10    |
+| Enum                  | Values                                                 | Phase |
+| --------------------- | ------------------------------------------------------ | ----- |
+| `user_role`           | `user`, `admin`                                        | 2     |
+| `item_type`           | `lost`, `found`                                        | 3     |
+| `item_status`         | `active`, `resolved`, `hidden`                         | 3     |
+| `match_status` ✓      | `suggested`, `dismissed`, `confirmed`                  | 6     |
+| `notification_type` ✓ | `match`, `message`, `moderation`                       | 7     |
+| `report_reason`       | `spam`, `inappropriate`, `fraud`, `duplicate`, `other` | 10    |
+| `report_status`       | `open`, `resolved`, `dismissed`                        | 10    |
 
 ### `categories` ✓ (P1.S6)
 
@@ -631,7 +631,7 @@ which always shows users their own items, also hidden ones); update also require
 `can_write()`, so banned owners can read but not change matches. Admins have no
 access (moderation works on items, not matches).
 
-### `notifications` (P7.S1)
+### `notifications` ✓ (P7.S1)
 
 | Column       | Type              | Notes                                                                                |
 | ------------ | ----------------- | ------------------------------------------------------------------------------------ |
@@ -643,6 +643,15 @@ access (moderation works on items, not matches).
 | `created_at` | timestamptz       |                                                                                      |
 
 Index `(user_id, created_at desc)`; partial index where `read_at is null`.
+
+Implemented in P7.S1 (`20261001114510_notifications.sql`): `data` is a JSON object
+(default `{}`); indexes `notifications_user_id_created_at_idx` and
+`notifications_user_id_unread_idx` (`(user_id) where read_at is null`). Privileges:
+`authenticated` selects, deletes and updates only `read_at` (also back to `null`, mark
+unread); `anon` has none; no insert grant (rows come from `security definer`
+triggers, P7.S2/P8.S6/P10.S4). Policies: own rows only (admins too); update also
+requires `can_write()`, delete does not (as for items). In the `supabase_realtime`
+publication.
 
 ### `conversations` (P8.S1)
 
@@ -803,18 +812,18 @@ password" always reports success, so emails cannot be enumerated).
 
 ### Policy matrix
 
-| Table         | select                                                                                                              | insert                                          | update                                                       | delete                    |
-| ------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------ | ------------------------- |
-| categories ✓  | everyone                                                                                                            | admin (P10.S6)                                  | admin (P10.S6)                                               | admin (P10.S6)            |
-| profiles      | everyone, public columns only (`id, display_name, avatar_path, created_at`); own full row via `current_profile()` ✓ | trigger only                                    | own row, allowed columns; admin: `role`, `is_banned` via RPC | none (cascade from auth)  |
-| items ✓       | `status in (active, resolved)` or own or admin                                                                      | own `user_id` and `can_write()`                 | own, not hidden, `can_write()`; admin any (hide/restore)     | own or admin              |
-| item_images ✓ | if parent item visible                                                                                              | parent owned, not hidden, own folder, can_write | `position` only; parent owned, not hidden, `can_write()`     | parent owned or admin     |
-| matches ✓     | owner of either item (not admins, not anon)                                                                         | definer functions only                          | owner of either item, only `status`, `can_write()`           | none (cascade from items) |
-| notifications | own                                                                                                                 | definer functions only                          | own, only `read_at`                                          | own                       |
-| conversations | participant                                                                                                         | requester = self, not item owner, `can_write()` | none (trigger updates `last_message_at`)                     | none                      |
-| messages      | participant                                                                                                         | participant, `sender_id = self`, `can_write()`  | recipient, only `read_at`                                    | none                      |
-| favorites     | own                                                                                                                 | own                                             | —                                                            | own                       |
-| reports       | own or admin                                                                                                        | self, `can_write()`                             | admin                                                        | none                      |
+| Table           | select                                                                                                              | insert                                          | update                                                       | delete                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------ | ------------------------- |
+| categories ✓    | everyone                                                                                                            | admin (P10.S6)                                  | admin (P10.S6)                                               | admin (P10.S6)            |
+| profiles        | everyone, public columns only (`id, display_name, avatar_path, created_at`); own full row via `current_profile()` ✓ | trigger only                                    | own row, allowed columns; admin: `role`, `is_banned` via RPC | none (cascade from auth)  |
+| items ✓         | `status in (active, resolved)` or own or admin                                                                      | own `user_id` and `can_write()`                 | own, not hidden, `can_write()`; admin any (hide/restore)     | own or admin              |
+| item_images ✓   | if parent item visible                                                                                              | parent owned, not hidden, own folder, can_write | `position` only; parent owned, not hidden, `can_write()`     | parent owned or admin     |
+| matches ✓       | owner of either item (not admins, not anon)                                                                         | definer functions only                          | owner of either item, only `status`, `can_write()`           | none (cascade from items) |
+| notifications ✓ | own                                                                                                                 | definer functions only                          | own, only `read_at`, `can_write()`                           | own                       |
+| conversations   | participant                                                                                                         | requester = self, not item owner, `can_write()` | none (trigger updates `last_message_at`)                     | none                      |
+| messages        | participant                                                                                                         | participant, `sender_id = self`, `can_write()`  | recipient, only `read_at`                                    | none                      |
+| favorites       | own                                                                                                                 | own                                             | —                                                            | own                       |
+| reports         | own or admin                                                                                                        | self, `can_write()`                             | admin                                                        | none                      |
 
 ### Security verification per step
 
@@ -1810,14 +1819,16 @@ weights and results documented.
 
 ---
 
-### Phase 7 — Notifications — `NOT STARTED`
+### Phase 7 — Notifications — `IN PROGRESS`
 
 **Goal:** users are told about new matches in real time and can review past notifications.
 
-#### P7.S1 — Notifications schema
+#### P7.S1 — Notifications schema — `COMPLETED`
 
 - **Affects:** migration `*_notifications.sql` (enum, table, RLS, `read_at` column grant, indexes, add to realtime publication).
 - **Verify:** SQL tests: users see only their own; cannot insert.
+- **Implemented:** migration `20261001114510_notifications.sql`: enum `notification_type`, table `notifications`, two indexes, privileges, three policies (select, update `read_at`, delete; details in §9 `notifications`), `supabase_realtime` publication. Types regenerated (`notifications`, `notification_type`). SQL tests `supabase/tests/notifications.sql`.
+- **Verified:** migration and tests dry-run together in a rolled-back transaction (a deliberately wrong assert fails the run), then pushed; `db:test` 14/14 — `notifications.sql`: defaults (id, `{}`, unread, `created_at`), non-object data / missing type / unknown user rejected, both indexes (partial `read_at is null`) and the publication exist; anon cannot read, update or delete; A sees only its 3 (newest first, 2 unread), marks one read and unread again, "mark all read" changes only its 2 unread rows, cannot touch B's row (0 rows), cannot change data/type/recipient/`created_at` or insert, deletes its own but not B's; B's row unchanged; a banned user reads and deletes but cannot mark read; an admin sees and updates nothing of others; deleting a user removes its notifications only. Advisors: only F-12/F-19. Lint, typecheck, 425 unit tests, `npm run build`. No UI change, so no browser check.
 
 #### P7.S2 — Match notification trigger
 
@@ -2025,6 +2036,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step       | Change                                                                                                                                                                                                                                                                                                       |
 | ---------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 2026-10-01 | P7.S1      | Notifications schema: `notification_type` enum, `notifications` table (ids-only `data` object, `read_at`), own rows only (select, `read_at` update with `can_write()`, delete), no inserts by users, list + unread indexes, Realtime publication; SQL tests. Phase 7 started.                                |
 | 2026-09-30 | P6.S6      | Demo dataset (44 reports, 14 true pairs) and evaluation; weights v2 (0.15/0.15/0.15/0.55, threshold 0.60): false positives 26 → 0, true pairs all first; `matching_demo.sql` with `-- @include`; F-29 fixed. Phase 6 done.                                                                                   |
 | 2026-09-30 | P6.S4 prod | Verified on Vercel (`a00451d`): matches browser suite 41/41 (after the 8 s Undo toast fix).                                                                                                                                                                                                                  |
 | 2026-09-30 | P6.S4      | Matches UI: item page (owner) and dashboard sections with explanation chips, strength + percentage, confirm/dismiss/undo/restore (`setMatchStatus`), empty/error/resolved states; P6.S5 merged in; 37 new tests; browser check 41/41.                                                                        |
@@ -2083,14 +2095,14 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P7.S1 — Notifications schema** (see §22, Phase 7; design in §15).
+**P7.S2 — Match notification trigger** (see §22, Phase 7; design in §15).
 
-Why next: Phase 6 is done — matches are created automatically, explained and
-confirmed/dismissed by the owners. Phase 7 tells users about new matches: P7.S1 adds
-the `notifications` table (enum, RLS: users see only their own, no inserts by users,
-`read_at` column grant, indexes, Realtime publication) with SQL tests. P7.S2 then
-creates a notification for both owners when a match row is inserted (`compute_matches`
-keeps existing rows, so only new pairs notify).
+Why next: the `notifications` table exists (P7.S1) but nothing writes to it yet.
+P7.S2 adds a `security definer` trigger on `matches` insert that creates one
+`match` notification for each of the two item owners (`data`: `match_id` and the
+recipient's own `item_id`). `compute_matches` upserts and keeps existing rows, so
+rescoring an existing pair does not notify again; SQL tests check exactly one
+notification per owner for a new pair and none for recomputes.
 
 Open manual items:
 
