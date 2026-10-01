@@ -140,7 +140,9 @@ status and the next step. Read it before any work.
   `active` item of `owner_id`; no user updates/deletes) and `messages` (participants
   only, `sender_id` = self, recipient updates only `read_at`; body ≤ 2000 and not only
   whitespace; `created_at` = `clock_timestamp()`). Trigger errors: `FL429`
-  `message_rate_limit` (30 per minute). `last_message_at` is trigger-maintained (null
+  `message_rate_limit` (30 per minute), `FL429` `daily_conversation_limit` (20 new conversations
+  per requester in 24 h; advisory lock per requester, so exact under concurrency;
+  re-opening an existing conversation is exempt). `last_message_at` is trigger-maintained (null
   before the first message). The list comes from `rpc("my_conversations")` (owner sees
   a conversation only after its first message; item columns null when deleted or
   hidden); read state through `rpc("mark_conversation_read")` (returns the count, 0 for
