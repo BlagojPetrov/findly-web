@@ -1,0 +1,60 @@
+import "server-only";
+import { z } from "zod";
+import { createClient } from "@/lib/supabase/server";
+
+// The conversation the user started about an item (one per item and
+// requester), or null. Conversations where the user is the owner are not
+// returned: the owner sees them in /messages (P8.S3).
+export async function getOwnConversationId(itemId: string, userId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("item_id", itemId)
+    .eq("requester_id", userId)
+    .maybeSingle();
+  if (error) {
+    throw new Error(
+      `Failed to load the conversation about item ${itemId}: ${error.message}`,
+    );
+  }
+  return data?.id ?? null;
+}
+
+// Both participants through their own foreign keys (public profile columns
+// only). RLS returns the conversation only to its participants, and the item
+// only when the viewer may see it (null when deleted or hidden).
+const conversationColumns = `
+  id, item_id, owner_id, requester_id, created_at,
+  item:items (id, type, status, title),
+  owner:profiles!conversations_owner_id_fkey (id, display_name, avatar_path),
+  requester:profiles!conversations_requester_id_fkey (id, display_name, avatar_path)
+`;
+
+// One conversation of the signed-in user with the other participant, or
+// null when it does not exist or the user does not take part in it.
+export async function getConversation(id: string, userId: string) {
+  if (!z.uuid().safeParse(id).success) return null;
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("conversations")
+    .select(conversationColumns)
+    .eq("id", id)
+    .maybeSingle();
+  if (error) {
+    throw new Error(`Failed to load conversation ${id}: ${error.message}`);
+  }
+  if (!data) return null;
+  const isOwner = data.owner_id === userId;
+  return {
+    id: data.id,
+    createdAt: data.created_at,
+    item: data.item,
+    isOwner,
+    other: isOwner ? data.requester : data.owner,
+  };
+}
+
+export type ConversationDetail = NonNullable<
+  Awaited<ReturnType<typeof getConversation>>
+>;

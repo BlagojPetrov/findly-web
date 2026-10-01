@@ -78,7 +78,10 @@
     "weak_password": "The password is too weak. Choose a longer or more complex password.",
     "email_send_failed": "The email could not be sent. Please try again later.",
     "email_rate_limited": "We cannot send emails right now because the sending limit has been reached. Please try again later.",
-    "resend_cooldown": "Please wait a moment before requesting another email."
+    "resend_cooldown": "Please wait a moment before requesting another email.",
+    "conversation_own_item": "This is your own report. You cannot start a conversation with yourself.",
+    "conversation_item_inactive": "This report is no longer active, so its author cannot be contacted.",
+    "conversation_limit": "You have started too many new conversations (at most 20 in 24 hours). Please try again later. Your existing conversations stay available."
   },
   "Validation": {
     "required": "This field is required.",
@@ -311,6 +314,20 @@
       "resolvedToast": "The report is marked as resolved.",
       "reopenedToast": "The report is active again.",
       "deletedToast": "The report was deleted."
+    },
+    "contact": {
+      "title": {
+        "lost": "Have you found this item?",
+        "found": "Is this yours?"
+      },
+      "hint": {
+        "lost": "Write to {name} to arrange how to return it.",
+        "found": "Write to {name} and describe the item to show that it is yours."
+      },
+      "button": "Contact",
+      "guestHint": "Sign in to send a message.",
+      "existingHint": "You already have a conversation about this report.",
+      "open": "Open conversation"
     }
   },
   "Dashboard": {
@@ -437,6 +454,16 @@
       "markedAllRead": "{count, plural, =0 {There were no unread notifications.} one {# notification marked as read.} other {# notifications marked as read.}}",
       "listLabel": "Notifications",
       "error": "Notifications could not be loaded. Refresh the page and try again."
+    }
+  },
+  "Messages": {
+    "conversation": {
+      "title": "Conversation",
+      "with": "Conversation with {name}",
+      "about": "About the report",
+      "itemUnavailable": "The report is no longer available.",
+      "started": "The conversation has started.",
+      "comingSoon": "Sending and reading messages will be available here soon."
     }
   },
   "Search": {

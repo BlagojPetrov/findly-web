@@ -4,6 +4,7 @@ import {
   ExternalLink,
   EyeOff,
   MapPin,
+  MessageCircle,
 } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
@@ -14,6 +15,7 @@ import {
   setRequestLocale,
 } from "next-intl/server";
 import type { ReactNode } from "react";
+import { ContactButton } from "@/components/chat/contact-button";
 import { CategoryIcon } from "@/components/items/category-icon";
 import { ImageGallery } from "@/components/items/image-gallery";
 import { ItemOwnerActions } from "@/components/items/item-owner-actions";
@@ -21,14 +23,19 @@ import { ItemTypeBadge } from "@/components/items/item-type-badge";
 import { ItemMap, MapFrame } from "@/components/map";
 import { MatchList } from "@/components/matches/match-list";
 import { UserAvatar } from "@/components/profile/user-avatar";
+import { buttonVariants } from "@/components/ui/button";
+import { Link } from "@/i18n/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { SIGN_IN_PATH } from "@/lib/auth-routes";
 import { calendarDay } from "@/lib/dates";
 import { itemImageUrl } from "@/lib/item-images";
 import { osmUrl } from "@/lib/map";
 import { categoryName } from "@/lib/queries/categories";
+import { getOwnConversationId } from "@/lib/queries/conversations";
 import { getItem } from "@/lib/queries/items";
 import { getItemMatches, type ItemMatches } from "@/lib/queries/matches";
 import { localeAlternates, metaDescription, openGraphBase } from "@/lib/seo";
+import { cn } from "@/lib/utils";
 
 // "Lost: <title>", a description from the category, place, date and the
 // report's text, canonical + hreflang URLs, and the cover photo for link
@@ -134,6 +141,24 @@ export default async function ItemPage({
       return null;
     });
   }
+  // Other signed-in users: their conversation about this report, if any
+  // ("Open conversation" instead of "Contact"; it stays available after the
+  // report is resolved). A failed query falls back to the contact button,
+  // whose action finds the conversation itself.
+  let conversationId: string | null = null;
+  if (viewer && !isOwner) {
+    conversationId = await getOwnConversationId(item.id, viewer.id).catch(
+      (error) => {
+        console.error(error);
+        return null;
+      },
+    );
+  }
+  // Contacting the author: an active report of someone else (guests sign in
+  // first), or a conversation that already exists. The database decides
+  // whether a new conversation may be started.
+  const showContact =
+    !isOwner && (conversationId !== null || item.status === "active");
   // Always set since P5.S3 (generated columns are typed as nullable).
   const point =
     item.lat !== null && item.lng !== null
@@ -234,6 +259,59 @@ export default async function ItemPage({
               </p>
             </div>
           </div>
+
+          {showContact && (
+            <section
+              aria-labelledby="contact-title"
+              className="grid gap-3 rounded-xl border bg-card p-4 shadow-xs"
+            >
+              <div>
+                <h2 id="contact-title" className="text-sm font-semibold">
+                  {t(`contact.title.${item.type}`)}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {conversationId
+                    ? t("contact.existingHint")
+                    : t(`contact.hint.${item.type}`, {
+                        name: item.owner.display_name,
+                      })}
+                </p>
+              </div>
+              {conversationId ? (
+                <Link
+                  href={`/messages/${conversationId}`}
+                  className={cn(
+                    buttonVariants({ size: "lg" }),
+                    "w-full sm:w-auto sm:justify-self-start",
+                  )}
+                >
+                  <MessageCircle aria-hidden />
+                  {t("contact.open")}
+                </Link>
+              ) : viewer ? (
+                <ContactButton itemId={item.id} label={t("contact.button")} />
+              ) : (
+                <div className="grid gap-2">
+                  <Link
+                    href={{
+                      pathname: SIGN_IN_PATH,
+                      query: { next: `/items/${item.id}` },
+                    }}
+                    className={cn(
+                      buttonVariants({ size: "lg" }),
+                      "w-full sm:w-auto sm:justify-self-start",
+                    )}
+                  >
+                    <MessageCircle aria-hidden />
+                    {t("contact.button")}
+                  </Link>
+                  <p className="text-xs text-muted-foreground">
+                    {t("contact.guestHint")}
+                  </p>
+                </div>
+              )}
+            </section>
+          )}
 
           {isOwner && (
             <section className="grid gap-3 rounded-xl border border-primary/30 bg-primary/5 p-4">

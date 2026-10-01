@@ -29,7 +29,8 @@ status and the next step. Read it before any work.
   weights v2 tuned on a demo dataset). Phase 7 started: notifications schema (P7.S1),
   match notifications trigger (P7.S2), header bell with Realtime (P7.S3), `/notifications`
   page (P7.S4); Phase 7 completed, optional match email (P7.S5) deferred. Phase 8 started:
-  messaging schema (P8.S1). Next: P8.S2 (start conversation from item).
+  messaging schema with a daily conversation limit (P8.S1), contact from the item page
+  with a minimal `/messages/[id]` (P8.S2). Next: P8.S3 (conversation list).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -147,6 +148,13 @@ status and the next step. Read it before any work.
   a conversation only after its first message; item columns null when deleted or
   hidden); read state through `rpc("mark_conversation_read")` (returns the count, 0 for
   banned users). `messages` is in the Realtime publication. Admins have no access.
+  Starting: only through `startConversation` (`src/actions/messages.ts`; redirects to
+  `/messages/[id]`, returns error codes `conversation_own_item`,
+  `conversation_item_inactive`, `conversation_limit`, `not_found`, `forbidden`); the
+  owner id always comes from the item. Item page: `ContactButton`
+  (`src/components/chat/`), "Open conversation" when `getOwnConversationId` finds one,
+  login link for guests, nothing for owners. Reads: `@/lib/queries/conversations`
+  (`getConversation` returns the other participant; null → 404).
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
   (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals) or render on the server.
