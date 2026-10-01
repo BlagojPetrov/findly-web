@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import {
   type ActionResult,
   fail,
@@ -44,6 +45,9 @@ export async function setNotificationRead(
   }
   // Not one of the user's notifications (or it no longer exists).
   if (data.length === 0) return fail("not_found");
+  // The response carries the re-rendered page: the header's unread count and
+  // /notifications show the change without a second request.
+  refresh();
   return ok();
 }
 
@@ -72,5 +76,27 @@ export async function deleteNotification(
     return fail("database");
   }
   if (data.length === 0) return fail("not_found");
+  refresh();
   return ok();
+}
+
+// Marks all of the user's unread notifications read; returns how many.
+export async function markAllNotificationsRead(): Promise<
+  ActionResult<{ count: number }>
+> {
+  const user = await requireUser();
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .is("read_at", null)
+    .select("id");
+  if (error) {
+    if (error.code === "42501") return fail("forbidden");
+    console.error(`Marking all notifications read failed: ${error.message}`);
+    return fail("database");
+  }
+  refresh();
+  return ok({ count: data.length });
 }

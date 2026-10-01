@@ -27,8 +27,9 @@ status and the next step. Read it before any work.
   with latest items; maps: location picker, required location, item map, radius
   filter, `/map` page; automatic matching with explanation, confirm/dismiss and
   weights v2 tuned on a demo dataset). Phase 7 started: notifications schema (P7.S1),
-  match notifications trigger (P7.S2), header bell with Realtime (P7.S3). Next: P7.S4
-  (notifications page).
+  match notifications trigger (P7.S2), header bell with Realtime (P7.S3), `/notifications`
+  page (P7.S4); Phase 7 completed, optional match email (P7.S5) deferred. Next: P8.S1
+  (conversations and messages schema).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -127,7 +128,14 @@ status and the next step. Read it before any work.
   by `user_id`, batched reloads, session check, cleanup on unmount), rows rendered by
   `NotificationEntry`. Browser reads through `fetchNotifications`/`fetchUnreadCount`
   (`@/lib/notifications`, always also `.eq("user_id", …)`); writes only through
-  `setNotificationRead`/`deleteNotification` (`src/actions/notifications.ts`).
+  `setNotificationRead`/`deleteNotification`/`markAllNotificationsRead`
+  (`src/actions/notifications.ts`; each calls `refresh()` from `next/cache` on success,
+  so optimistic UI hands over to the re-rendered page). `/notifications` renders
+  `NotificationList` (`useOptimistic`) from `getNotificationPage` (20 per page,
+  canonical `?page=`). Bell and page talk through window events
+  (`NOTIFICATIONS_RECEIVED_EVENT`, `NOTIFICATIONS_CHANGED_EVENT`), never a second
+  subscription. Supabase `.range()` past the end returns error `PGRST103` (416), not
+  an empty list: handle it in paged queries.
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
   (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals) or render on the server.

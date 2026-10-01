@@ -1,21 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { deleteNotification, setNotificationRead } from "./notifications";
+import {
+  deleteNotification,
+  markAllNotificationsRead,
+  setNotificationRead,
+} from "./notifications";
 
-const { requireUser, run } = vi.hoisted(() => ({
+const { requireUser, run, refresh } = vi.hoisted(() => ({
   requireUser: vi.fn(),
   run: vi.fn(),
+  refresh: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({ requireUser }));
+vi.mock("next/cache", () => ({ refresh }));
 // from(table).update(values) | .delete(), then .eq(…).eq(…).select("id")
 // → run(table, operation, values, filters)'s result.
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
     from: (table: string) => {
       const query = (operation: string, values?: object) => {
-        const filters: [string, string][] = [];
+        const filters: [string, string | null][] = [];
         const chain = {
           eq: (column: string, value: string) => {
+            filters.push([column, value]);
+            return chain;
+          },
+          is: (column: string, value: null) => {
             filters.push([column, value]);
             return chain;
           },
@@ -42,6 +52,7 @@ function form(values: Record<string, string>) {
 
 beforeEach(() => {
   requireUser.mockReset().mockResolvedValue({ id: userId });
+  refresh.mockReset();
   run
     .mockReset()
     .mockResolvedValue({ data: [{ id: notificationId }], error: null });
@@ -62,6 +73,8 @@ describe("setNotificationRead", () => {
       ["id", notificationId],
       ["user_id", userId],
     ]);
+    // The page and the header's count are rendered again with the response.
+    expect(refresh).toHaveBeenCalledTimes(1);
   });
 
   it("marks a notification unread", async () => {
@@ -95,6 +108,7 @@ describe("setNotificationRead", () => {
       form({ notificationId, read: "true" }),
     );
     expect(result).toEqual({ ok: false, error: "not_found" });
+    expect(refresh).not.toHaveBeenCalled();
   });
 
   it("reports a banned user as forbidden", async () => {
@@ -149,5 +163,48 @@ describe("deleteNotification", () => {
       ok: false,
       error: "database",
     });
+  });
+});
+
+describe("markAllNotificationsRead", () => {
+  it("marks only the user's unread notifications read", async () => {
+    run.mockResolvedValue({ data: [{ id: "a" }, { id: "b" }], error: null });
+    const result = await markAllNotificationsRead();
+    expect(result).toEqual({ ok: true, data: { count: 2 } });
+    expect(requireUser).toHaveBeenCalled();
+    const [table, operation, values, filters] = run.mock.calls[0];
+    expect([table, operation]).toEqual(["notifications", "update"]);
+    expect(Object.keys(values)).toEqual(["read_at"]);
+    expect(filters).toEqual([
+      ["user_id", userId],
+      ["read_at", null],
+    ]);
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("succeeds with nothing to mark", async () => {
+    run.mockResolvedValue({ data: [], error: null });
+    expect(await markAllNotificationsRead()).toEqual({
+      ok: true,
+      data: { count: 0 },
+    });
+  });
+
+  it("reports a banned user and database errors", async () => {
+    run.mockResolvedValueOnce({
+      data: null,
+      error: { code: "42501", message: "row-level security" },
+    });
+    expect(await markAllNotificationsRead()).toEqual({
+      ok: false,
+      error: "forbidden",
+    });
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    run.mockResolvedValueOnce({ data: null, error: { message: "x" } });
+    expect(await markAllNotificationsRead()).toEqual({
+      ok: false,
+      error: "database",
+    });
+    expect(refresh).not.toHaveBeenCalled();
   });
 });

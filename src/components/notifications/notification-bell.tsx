@@ -13,7 +13,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import type { ActionResult } from "@/lib/action-result";
 import { badgeCount } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
@@ -149,6 +149,18 @@ export function NotificationBell({
               {t("loading")}
             </p>
           )}
+        </div>
+        <div className="border-t p-1">
+          <Link
+            href="/notifications"
+            onClick={() => setOpen(false)}
+            className={cn(
+              buttonVariants({ variant: "ghost", size: "sm" }),
+              "w-full",
+            )}
+          >
+            {t("seeAll")}
+          </Link>
         </div>
       </PopoverContent>
     </Popover>

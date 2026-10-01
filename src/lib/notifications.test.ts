@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   badgeCount,
+  fetchNotificationPage,
   fetchNotifications,
   fetchUnreadCount,
   type NotificationItem,
@@ -154,7 +155,15 @@ describe("notificationHref", () => {
 // A query builder that records its calls and resolves to the given result.
 function builder(result: object, calls: unknown[][]) {
   const chain: Record<string, unknown> = {};
-  for (const method of ["select", "eq", "is", "order", "limit", "in"]) {
+  for (const method of [
+    "select",
+    "eq",
+    "is",
+    "order",
+    "limit",
+    "in",
+    "range",
+  ]) {
     chain[method] = (...args: unknown[]) => {
       calls.push([method, ...args]);
       return chain;
@@ -232,6 +241,60 @@ describe("fetchNotifications", () => {
     });
     await expect(fetchNotifications(client, user)).rejects.toThrow(
       "items down",
+    );
+  });
+});
+
+describe("fetchNotificationPage", () => {
+  it("loads one page of the user's notifications with the total", async () => {
+    const { client, calls } = fakeClient({
+      notifications: { data: [row()], error: null, count: 45 },
+      items: { data: [ownItem, otherItem], error: null },
+      matches: { data: [{ id: matchId, status: "confirmed" }], error: null },
+    });
+    const { views, total } = await fetchNotificationPage(client, user, 3, 20);
+    expect(total).toBe(45);
+    expect(calls.notifications).toContainEqual([
+      "select",
+      "id, type, data, read_at, created_at",
+      { count: "exact" },
+    ]);
+    expect(calls.notifications).toContainEqual(["eq", "user_id", user]);
+    expect(calls.notifications).toContainEqual(["range", 40, 59]);
+    expect(views[0]).toMatchObject({ otherItem, matchStatus: "confirmed" });
+  });
+
+  it("returns an empty page with the total past the last page", async () => {
+    // The first query asks for the range (416), the second only counts.
+    const results = [
+      {
+        data: null,
+        error: { code: "PGRST103", message: "Requested range not satisfiable" },
+        count: null,
+      },
+      { data: null, error: null, count: 23 },
+    ];
+    const calls: unknown[][] = [];
+    const client = {
+      from: vi.fn(() => builder(results.shift()!, calls)),
+    } as never;
+    await expect(fetchNotificationPage(client, user, 9, 20)).resolves.toEqual({
+      views: [],
+      total: 23,
+    });
+    expect(calls).toContainEqual([
+      "select",
+      "id",
+      { count: "exact", head: true },
+    ]);
+  });
+
+  it("throws on errors", async () => {
+    const { client } = fakeClient({
+      notifications: { data: null, error: { message: "down" }, count: null },
+    });
+    await expect(fetchNotificationPage(client, user, 1, 20)).rejects.toThrow(
+      "down",
     );
   });
 });

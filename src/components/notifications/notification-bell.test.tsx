@@ -10,6 +10,8 @@ import {
 import {
   fetchNotifications,
   fetchUnreadCount,
+  NOTIFICATIONS_CHANGED_EVENT,
+  NOTIFICATIONS_RECEIVED_EVENT,
   type NotificationView,
 } from "@/lib/notifications";
 import en from "../../../messages/en.json";
@@ -554,5 +556,53 @@ describe("NotificationBell", () => {
     expect(trigger()).toBeNull();
     expect(refresh).toHaveBeenCalled();
     expect(client.removeChannel).toHaveBeenCalled();
+  });
+
+  it("links to all notifications and closes the panel", async () => {
+    render(userA, 0);
+    await openPanel();
+    const link = [
+      ...document.querySelectorAll<HTMLAnchorElement>(
+        '[data-slot="popover-content"] a',
+      ),
+    ].find((a) => a.textContent === "Сите известувања")!;
+    expect(link.getAttribute("href")).toBe("/notifications");
+    link.addEventListener("click", (event) => event.preventDefault());
+    act(() => link.click());
+    await flush();
+    expect(document.querySelector('[data-slot="popover-content"]')).toBeNull();
+  });
+
+  it("announces new notifications to the notifications page", async () => {
+    const received = vi.fn();
+    window.addEventListener(NOTIFICATIONS_RECEIVED_EVENT, received);
+    render(userA, 0);
+    await subscribe();
+    act(() => channel().emit("UPDATE", { user_id: userA }));
+    await flush();
+    expect(received).not.toHaveBeenCalled();
+    act(() => channel().emit("INSERT", { user_id: userA, type: "match" }));
+    await flush();
+    expect(received).toHaveBeenCalledTimes(1);
+    window.removeEventListener(NOTIFICATIONS_RECEIVED_EVENT, received);
+  });
+
+  it("reloads after changes made on the notifications page", async () => {
+    render(userA, 2);
+    await subscribe();
+    vi.mocked(fetchUnreadCount).mockClear().mockResolvedValue(1);
+    act(() => {
+      window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED_EVENT));
+    });
+    await flush();
+    expect(fetchUnreadCount).toHaveBeenCalledTimes(1);
+    expect(badge()).toBe("1");
+    // Not after unmounting.
+    act(() => root.unmount());
+    root = createRoot(container);
+    vi.mocked(fetchUnreadCount).mockClear();
+    window.dispatchEvent(new Event(NOTIFICATIONS_CHANGED_EVENT));
+    await flush();
+    expect(fetchUnreadCount).not.toHaveBeenCalled();
   });
 });

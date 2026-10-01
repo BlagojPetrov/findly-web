@@ -128,20 +128,15 @@ export async function fetchUnreadCount(
   return count ?? 0;
 }
 
-export async function fetchNotifications(
-  supabase: Client,
-  userId: string,
-  limit = NOTIFICATIONS_PANEL_LIMIT,
-): Promise<NotificationView[]> {
-  const { data: rows, error } = await supabase
-    .from("notifications")
-    .select("id, type, data, read_at, created_at")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .order("id", { ascending: false })
-    .limit(limit);
-  if (error) throw new Error(`Failed to load notifications: ${error.message}`);
+const notificationColumns = "id, type, data, read_at, created_at";
 
+// Adds the reports and matches the notifications refer to. RLS decides what
+// still exists for the viewer: deleted reports, someone else's hidden report
+// and dropped matches are simply not returned.
+async function resolveNotifications(
+  supabase: Client,
+  rows: NotificationRow[],
+): Promise<NotificationView[]> {
   const parsed = rows.map((row) => parseNotificationData(row.data));
   const itemIds = [
     ...new Set(parsed.flatMap((data) => [data.itemId, data.otherItemId])),
@@ -150,8 +145,6 @@ export async function fetchNotifications(
     (id): id is string => id !== null,
   );
 
-  // RLS decides what still exists for the viewer: deleted reports, someone
-  // else's hidden report and dropped matches are simply not returned.
   const [items, matches] = await Promise.all([
     itemIds.length
       ? supabase
@@ -175,3 +168,66 @@ export async function fetchNotifications(
   }
   return toNotificationViews(rows, items?.data ?? [], matches?.data ?? []);
 }
+
+// The newest notifications (header panel).
+export async function fetchNotifications(
+  supabase: Client,
+  userId: string,
+  limit = NOTIFICATIONS_PANEL_LIMIT,
+): Promise<NotificationView[]> {
+  const { data: rows, error } = await supabase
+    .from("notifications")
+    .select(notificationColumns)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limit);
+  if (error) throw new Error(`Failed to load notifications: ${error.message}`);
+  return resolveNotifications(supabase, rows);
+}
+
+// One page of all notifications, newest first, with the total (page 1 = the
+// newest `pageSize`).
+export async function fetchNotificationPage(
+  supabase: Client,
+  userId: string,
+  page: number,
+  pageSize: number,
+): Promise<{ views: NotificationView[]; total: number }> {
+  const from = (page - 1) * pageSize;
+  const {
+    data: rows,
+    error,
+    count,
+  } = await supabase
+    .from("notifications")
+    .select(notificationColumns, { count: "exact" })
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(from, from + pageSize - 1);
+  // A page past the end: PostgREST answers 416 instead of an empty page. The
+  // caller needs the total to send the visitor to the last page.
+  if (error?.code === "PGRST103") {
+    const { count: total, error: countError } = await supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId);
+    if (countError) {
+      throw new Error(`Failed to count notifications: ${countError.message}`);
+    }
+    return { views: [], total: total ?? 0 };
+  }
+  if (error) throw new Error(`Failed to load notifications: ${error.message}`);
+  return {
+    views: await resolveNotifications(supabase, rows),
+    total: count ?? 0,
+  };
+}
+
+// Window events between the header bell and /notifications, so neither needs
+// a second Realtime subscription: the bell announces new notifications it
+// received (the page refreshes), the page announces its own changes (the bell
+// reloads its count and list).
+export const NOTIFICATIONS_RECEIVED_EVENT = "findly:notifications-received";
+export const NOTIFICATIONS_CHANGED_EVENT = "findly:notifications-changed";

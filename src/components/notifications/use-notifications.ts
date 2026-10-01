@@ -9,6 +9,8 @@ import type { ActionResult } from "@/lib/action-result";
 import {
   fetchNotifications,
   fetchUnreadCount,
+  NOTIFICATIONS_CHANGED_EVENT,
+  NOTIFICATIONS_RECEIVED_EVENT,
   type NotificationView,
 } from "@/lib/notifications";
 import { createClient } from "@/lib/supabase/client";
@@ -120,7 +122,10 @@ export function useNotifications({
       timer = setTimeout(() => {
         const count = inserted;
         inserted = 0;
-        if (count > 0) onNewRef.current?.(count);
+        if (count > 0) {
+          onNewRef.current?.(count);
+          window.dispatchEvent(new Event(NOTIFICATIONS_RECEIVED_EVENT));
+        }
         void reload();
       }, RELOAD_DELAY_MS);
     };
@@ -166,6 +171,8 @@ export function useNotifications({
     };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("online", schedule);
+    // Changes made on /notifications (deletes have no Realtime event).
+    window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, schedule);
 
     const {
       data: { subscription },
@@ -180,6 +187,7 @@ export function useNotifications({
       clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", schedule);
+      window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, schedule);
       subscription.unsubscribe();
       void supabase.removeChannel(channel);
     };
