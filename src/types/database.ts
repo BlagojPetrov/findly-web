@@ -44,6 +44,55 @@ export type Database = {
         }
         Relationships: []
       }
+      conversations: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string | null
+          last_message_at: string | null
+          owner_id: string
+          requester_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          last_message_at?: string | null
+          owner_id: string
+          requester_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          last_message_at?: string | null
+          owner_id?: string
+          requester_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversations_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       item_images: {
         Row: {
           created_at: string
@@ -199,6 +248,48 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          body: string
+          conversation_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_id: string
+        }
+        Insert: {
+          body: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+        }
+        Update: {
+          body?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -329,6 +420,30 @@ export type Database = {
           title: string
           total_count: number
           type: Database["public"]["Enums"]["item_type"]
+        }[]
+      }
+      mark_conversation_read: {
+        Args: { conversation_id: string }
+        Returns: number
+      }
+      my_conversations: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          is_owner: boolean
+          item_cover_path: string
+          item_id: string
+          item_status: Database["public"]["Enums"]["item_status"]
+          item_title: string
+          item_type: Database["public"]["Enums"]["item_type"]
+          last_message_at: string
+          last_message_body: string
+          last_message_sender_id: string
+          other_avatar_path: string
+          other_display_name: string
+          other_user_id: string
+          unread_count: number
         }[]
       }
       search_items: {

@@ -28,8 +28,8 @@ status and the next step. Read it before any work.
   filter, `/map` page; automatic matching with explanation, confirm/dismiss and
   weights v2 tuned on a demo dataset). Phase 7 started: notifications schema (P7.S1),
   match notifications trigger (P7.S2), header bell with Realtime (P7.S3), `/notifications`
-  page (P7.S4); Phase 7 completed, optional match email (P7.S5) deferred. Next: P8.S1
-  (conversations and messages schema).
+  page (P7.S4); Phase 7 completed, optional match email (P7.S5) deferred. Phase 8 started:
+  messaging schema (P8.S1). Next: P8.S2 (start conversation from item).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -136,6 +136,15 @@ status and the next step. Read it before any work.
   (`NOTIFICATIONS_RECEIVED_EVENT`, `NOTIFICATIONS_CHANGED_EVENT`), never a second
   subscription. Supabase `.range()` past the end returns error `PGRST103` (416), not
   an empty list: handle it in paged queries.
+- Messaging (§16): `conversations` (one per item and requester; started only about an
+  `active` item of `owner_id`; no user updates/deletes) and `messages` (participants
+  only, `sender_id` = self, recipient updates only `read_at`; body ≤ 2000 and not only
+  whitespace; `created_at` = `clock_timestamp()`). Trigger errors: `FL429`
+  `message_rate_limit` (30 per minute). `last_message_at` is trigger-maintained (null
+  before the first message). The list comes from `rpc("my_conversations")` (owner sees
+  a conversation only after its first message; item columns null when deleted or
+  hidden); read state through `rpc("mark_conversation_read")` (returns the count, 0 for
+  banned users). `messages` is in the Realtime publication. Admins have no access.
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
   (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals) or render on the server.
