@@ -26,8 +26,8 @@ status and the next step. Read it before any work.
   page, `/dashboard`; search, `/items` feed with filters and pagination, SEO, home page
   with latest items; maps: location picker, required location, item map, radius
   filter, `/map` page; automatic matching with explanation, confirm/dismiss and
-  weights v2 tuned on a demo dataset). Phase 7 started: notifications schema (P7.S1).
-  Next: P7.S2 (match notification trigger).
+  weights v2 tuned on a demo dataset). Phase 7 started: notifications schema (P7.S1),
+  match notifications trigger (P7.S2). Next: P7.S3 (notification bell with Realtime).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -110,7 +110,13 @@ status and the next step. Read it before any work.
 - Notifications (§15): rows only from `security definer` triggers (no insert grant);
   `data` holds ids only, the UI renders text in the viewer's language. Users select and
   delete their own and update only `read_at` (`can_write()`). The table is in the
-  `supabase_realtime` publication (Realtime applies the select policy).
+  `supabase_realtime` publication (Realtime applies the select policy). Match
+  notifications come from trigger `matches_notify` (only on a really new `matches` row):
+  `data = { match_id, item_id (recipient's own report), other_item_id }`, unique per
+  recipient and pair (`notifications_match_pair_key`; a recreated pair reuses it).
+  Deleting an item removes the match notifications about it; ones whose match was
+  only dropped or whose other report is hidden stay, so the UI must handle a missing
+  match/item. SQL tests that create matches also create notifications.
 - Security: RLS on every table in the same migration that creates it (Supabase grants
   table privileges to anon/authenticated by default). `private.can_write()` in write
   policies, `private.is_admin()` for admin access. Policy helpers go in schema
