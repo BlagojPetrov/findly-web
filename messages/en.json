@@ -386,6 +386,49 @@
     "dismissedTitle": "Dismissed ({count})",
     "dismissedHint": "Dismissed matches are hidden for both people. Restore one if you dismissed it by mistake."
   },
+  "Notifications": {
+    "label": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
+    "title": "Notifications",
+    "unreadSummary": "{count, plural, =0 {All read} one {# unread} other {# unread}}",
+    "unread": "Unread",
+    "loading": "Loading notifications…",
+    "error": "Notifications could not be loaded.",
+    "retry": "Try again",
+    "empty": "No notifications yet. When a report matches one of yours, you will see it here.",
+    "reconnecting": "Live updates are interrupted. Reconnecting…",
+    "markRead": "Mark as read",
+    "markUnread": "Mark as unread",
+    "delete": "Delete notification",
+    "toast": "{count, plural, one {You have a new notification} other {You have # new notifications}}",
+    "show": "Show",
+    "match": {
+      "title": "Possible match for your report",
+      "own": "Your report: “{title}”",
+      "itemUnavailable": "Your report is no longer available.",
+      "otherUnavailable": "The other report is no longer available.",
+      "matchUnavailable": "This match is no longer suggested.",
+      "status": {
+        "confirmed": "You confirmed this match.",
+        "dismissed": "This match was dismissed."
+      }
+    },
+    "message": {
+      "title": "New message"
+    },
+    "moderation": {
+      "title": "Update about your report"
+    },
+    "other": {
+      "item": "Report: “{title}”"
+    },
+    "time": {
+      "now": "just now",
+      "minutes": "{count, plural, one {# minute ago} other {# minutes ago}}",
+      "hours": "{count, plural, one {# hour ago} other {# hours ago}}",
+      "days": "{count, plural, one {# day ago} other {# days ago}}",
+      "date": "{month}/{day}/{year}"
+    }
+  },
   "Search": {
     "title": "Lost and found items",
     "description": "Browse reports of lost and found items. Search by words, type, category, date and distance.",

@@ -27,7 +27,8 @@ status and the next step. Read it before any work.
   with latest items; maps: location picker, required location, item map, radius
   filter, `/map` page; automatic matching with explanation, confirm/dismiss and
   weights v2 tuned on a demo dataset). Phase 7 started: notifications schema (P7.S1),
-  match notifications trigger (P7.S2). Next: P7.S3 (notification bell with Realtime).
+  match notifications trigger (P7.S2), header bell with Realtime (P7.S3). Next: P7.S4
+  (notifications page).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -85,7 +86,10 @@ status and the next step. Read it before any work.
   `playwright-core` installed in the scratchpad (not the project) against `next start`
   (another port if the user's dev server has 3000) with browser locale `mk-MK`
   (locale detection, F-13); stop that server by its node PID afterwards (stopping the
-  background task leaves `next start` running and serving the old build); create temporary users with SQL and delete them
+  background task leaves `next start` running and serving the old build); sign in through
+  `form:has(input[name="email"])` (the Google button is a form of its own) and record
+  toasts with a `MutationObserver` (they close after 4 s; a CLI SQL call takes longer);
+  create temporary users with SQL and delete them
   afterwards. Custom SMTP is on: a sign-up that succeeds **sends a real email**, so
   never sign up with `@findly.test` (it bounces) — use a disposable inbox
   (`…@mailinator.com`) and read the confirmation `token_hash` from
@@ -117,6 +121,16 @@ status and the next step. Read it before any work.
   Deleting an item removes the match notifications about it; ones whose match was
   only dropped or whose other report is hidden stay, so the UI must handle a missing
   match/item. SQL tests that create matches also create notifications.
+  UI: `NotificationBell` (`src/components/notifications/`, in `SiteHeader` with
+  `key = user id`; first count from `getUnreadNotificationCount`), state and Realtime in
+  `useNotifications` (one channel per mount with a unique topic, INSERT/UPDATE filtered
+  by `user_id`, batched reloads, session check, cleanup on unmount), rows rendered by
+  `NotificationEntry`. Browser reads through `fetchNotifications`/`fetchUnreadCount`
+  (`@/lib/notifications`, always also `.eq("user_id", …)`); writes only through
+  `setNotificationRead`/`deleteNotification` (`src/actions/notifications.ts`).
+- Client components must not format dates, relative times or numbers with `Intl` for
+  `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
+  (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals) or render on the server.
 - Security: RLS on every table in the same migration that creates it (Supabase grants
   table privileges to anon/authenticated by default). `private.can_write()` in write
   policies, `private.is_admin()` for admin access. Policy helpers go in schema

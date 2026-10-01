@@ -2,10 +2,12 @@ import { Map as MapIcon, Search, SearchCheck } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { LocaleSwitcher } from "@/components/layout/locale-switcher";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 import { UserMenu } from "@/components/layout/user-menu";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { getUnreadNotificationCount } from "@/lib/queries/notifications";
 import { cn } from "@/lib/utils";
 
 export async function SiteHeader() {
@@ -13,6 +15,7 @@ export async function SiteHeader() {
     getTranslations("Header"),
     getCurrentUser(),
   ]);
+  const unread = user ? await getUnreadNotificationCount(user.id) : null;
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
@@ -41,11 +44,20 @@ export async function SiteHeader() {
             <LocaleSwitcher />
           </Suspense>
           {user ? (
-            <UserMenu
-              displayName={user.profile.display_name}
-              email={user.email}
-              avatarPath={user.profile.avatar_path}
-            />
+            <>
+              {/* A new key per account: no state or subscription of the
+                  previous user survives an account switch. */}
+              <NotificationBell
+                key={user.id}
+                userId={user.id}
+                initialUnread={unread}
+              />
+              <UserMenu
+                displayName={user.profile.display_name}
+                email={user.email}
+                avatarPath={user.profile.avatar_path}
+              />
+            </>
           ) : (
             <>
               <Link

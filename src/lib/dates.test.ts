@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { calendarDay, todayInAppTimeZone } from "./dates";
+import { calendarDay, elapsedSince, todayInAppTimeZone } from "./dates";
 
 describe("todayInAppTimeZone", () => {
   it.each([
@@ -19,5 +19,35 @@ describe("calendarDay", () => {
     expect(calendarDay("2026-03-01").toISOString()).toBe(
       "2026-03-01T00:00:00.000Z",
     );
+  });
+});
+
+describe("elapsedSince", () => {
+  const now = new Date("2026-10-01T12:00:00Z");
+  const ago = (ms: number) => elapsedSince(new Date(now.getTime() - ms), now);
+
+  it("counts minutes, hours and days", () => {
+    expect(ago(0)).toEqual({ unit: "now" });
+    expect(ago(59_000)).toEqual({ unit: "now" });
+    expect(ago(60_000)).toEqual({ unit: "minutes", count: 1 });
+    expect(ago(59 * 60_000)).toEqual({ unit: "minutes", count: 59 });
+    expect(ago(60 * 60_000)).toEqual({ unit: "hours", count: 1 });
+    expect(ago(23.9 * 3_600_000)).toEqual({ unit: "hours", count: 23 });
+    expect(ago(24 * 3_600_000)).toEqual({ unit: "days", count: 1 });
+    expect(ago(6.9 * 86_400_000)).toEqual({ unit: "days", count: 6 });
+  });
+
+  it("treats a time in the future as now", () => {
+    expect(ago(-5_000)).toEqual({ unit: "now" });
+  });
+
+  it("gives the calendar day in Macedonia after a week", () => {
+    // 2026-09-23 22:30 UTC is already the 24th in Skopje (UTC+2).
+    expect(elapsedSince(new Date("2026-09-23T22:30:00Z"), now)).toEqual({
+      unit: "date",
+      day: "24",
+      month: "9",
+      year: "2026",
+    });
   });
 });
