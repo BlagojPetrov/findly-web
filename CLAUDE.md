@@ -30,7 +30,8 @@ status and the next step. Read it before any work.
   match notifications trigger (P7.S2), header bell with Realtime (P7.S3), `/notifications`
   page (P7.S4); Phase 7 completed, optional match email (P7.S5) deferred. Phase 8 started:
   messaging schema with a daily conversation limit (P8.S1), contact from the item page
-  with a minimal `/messages/[id]` (P8.S2). Next: P8.S3 (conversation list).
+  with a minimal `/messages/[id]` (P8.S2, deployed and verified on Vercel at `e449c06`).
+  Next: P8.S3 (conversation list).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -273,7 +274,9 @@ status and the next step. Read it before any work.
   Windows Application Control blocked the native SWC binary (F-22). If that happens again,
   verify with `npx next build --webpack`; do not change the scripts. webpack and Turbopack
   can differ (F-25): after pushing browser-facing changes (maps, assets), re-run the
-  browser check against the Vercel deployment. There, wait for `load` and
+  browser check against the Vercel deployment. The Vercel CLI is logged out and the
+  repo is private, so confirm a deployment by markup that only the new commit renders
+  (fetch a dynamic page, `X-Vercel-Cache: MISS`), never by HTTP 200 alone. There, wait for `load` and
   specific elements, not `networkidle` (prefetches stay open on Vercel, F-26).
 - `npx supabase login` needs an interactive terminal: the user runs it in their own
   PowerShell window, not through the agent.
