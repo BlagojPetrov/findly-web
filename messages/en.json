@@ -508,7 +508,6 @@
       "label": "Message",
       "send": "Send",
       "sending": "Sending…",
-      "hint": "Enter sends, Shift + Enter adds a new line.",
       "counter": "{count} / {max}",
       "readOnly": "You can read the messages but cannot send new ones."
     }

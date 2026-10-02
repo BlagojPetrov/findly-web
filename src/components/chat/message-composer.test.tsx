@@ -186,6 +186,16 @@ describe("MessageComposer", () => {
     ).toBe("1850 / 2000");
   });
 
+  it("shows no keyboard hint", () => {
+    const { field } = render();
+    expect(container.textContent).not.toContain("Shift");
+    expect(field.hasAttribute("aria-describedby")).toBe(false);
+    act(() => root.unmount());
+    root = createRoot(container);
+    render("en");
+    expect(container.textContent).not.toContain("Shift");
+  });
+
   it("is translated", () => {
     const { field, button } = render("en");
     expect(field.placeholder).toBe("Write a message…");

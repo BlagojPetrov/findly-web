@@ -39,7 +39,6 @@ export function MessageComposer({
   const [failure, setFailure] = useState<Failure>();
   const [pending, startTransition] = useTransition();
   const field = useRef<HTMLTextAreaElement>(null);
-  const hintId = useId();
   const errorId = useId();
 
   const empty = body.trim().length === 0;
@@ -105,7 +104,6 @@ export function MessageComposer({
           rows={1}
           placeholder={t("placeholder")}
           aria-label={t("label")}
-          aria-describedby={hintId}
           aria-invalid={fieldError ? true : undefined}
           aria-errormessage={fieldError ? errorId : undefined}
           className="max-h-40 min-h-10 resize-none"
@@ -124,20 +122,18 @@ export function MessageComposer({
           )}
         </Button>
       </div>
-      <div className="flex justify-between gap-3 text-xs text-muted-foreground">
-        <p id={hintId} className="max-sm:sr-only">
-          {t("hint")}
+      {body.length >= COUNTER_FROM && (
+        <p
+          className="text-right text-xs text-muted-foreground tabular-nums"
+          data-testid="message-counter"
+        >
+          {/* Strings: number formatting would group the digits (F-30). */}
+          {t("counter", {
+            count: String(body.length),
+            max: String(MESSAGE_MAX_LENGTH),
+          })}
         </p>
-        {body.length >= COUNTER_FROM && (
-          <p className="ml-auto tabular-nums" data-testid="message-counter">
-            {/* Strings: number formatting would group the digits (F-30). */}
-            {t("counter", {
-              count: String(body.length),
-              max: String(MESSAGE_MAX_LENGTH),
-            })}
-          </p>
-        )}
-      </div>
+      )}
     </form>
   );
 }
