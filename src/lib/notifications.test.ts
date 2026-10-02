@@ -4,6 +4,7 @@ import {
   fetchNotificationPage,
   fetchNotifications,
   fetchUnreadCount,
+  isConversationPath,
   type NotificationItem,
   type NotificationRow,
   notificationHref,
@@ -15,6 +16,20 @@ const user = "00000000-0000-4000-8000-00000000000a";
 const own = "10000000-0000-4000-8000-000000000001";
 const other = "20000000-0000-4000-8000-000000000001";
 const matchId = "30000000-0000-4000-8000-000000000001";
+const conversationId = "50000000-0000-4000-8000-000000000001";
+const sender = "00000000-0000-4000-8000-00000000000b";
+
+function messageRow(data: object = {}): NotificationRow {
+  return row({
+    type: "message",
+    data: {
+      conversation_id: conversationId,
+      item_id: own,
+      sender_id: sender,
+      ...data,
+    },
+  });
+}
 
 const ownItem: NotificationItem = {
   id: own,
@@ -48,18 +63,36 @@ describe("parseNotificationData", () => {
         item_id: own,
         other_item_id: other,
       }),
-    ).toEqual({ matchId, itemId: own, otherItemId: other });
+    ).toEqual({
+      matchId,
+      itemId: own,
+      otherItemId: other,
+      conversationId: null,
+      senderId: null,
+    });
+    expect(parseNotificationData(messageRow().data)).toEqual({
+      matchId: null,
+      itemId: own,
+      otherItemId: null,
+      conversationId,
+      senderId: sender,
+    });
   });
 
   it("drops missing and malformed fields", () => {
     expect(
       parseNotificationData({ match_id: "x", item_id: 5, extra: own }),
-    ).toEqual({ matchId: null, itemId: null, otherItemId: null });
+    ).toMatchObject({ matchId: null, itemId: null, otherItemId: null });
+    expect(
+      parseNotificationData({ conversation_id: "x", sender_id: [sender] }),
+    ).toMatchObject({ conversationId: null, senderId: null });
     for (const value of [null, undefined, "text", 3, [own], {}]) {
       expect(parseNotificationData(value)).toEqual({
         matchId: null,
         itemId: null,
         otherItemId: null,
+        conversationId: null,
+        senderId: null,
       });
     }
   });
@@ -82,8 +115,46 @@ describe("toNotificationViews", () => {
         item: ownItem,
         otherItem,
         matchStatus: "suggested",
+        conversationId: null,
+        sender: null,
       },
     ]);
+  });
+
+  it("resolves a message notification's conversation, report and sender", () => {
+    const [view] = toNotificationViews(
+      [messageRow()],
+      [ownItem],
+      [],
+      [{ id: sender, displayName: "Ана" }],
+    );
+    expect(view).toMatchObject({
+      type: "message",
+      item: ownItem,
+      otherItem: null,
+      matchStatus: null,
+      conversationId,
+      sender: { id: sender, displayName: "Ана" },
+    });
+  });
+
+  it("keeps a message notification whose report or sender is gone", () => {
+    const [view] = toNotificationViews(
+      [messageRow({ item_id: undefined })],
+      [],
+      [],
+    );
+    expect(view).toMatchObject({ item: null, conversationId, sender: null });
+  });
+
+  it("reads conversation and sender only for message notifications", () => {
+    const [view] = toNotificationViews(
+      [row({ data: { conversation_id: conversationId, sender_id: sender } })],
+      [],
+      [],
+      [{ id: sender, displayName: "Ана" }],
+    );
+    expect(view).toMatchObject({ conversationId: null, sender: null });
   });
 
   it("marks records that no longer exist as null", () => {
@@ -149,6 +220,47 @@ describe("notificationHref", () => {
 
   it("has no link when the own report is gone", () => {
     expect(notificationHref({ ...view, item: null })).toBeNull();
+  });
+
+  it("links a message to its conversation, also without the report", () => {
+    const [message] = toNotificationViews([messageRow()], [ownItem], []);
+    expect(notificationHref(message)).toBe(`/messages/${conversationId}`);
+    expect(notificationHref({ ...message, item: null })).toBe(
+      `/messages/${conversationId}`,
+    );
+    expect(notificationHref({ ...message, conversationId: null })).toBeNull();
+  });
+});
+
+describe("isConversationPath", () => {
+  it("recognizes the chat of the conversation in both locales", () => {
+    expect(
+      isConversationPath(`/messages/${conversationId}`, conversationId),
+    ).toBe(true);
+    expect(
+      isConversationPath(`/en/messages/${conversationId}`, conversationId),
+    ).toBe(true);
+    expect(
+      isConversationPath(`/messages/${conversationId}/`, conversationId),
+    ).toBe(true);
+  });
+
+  it("rejects other pages, conversations and invalid ids", () => {
+    const another = "50000000-0000-4000-8000-000000000002";
+    expect(isConversationPath(`/messages/${another}`, conversationId)).toBe(
+      false,
+    );
+    expect(isConversationPath("/messages", conversationId)).toBe(false);
+    expect(isConversationPath(`/items/${conversationId}`, conversationId)).toBe(
+      false,
+    );
+    expect(
+      isConversationPath(`/messages/${conversationId}/x`, conversationId),
+    ).toBe(false);
+    expect(isConversationPath("/messages/.*", ".*")).toBe(false);
+    expect(isConversationPath(`/messages/${conversationId}`, undefined)).toBe(
+      false,
+    );
   });
 });
 
@@ -223,6 +335,35 @@ describe("fetchNotifications", () => {
       otherItem: null,
       matchStatus: null,
     });
+  });
+
+  it("loads the senders of message notifications (public columns)", async () => {
+    const { client, calls } = fakeClient({
+      notifications: { data: [messageRow()], error: null },
+      items: { data: [ownItem], error: null },
+      profiles: { data: [{ id: sender, display_name: "Ана" }], error: null },
+    });
+    const [view] = await fetchNotifications(client, user);
+    expect(calls.profiles).toEqual([
+      ["select", "id, display_name"],
+      ["in", "id", [sender]],
+    ]);
+    expect(calls.matches).toBeUndefined();
+    expect(view).toMatchObject({
+      item: ownItem,
+      sender: { id: sender, displayName: "Ана" },
+    });
+  });
+
+  it("throws when the senders cannot be loaded", async () => {
+    const { client } = fakeClient({
+      notifications: { data: [messageRow()], error: null },
+      items: { data: [], error: null },
+      profiles: { data: null, error: { message: "profiles down" } },
+    });
+    await expect(fetchNotifications(client, user)).rejects.toThrow(
+      "profiles down",
+    );
   });
 
   it("skips the related queries without ids", async () => {

@@ -7,6 +7,7 @@ import {
   deleteNotification,
   setNotificationRead,
 } from "@/actions/notifications";
+import { MESSAGES_READ_EVENT } from "@/lib/chat";
 import {
   fetchNotifications,
   fetchUnreadCount,
@@ -116,6 +117,22 @@ vi.mock("sonner", () => ({ toast }));
 
 const userA = "00000000-0000-4000-8000-00000000000a";
 const userB = "00000000-0000-4000-8000-00000000000b";
+const conversation = "70000000-0000-4000-8000-000000000001";
+const otherConversation = "70000000-0000-4000-8000-000000000002";
+
+function messageView(
+  id: string,
+  overrides: Partial<NotificationView> = {},
+): NotificationView {
+  return view(id, {
+    type: "message",
+    otherItem: null,
+    matchStatus: null,
+    conversationId: conversation,
+    sender: { id: userB, displayName: "Ана" },
+    ...overrides,
+  });
+}
 
 function view(
   id: string,
@@ -139,6 +156,8 @@ function view(
       title: `Најдени клучеви ${id}`,
     },
     matchStatus: "suggested",
+    conversationId: null,
+    sender: null,
     ...overrides,
   };
 }
@@ -372,6 +391,120 @@ describe("NotificationBell", () => {
     expect(panelText()).toContain("Update about your report");
     expect(panelText()).toContain("Report: “Изгубени клучеви”");
     expect(panelText()).toContain("5 minutes ago");
+  });
+
+  it("lists message notifications linking to the conversation", async () => {
+    vi.mocked(fetchNotifications).mockResolvedValue([
+      messageView("01"),
+      messageView("02", { item: null, sender: null, read: true }),
+      messageView("03", { conversationId: null }),
+    ]);
+    render(userA, 1);
+    await subscribe();
+    await openPanel();
+    const items = [
+      ...document.querySelectorAll('[data-slot="popover-content"] li'),
+    ];
+    const text = items.map((item) => item.textContent);
+    expect(text[0]).toContain("Нова порака");
+    expect(text[0]).toContain("Од Ана");
+    expect(text[0]).toContain("Пријава: „Изгубени клучеви“");
+    expect(text[0]).toContain("Непрочитано");
+    // A deleted report or an unknown sender is left out; the chat remains.
+    expect(text[1]).toContain("Нова порака");
+    expect(text[1]).not.toContain("Од ");
+    expect(text[1]).not.toContain("Пријава");
+    const links = items.map((item) =>
+      item.querySelector("a")?.getAttribute("href"),
+    );
+    expect(links).toEqual([
+      `/messages/${conversation}`,
+      `/messages/${conversation}`,
+      undefined,
+    ]);
+  });
+
+  it("lists message notifications in English", async () => {
+    vi.mocked(fetchNotifications).mockResolvedValue([messageView("01")]);
+    render(userA, 1, "en");
+    await subscribe();
+    await openPanel();
+    expect(panelText()).toContain("New message");
+    expect(panelText()).toContain("From Ана");
+    expect(panelText()).toContain("Report: “Изгубени клучеви”");
+  });
+
+  it("shows no toast for a message notification about the open chat", async () => {
+    render(userA, 0);
+    await subscribe();
+    window.history.pushState({}, "", `/en/messages/${conversation}`);
+    try {
+      vi.mocked(fetchUnreadCount).mockClear();
+      act(() =>
+        channel().emit("INSERT", {
+          user_id: userA,
+          type: "message",
+          data: { conversation_id: conversation },
+        }),
+      );
+      await flush();
+      // Reloaded (the chat marks it read), but no toast.
+      expect(fetchUnreadCount).toHaveBeenCalledTimes(1);
+      expect(toast).not.toHaveBeenCalled();
+
+      // Another conversation is news.
+      act(() =>
+        channel().emit("INSERT", {
+          user_id: userA,
+          type: "message",
+          data: { conversation_id: otherConversation },
+        }),
+      );
+      await flush();
+      expect(toast).toHaveBeenCalledTimes(1);
+      expect(toast.mock.calls[0][0]).toBe("Имате ново известување");
+
+      // So is the open chat's in a hidden tab.
+      const visibility = vi
+        .spyOn(document, "visibilityState", "get")
+        .mockReturnValue("hidden");
+      act(() =>
+        channel().emit("INSERT", {
+          user_id: userA,
+          type: "message",
+          data: { conversation_id: conversation },
+        }),
+      );
+      await flush();
+      expect(toast).toHaveBeenCalledTimes(2);
+      visibility.mockRestore();
+    } finally {
+      window.history.pushState({}, "", "/");
+    }
+
+    // And on another page.
+    act(() =>
+      channel().emit("INSERT", {
+        user_id: userA,
+        type: "message",
+        data: { conversation_id: conversation },
+      }),
+    );
+    await flush();
+    expect(toast).toHaveBeenCalledTimes(3);
+  });
+
+  it("reloads when a chat was read", async () => {
+    render(userA, 1);
+    await subscribe();
+    vi.mocked(fetchUnreadCount).mockClear().mockResolvedValue(0);
+    act(() => {
+      window.dispatchEvent(new Event(MESSAGES_READ_EVENT));
+    });
+    await flush();
+    expect(fetchUnreadCount).toHaveBeenCalledTimes(1);
+    expect(badge()).toBeNull();
+    expect(toast).not.toHaveBeenCalled();
   });
 
   it("shows loading, empty and error states with retry", async () => {

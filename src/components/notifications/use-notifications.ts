@@ -6,9 +6,11 @@ import {
   setNotificationRead,
 } from "@/actions/notifications";
 import type { ActionResult } from "@/lib/action-result";
+import { MESSAGES_READ_EVENT } from "@/lib/chat";
 import {
   fetchNotifications,
   fetchUnreadCount,
+  isConversationPath,
   NOTIFICATIONS_CHANGED_EVENT,
   NOTIFICATIONS_RECEIVED_EVENT,
   type NotificationView,
@@ -28,7 +30,19 @@ export type LiveState = "connecting" | "live" | "reconnecting";
 // answered with one reload.
 export const RELOAD_DELAY_MS = 300;
 
-type RealtimeRow = { user_id?: string } | undefined;
+type RealtimeRow =
+  | { user_id?: string; type?: string; data?: { conversation_id?: unknown } }
+  | undefined;
+
+// A new message notification about the chat open in this (visible) tab: the
+// chat marks it read at once, so it is no news (no toast).
+function isOpenChat(row: RealtimeRow): boolean {
+  return (
+    row?.type === "message" &&
+    document.visibilityState === "visible" &&
+    isConversationPath(window.location.pathname, row.data?.conversation_id)
+  );
+}
 
 // The signed-in user's notifications in the browser: the unread count (first
 // from the server, then kept current), the panel list (loaded when first
@@ -140,8 +154,9 @@ export function useNotifications({
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "notifications", filter },
         (payload) => {
-          if (!own(payload.new as RealtimeRow)) return;
-          inserted++;
+          const row = payload.new as RealtimeRow;
+          if (!own(row)) return;
+          if (!isOpenChat(row)) inserted++;
           schedule();
         },
       )
@@ -173,6 +188,9 @@ export function useNotifications({
     window.addEventListener("online", schedule);
     // Changes made on /notifications (deletes have no Realtime event).
     window.addEventListener(NOTIFICATIONS_CHANGED_EVENT, schedule);
+    // A chat was read: its message notification is read too (also announced
+    // by Realtime; this reloads without waiting for it).
+    window.addEventListener(MESSAGES_READ_EVENT, schedule);
 
     const {
       data: { subscription },
@@ -188,6 +206,7 @@ export function useNotifications({
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("online", schedule);
       window.removeEventListener(NOTIFICATIONS_CHANGED_EVENT, schedule);
+      window.removeEventListener(MESSAGES_READ_EVENT, schedule);
       subscription.unsubscribe();
       void supabase.removeChannel(channel);
     };

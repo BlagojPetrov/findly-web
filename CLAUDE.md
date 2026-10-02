@@ -33,7 +33,9 @@ status and the next step. Read it before any work.
   (P8.S2). Conversation list `/messages` with a header link (P8.S3). Chat view with
   Realtime on `/messages/[id]` (P8.S4). P8.S1–P8.S4 deployed and verified on Vercel at
   `7ae4ae4` (2026-10-02). Read state and live unread badge in the header (P8.S5, local).
-  Next: P8.S6 (message notifications).
+  Message notifications (P8.S6, local; its migration is already on the hosted project).
+  Phase 8 completed. Open: F-33 (stale `/messages` after the browser's back button).
+  Next: P9.S1 (favorites schema).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -126,6 +128,14 @@ status and the next step. Read it before any work.
   Deleting an item removes the match notifications about it; ones whose match was
   only dropped or whose other report is hidden stay, so the UI must handle a missing
   match/item. SQL tests that create matches also create notifications.
+  Message notifications (trigger `messages_notify`): `data = { conversation_id,
+item_id?, sender_id }`, one per recipient and conversation
+  (`notifications_message_conversation_key`); unread → more messages change nothing;
+  read → the next message replaces it (delete + insert). Reading the chat marks it read
+  (statement trigger `messages_read_notifications`); a deleted conversation removes it.
+  SQL tests that insert messages also create notifications. The bell shows no toast for
+  the chat open in a visible tab (`isConversationPath`); message entries link to
+  `/messages/<id>` and show the sender (`profiles` public columns).
   UI: `NotificationBell` (`src/components/notifications/`, in `SiteHeader` with
   `key = user id`; first count from `getUnreadNotificationCount`), state and Realtime in
   `useNotifications` (one channel per mount with a unique topic, INSERT/UPDATE filtered
@@ -295,6 +305,13 @@ status and the next step. Read it before any work.
 ## Environment notes
 
 - Windows; Bash and PowerShell both available. No Docker, so no local Supabase stack.
+- Never junction/symlink `node_modules` into a `git worktree`: `git worktree remove --force`
+  follows the junction and empties the project's `node_modules` (happened in P8.S6;
+  restored with `npm ci`). Build an old commit with its own `npm ci` instead.
+- Browser checks with two users in separate browser contexts: launch Edge with
+  `--disable-background-timer-throttling --disable-renderer-backgrounding
+--disable-backgrounding-occluded-windows`, or the window not in front misses its
+  timers (Realtime reloads look broken). Chat bubbles carry `data-own="true|false"`.
 - Local `npm run build` (Turbopack) works again since 2026-09-30; it failed earlier when
   Windows Application Control blocked the native SWC binary (F-22). If that happens again,
   verify with `npx next build --webpack`; do not change the scripts. webpack and Turbopack

@@ -414,7 +414,7 @@
     "loading": "Loading notifications…",
     "error": "Notifications could not be loaded.",
     "retry": "Try again",
-    "empty": "No notifications yet. When a report matches one of yours, you will see it here.",
+    "empty": "No notifications yet. When a report matches one of yours or you get a message, you will see it here.",
     "reconnecting": "Live updates are interrupted. Reconnecting…",
     "markRead": "Mark as read",
     "markUnread": "Mark as unread",
@@ -433,7 +433,8 @@
       }
     },
     "message": {
-      "title": "New message"
+      "title": "New message",
+      "from": "From {name}"
     },
     "moderation": {
       "title": "Update about your report"

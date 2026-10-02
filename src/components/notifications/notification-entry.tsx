@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, Check, Link2, Mail, Trash2 } from "lucide-react";
+import { Bell, Check, Link2, Mail, MessageCircle, Trash2 } from "lucide-react";
 import { useNow, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { ItemTypeBadge } from "@/components/items/item-type-badge";
@@ -10,7 +10,7 @@ import { elapsedSince } from "@/lib/dates";
 import { notificationHref, type NotificationView } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
-const icons = { match: Link2, message: Mail, moderation: Bell };
+const icons = { match: Link2, message: MessageCircle, moderation: Bell };
 
 // One notification in the header panel. The text comes from the type and
 // the reports it refers to; a report or match that is gone (or no longer
@@ -66,8 +66,13 @@ export function NotificationEntry({
     } else {
       details.push(t("match.otherUnavailable"));
     }
-  } else if (view.item) {
-    details.push(t("other.item", { title: view.item.title }));
+  } else {
+    if (view.type === "message" && view.sender) {
+      details.push(t("message.from", { name: view.sender.displayName }));
+    }
+    if (view.item) {
+      details.push(t("other.item", { title: view.item.title }));
+    }
   }
 
   return (

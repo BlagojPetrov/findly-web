@@ -69,6 +69,8 @@ function view(
       title: `Најдени клучеви ${id}`,
     },
     matchStatus: "suggested",
+    conversationId: null,
+    sender: null,
     ...overrides,
   };
 }

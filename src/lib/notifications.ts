@@ -32,11 +32,18 @@ export type NotificationItem = {
 
 export type NotificationData = {
   matchId: string | null;
-  // The recipient's own report.
+  // Match notifications: the recipient's own report. Message notifications:
+  // the report the conversation is about.
   itemId: string | null;
   // Match notifications: the other report of the pair.
   otherItemId: string | null;
+  // Message notifications: the conversation and who wrote.
+  conversationId: string | null;
+  senderId: string | null;
 };
+
+// The public name of a message notification's sender.
+export type NotificationSender = { id: string; displayName: string };
 
 // A related record that is gone (deleted, dropped match) or that the viewer
 // may no longer see (someone else's hidden report) is null.
@@ -48,6 +55,9 @@ export type NotificationView = {
   item: NotificationItem | null;
   otherItem: NotificationItem | null;
   matchStatus: MatchStatus | null;
+  // Message notifications only.
+  conversationId: string | null;
+  sender: NotificationSender | null;
 };
 
 const uuid = z.uuid();
@@ -67,6 +77,8 @@ export function parseNotificationData(value: unknown): NotificationData {
     matchId: uuidField(data.match_id),
     itemId: uuidField(data.item_id),
     otherItemId: uuidField(data.other_item_id),
+    conversationId: uuidField(data.conversation_id),
+    senderId: uuidField(data.sender_id),
   };
 }
 
@@ -74,9 +86,11 @@ export function toNotificationViews(
   rows: NotificationRow[],
   items: NotificationItem[],
   matches: { id: string; status: MatchStatus }[],
+  senders: NotificationSender[] = [],
 ): NotificationView[] {
   const itemById = new Map(items.map((item) => [item.id, item]));
   const matchById = new Map(matches.map((match) => [match.id, match]));
+  const senderById = new Map(senders.map((sender) => [sender.id, sender]));
   return rows.map((row) => {
     const data = parseNotificationData(row.data);
     const pick = (id: string | null) => (id && itemById.get(id)) || null;
@@ -91,6 +105,11 @@ export function toNotificationViews(
         row.type === "match" && data.matchId
           ? (matchById.get(data.matchId)?.status ?? null)
           : null,
+      conversationId: row.type === "message" ? data.conversationId : null,
+      sender:
+        row.type === "message" && data.senderId
+          ? (senderById.get(data.senderId) ?? null)
+          : null,
     };
   });
 }
@@ -101,9 +120,12 @@ export function badgeCount(count: number): string | null {
   return count > MAX_BADGE_COUNT ? `${MAX_BADGE_COUNT}+` : String(count);
 }
 
-// Where a notification leads: the recipient's report, at its matches for a
-// match. Null when the report is gone.
+// Where a notification leads: the conversation for a message; otherwise the
+// recipient's report, at its matches for a match (null when it is gone).
 export function notificationHref(view: NotificationView): string | null {
+  if (view.type === "message") {
+    return view.conversationId ? `/messages/${view.conversationId}` : null;
+  }
   if (!view.item) return null;
   return view.type === "match"
     ? `/items/${view.item.id}#matches-item`
@@ -144,8 +166,11 @@ async function resolveNotifications(
   const matchIds = [...new Set(parsed.map((data) => data.matchId))].filter(
     (id): id is string => id !== null,
   );
+  const senderIds = [...new Set(parsed.map((data) => data.senderId))].filter(
+    (id): id is string => id !== null,
+  );
 
-  const [items, matches] = await Promise.all([
+  const [items, matches, senders] = await Promise.all([
     itemIds.length
       ? supabase
           .from("items")
@@ -154,6 +179,10 @@ async function resolveNotifications(
       : null,
     matchIds.length
       ? supabase.from("matches").select("id, status").in("id", matchIds)
+      : null,
+    // Public profile columns only (column privileges).
+    senderIds.length
+      ? supabase.from("profiles").select("id, display_name").in("id", senderIds)
       : null,
   ]);
   if (items?.error) {
@@ -166,7 +195,20 @@ async function resolveNotifications(
       `Failed to load notification matches: ${matches.error.message}`,
     );
   }
-  return toNotificationViews(rows, items?.data ?? [], matches?.data ?? []);
+  if (senders?.error) {
+    throw new Error(
+      `Failed to load notification senders: ${senders.error.message}`,
+    );
+  }
+  return toNotificationViews(
+    rows,
+    items?.data ?? [],
+    matches?.data ?? [],
+    (senders?.data ?? []).map((profile) => ({
+      id: profile.id,
+      displayName: profile.display_name,
+    })),
+  );
 }
 
 // The newest notifications (header panel).
@@ -231,3 +273,19 @@ export async function fetchNotificationPage(
 // reloads its count and list).
 export const NOTIFICATIONS_RECEIVED_EVENT = "findly:notifications-received";
 export const NOTIFICATIONS_CHANGED_EVENT = "findly:notifications-changed";
+
+// Whether `pathname` (with or without a locale prefix) is the chat of the
+// given conversation. The bell shows no toast for a message notification
+// about the chat the user is looking at (it is marked read right away).
+export function isConversationPath(
+  pathname: string,
+  conversationId: unknown,
+): boolean {
+  return (
+    typeof conversationId === "string" &&
+    uuid.safeParse(conversationId).success &&
+    new RegExp(`^(/[a-z]{2})?/messages/${conversationId}/?$`, "i").test(
+      pathname,
+    )
+  );
+}
