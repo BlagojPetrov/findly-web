@@ -42,3 +42,23 @@ export function elapsedSince(date: Date, now = new Date()): Elapsed {
   // Strings, so message formatting does not group or localize the digits.
   return { unit: "date", day: String(+day), month: String(+month), year };
 }
+
+// The time of day in Macedonia as "HH:MM" (24-hour). en-GB only gives the
+// digits, so it renders the same on the server and in every browser (F-30).
+const clockFormat = new Intl.DateTimeFormat("en-GB", {
+  timeZone: APP_TIME_ZONE,
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+export function clockTime(date: Date) {
+  return clockFormat.format(date);
+}
+
+// The calendar day before a "YYYY-MM-DD" day.
+export function previousDay(day: string) {
+  return new Date(calendarDay(day).getTime() - 86_400_000)
+    .toISOString()
+    .slice(0, 10);
+}

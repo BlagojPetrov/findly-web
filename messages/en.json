@@ -82,7 +82,8 @@
     "resend_cooldown": "Please wait a moment before requesting another email.",
     "conversation_own_item": "This is your own report. You cannot start a conversation with yourself.",
     "conversation_item_inactive": "This report is no longer active, so its author cannot be contacted.",
-    "conversation_limit": "You have started too many new conversations (at most 20 in 24 hours). Please try again later. Your existing conversations stay available."
+    "conversation_limit": "You have started too many new conversations (at most 20 in 24 hours). Please try again later. Your existing conversations stay available.",
+    "message_rate_limit": "You sent too many messages in a short time. Please wait a moment and try again."
   },
   "Validation": {
     "required": "This field is required.",
@@ -107,7 +108,8 @@
     "locationRequired": "Mark the place on the map.",
     "locationInvalid": "Choose a valid location.",
     "tooManyImages": "You can add at most 5 images.",
-    "imageInvalid": "One of the images is invalid. Remove it and upload it again."
+    "imageInvalid": "One of the images is invalid. Remove it and upload it again.",
+    "messageTooLong": "The message can be at most 2000 characters."
   },
   "Auth": {
     "loginTitle": "Sign in",
@@ -486,8 +488,29 @@
       "with": "Conversation with {name}",
       "about": "About the report",
       "itemUnavailable": "The report is no longer available.",
-      "started": "The conversation has started.",
-      "comingSoon": "Sending and reading messages will be available here soon."
+      "back": "All conversations"
+    },
+    "chat": {
+      "messages": "Messages",
+      "empty": "No messages yet. Write the first message.",
+      "you": "You",
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "date": "{month}/{day}/{year}",
+      "loadOlder": "Load older messages",
+      "loadingOlder": "Loading older messages…",
+      "olderError": "Older messages could not be loaded.",
+      "retry": "Try again",
+      "beginning": "Beginning of the conversation",
+      "newMessages": "{count, plural, one {# new message} other {# new messages}}",
+      "reconnecting": "Reconnecting… New messages will appear once the connection is back.",
+      "placeholder": "Write a message…",
+      "label": "Message",
+      "send": "Send",
+      "sending": "Sending…",
+      "hint": "Enter sends, Shift + Enter adds a new line.",
+      "counter": "{count} / {max}",
+      "readOnly": "You can read the messages but cannot send new ones."
     }
   },
   "Search": {

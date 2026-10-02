@@ -31,8 +31,8 @@ status and the next step. Read it before any work.
   page (P7.S4); Phase 7 completed, optional match email (P7.S5) deferred. Phase 8 started:
   messaging schema with a daily conversation limit (P8.S1), contact from the item page
   with a minimal `/messages/[id]` (P8.S2, deployed and verified on Vercel at `e449c06`).
-  Conversation list `/messages` with a header link (P8.S3). Next: P8.S4 (chat view with
-  Realtime).
+  Conversation list `/messages` with a header link (P8.S3). Chat view with Realtime on
+  `/messages/[id]` (P8.S4). Next: P8.S5 (read state and unread badge).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -161,6 +161,16 @@ status and the next step. Read it before any work.
   client-safe: item null when deleted/hidden, last message null before the first).
   `/messages` renders `ConversationList` (`src/components/chat/`) in the RPC's order;
   times via `elapsedSince` + `Messages.list.time` (no `Intl`, F-30).
+  Chat: the page loads `getLatestMessages` (newest 50) into `ChatView`
+  (`src/components/chat/`; one channel per mount with a unique topic, INSERT filtered by
+  `conversation_id`, catch-up after every `SUBSCRIBED`/visible tab, older pages by
+  `created_at` cursor). Browser reads and merging through `@/lib/chat`
+  (`fetchMessagesBefore`/`fetchMessagesAfter`, `mergeMessages` dedupes by id,
+  `realtimeMessage` validates payloads). Sending only through `sendMessage`
+  (`src/actions/messages.ts`; returns the stored `ChatMessage`; `FL429` →
+  `message_rate_limit`). Form data turns line breaks into `\r\n`: schemas for multi-line
+  text normalize them before length checks (`sendMessageSchema`). Times of day:
+  `clockTime()` (`@/lib/dates`, Europe/Skopje, same on server and browser).
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
   (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals) or render on the server.

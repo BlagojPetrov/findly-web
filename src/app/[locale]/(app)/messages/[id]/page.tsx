@@ -1,13 +1,17 @@
-import { MessageCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { Locale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
+import { ChatView } from "@/components/chat/chat-view";
 import { ItemTypeBadge } from "@/components/items/item-type-badge";
 import { UserAvatar } from "@/components/profile/user-avatar";
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/auth";
-import { getConversation } from "@/lib/queries/conversations";
+import {
+  getConversation,
+  getLatestMessages,
+} from "@/lib/queries/conversations";
 
 export async function generateMetadata({
   params,
@@ -21,9 +25,9 @@ export async function generateMetadata({
 }
 
 // One conversation of the signed-in user (participants only; RLS returns
-// nothing to anyone else, so they get the 404 page). P8.S2 only needs this
-// route as the target of "Contact": it shows who the conversation is with and
-// which report it is about. The messages themselves come in P8.S4.
+// nothing to anyone else, so they get the 404 page): who it is with, which
+// report it is about, and the chat (the newest messages from the server,
+// then live in the browser; §16).
 export default async function ConversationPage({
   params,
 }: PageProps<"/[locale]/messages/[id]">) {
@@ -33,46 +37,59 @@ export default async function ConversationPage({
   const conversation = await getConversation(id, user.id);
   if (!conversation) notFound();
 
-  const t = await getTranslations("Messages.conversation");
+  const [t, latest] = await Promise.all([
+    getTranslations("Messages.conversation"),
+    getLatestMessages(conversation.id),
+  ]);
   const { item, other } = conversation;
 
   return (
-    <div className="mx-auto grid w-full max-w-2xl gap-6">
+    <div className="mx-auto grid w-full max-w-2xl gap-4">
+      <Link
+        href="/messages"
+        className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" aria-hidden />
+        {t("back")}
+      </Link>
+
       <div className="flex items-center gap-3">
         <UserAvatar
           name={other.display_name}
           avatarPath={other.avatar_path}
-          className="size-12"
+          className="size-11 shrink-0"
         />
-        <h1 className="min-w-0 text-2xl font-semibold tracking-tight break-words">
-          {t("with", { name: other.display_name })}
-        </h1>
+        <div className="grid min-w-0 gap-0.5">
+          <h1 className="text-xl font-semibold tracking-tight break-words">
+            {t("with", { name: other.display_name })}
+          </h1>
+          {item ? (
+            <p className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+              <span className="sr-only">{t("about")}: </span>
+              <ItemTypeBadge type={item.type} />
+              <Link
+                href={`/items/${item.id}`}
+                className="min-w-0 font-medium break-words text-primary underline-offset-4 hover:underline"
+              >
+                {item.title}
+              </Link>
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              {t("itemUnavailable")}
+            </p>
+          )}
+        </div>
       </div>
 
-      <section className="grid gap-2 rounded-xl border bg-card p-4 shadow-xs">
-        <h2 className="text-xs text-muted-foreground">{t("about")}</h2>
-        {item ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <ItemTypeBadge type={item.type} />
-            <Link
-              href={`/items/${item.id}`}
-              className="min-w-0 font-medium break-words text-primary underline-offset-4 hover:underline"
-            >
-              {item.title}
-            </Link>
-          </div>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            {t("itemUnavailable")}
-          </p>
-        )}
-      </section>
-
-      <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed p-8 text-center">
-        <MessageCircle className="size-8 text-muted-foreground" aria-hidden />
-        <p className="font-medium">{t("started")}</p>
-        <p className="text-sm text-muted-foreground">{t("comingSoon")}</p>
-      </div>
+      <ChatView
+        conversationId={conversation.id}
+        viewerId={user.id}
+        otherName={other.display_name}
+        initialMessages={latest.messages}
+        initialHasMore={latest.hasMore}
+        canSend={!user.profile.is_banned}
+      />
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { startConversation } from "./messages";
+import { sendMessage, startConversation } from "./messages";
 
 const { requireUser, itemQuery, conversationQuery, insert, redirect } =
   vi.hoisted(() => ({
@@ -259,5 +259,97 @@ describe("startConversation", () => {
     expect(result).toEqual({ ok: false, error: "database" });
     expect(JSON.stringify(result)).not.toContain("boom");
     expect(console.error).toHaveBeenCalled();
+  });
+});
+
+describe("sendMessage", () => {
+  const body = "Здраво, дали е ова вашиот паричник?";
+  const row = {
+    id: "4a000000-0000-4000-8000-000000000001",
+    sender_id: userId,
+    body,
+    created_at: "2026-10-02T10:00:00.123456+00:00",
+  };
+
+  beforeEach(() => {
+    insert.mockResolvedValue({ data: row, error: null });
+  });
+
+  it("stores the trimmed message as the user and returns it", async () => {
+    const result = await sendMessage(
+      form({ conversationId, body: `\n  ${body}  \n`, senderId: ownerId }),
+    );
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        id: row.id,
+        senderId: userId,
+        body,
+        createdAt: row.created_at,
+      },
+    });
+    expect(requireUser).toHaveBeenCalledWith(`/messages/${conversationId}`);
+    // The sender comes from the session (column default), never the form.
+    expect(insert).toHaveBeenCalledWith("messages", {
+      conversation_id: conversationId,
+      body,
+    });
+  });
+
+  it.each([
+    ["empty", { conversationId, body: " \n " }, { body: ["required"] }],
+    [
+      "too long",
+      { conversationId, body: "a".repeat(2001) },
+      { body: ["messageTooLong"] },
+    ],
+    [
+      "an invalid conversation",
+      { conversationId: "abc", body },
+      { conversationId: ["invalidValue"] },
+    ],
+  ])("rejects %s before signing in", async (_, values, fieldErrors) => {
+    expect(await sendMessage(form(values))).toEqual({
+      ok: false,
+      error: "validation",
+      fieldErrors,
+    });
+    expect(requireUser).not.toHaveBeenCalled();
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it("does not let banned users send", async () => {
+    requireUser.mockResolvedValue({ id: userId, profile: { is_banned: true } });
+    expect(await sendMessage(form({ conversationId, body }))).toEqual({
+      ok: false,
+      error: "forbidden",
+    });
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["FL429", "message_rate_limit"],
+    ["42501", "forbidden"],
+    ["23503", "not_found"],
+    ["XX000", "database"],
+  ])("maps database error %s to %s", async (code, error) => {
+    insert.mockResolvedValue({
+      data: null,
+      error: { code, message: "raw database text" },
+    });
+    const result = await sendMessage(form({ conversationId, body }));
+    expect(result).toEqual({ ok: false, error });
+    expect(JSON.stringify(result)).not.toContain("raw database text");
+  });
+
+  it("logs unexpected database errors", async () => {
+    insert.mockResolvedValue({
+      data: null,
+      error: { code: "XX000", message: "boom" },
+    });
+    await sendMessage(form({ conversationId, body }));
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining("XX000: boom"),
+    );
   });
 });

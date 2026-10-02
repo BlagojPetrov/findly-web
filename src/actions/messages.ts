@@ -2,10 +2,19 @@
 
 import { getLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
-import { type ActionResult, fail, validationError } from "@/lib/action-result";
+import {
+  type ActionResult,
+  fail,
+  ok,
+  validationError,
+} from "@/lib/action-result";
 import { requireUser } from "@/lib/auth";
+import { type ChatMessage, messageColumns, toChatMessage } from "@/lib/chat";
 import { createClient } from "@/lib/supabase/server";
-import { startConversationSchema } from "@/lib/validation/conversations";
+import {
+  sendMessageSchema,
+  startConversationSchema,
+} from "@/lib/validation/conversations";
 
 type Client = Awaited<ReturnType<typeof createClient>>;
 
@@ -95,4 +104,44 @@ export async function startConversation(
     href: `/messages/${conversationId}`,
     locale: await getLocale(),
   });
+}
+
+// Sends a message as the signed-in user and returns it, so the chat can
+// show it before its Realtime event arrives (§16). The database decides
+// (RLS: a participant, sender = the user, not banned; check: length and not
+// only whitespace; trigger: 30 messages per minute).
+export async function sendMessage(
+  formData: FormData,
+): Promise<ActionResult<ChatMessage>> {
+  const parsed = sendMessageSchema.safeParse({
+    conversationId: formData.get("conversationId"),
+    body: formData.get("body"),
+  });
+  if (!parsed.success) return validationError(parsed.error);
+  const { conversationId, body } = parsed.data;
+  const user = await requireUser(`/messages/${conversationId}`);
+  if (user.profile.is_banned) return fail("forbidden");
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("messages")
+    .insert({ conversation_id: conversationId, body })
+    .select(messageColumns)
+    .single();
+  if (error) {
+    switch (error.code) {
+      case "FL429": // message_rate_limit
+        return fail("message_rate_limit");
+      case "42501": // RLS: not a participant, or banned in the meantime
+        return fail("forbidden");
+      case "23503": // the conversation no longer exists
+        return fail("not_found");
+      default:
+        console.error(
+          `Sending a message in conversation ${conversationId} failed: ${error.code}: ${error.message}`,
+        );
+        return fail("database");
+    }
+  }
+  return ok(toChatMessage(data));
 }

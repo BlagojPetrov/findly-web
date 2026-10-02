@@ -1,5 +1,6 @@
 import "server-only";
 import { z } from "zod";
+import { fetchMessagesBefore } from "@/lib/chat";
 import { toConversationSummaries } from "@/lib/conversations";
 import { createClient } from "@/lib/supabase/server";
 
@@ -71,3 +72,10 @@ export async function getConversation(id: string, userId: string) {
 export type ConversationDetail = NonNullable<
   Awaited<ReturnType<typeof getConversation>>
 >;
+
+// The newest page of a conversation's messages, oldest first (RLS: only
+// participants get any). The chat loads older pages in the browser.
+export async function getLatestMessages(conversationId: string) {
+  const supabase = await createClient();
+  return fetchMessagesBefore(supabase, conversationId);
+}

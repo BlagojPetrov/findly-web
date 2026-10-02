@@ -1,5 +1,34 @@
 import { describe, expect, it } from "vitest";
-import { calendarDay, elapsedSince, todayInAppTimeZone } from "./dates";
+import {
+  calendarDay,
+  clockTime,
+  elapsedSince,
+  previousDay,
+  todayInAppTimeZone,
+} from "./dates";
+
+describe("clockTime", () => {
+  it.each([
+    // Summer time (UTC+2) and winter time (UTC+1), 24-hour clock.
+    ["2026-09-25T21:59:00Z", "23:59"],
+    ["2026-09-25T22:05:00Z", "00:05"],
+    ["2026-12-31T12:30:00Z", "13:30"],
+  ])("%s is %s in Macedonia", (instant, time) => {
+    expect(clockTime(new Date(instant))).toBe(time);
+  });
+});
+
+describe("previousDay", () => {
+  it.each([
+    ["2026-10-02", "2026-10-01"],
+    ["2026-03-01", "2026-02-28"],
+    ["2027-01-01", "2026-12-31"],
+    // The day after the switch to summer time.
+    ["2026-03-30", "2026-03-29"],
+  ])("before %s is %s", (day, previous) => {
+    expect(previousDay(day)).toBe(previous);
+  });
+});
 
 describe("todayInAppTimeZone", () => {
   it.each([
