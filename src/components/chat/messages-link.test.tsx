@@ -4,6 +4,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  currentMessagesVersion,
   fetchUnreadMessageCount,
   MESSAGES_CHANGED_EVENT,
   MESSAGES_READ_EVENT,
@@ -216,6 +217,21 @@ describe("MessagesLink", () => {
     expect(badge()).toBe("4");
     expect(changed).toHaveBeenCalledTimes(1);
     window.removeEventListener(MESSAGES_CHANGED_EVENT, changed);
+  });
+
+  // F-33: a list restored by the Back button before the batch ends must
+  // already see the change.
+  it("notes Realtime changes at once, before the batched reload", async () => {
+    render(0);
+    await subscribe();
+    const version = currentMessagesVersion();
+    act(() => {
+      channel().emit("INSERT", { id: "1" });
+      channel().emit("UPDATE", { id: "2" });
+    });
+    expect(currentMessagesVersion()).toBe(version + 2);
+    await flush();
+    expect(currentMessagesVersion()).toBe(version + 2);
   });
 
   it("reloads when the chat marked messages read, without telling the page", async () => {

@@ -34,8 +34,9 @@ status and the next step. Read it before any work.
   Realtime on `/messages/[id]` (P8.S4). P8.S1–P8.S4 deployed and verified on Vercel at
   `7ae4ae4` (2026-10-02). Read state and live unread badge in the header (P8.S5, local).
   Message notifications (P8.S6, local; its migration is already on the hosted project).
-  Phase 8 completed. Open: F-33 (stale `/messages` after the browser's back button).
-  Next: P9.S1 (favorites schema).
+  Phase 8 completed. F-33 (stale `/messages` after the browser's Back button) fixed
+  locally. Nothing after `7ae4ae4` is pushed yet (P8.S4 record, P8.S5, P8.S6, F-33 fix):
+  push only with the user's approval, then verify on Vercel. Next: P9.S1 (favorites schema).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -190,6 +191,12 @@ item_id?, sender_id }`, one per recipient and conversation
   `fetchUnreadMessageCount` (equals the sum of `my_conversations()` counts) and passes
   Realtime events on as `MESSAGES_CHANGED_EVENT`, which `RefreshOnMessages` on
   `/messages` answers with `router.refresh()`. Never add a second all-messages channel.
+  Back/Forward restores pages from the router cache without a request: `RefreshOnMessages`
+  keeps the messages version (`noteMessagesChanged`/`currentMessagesVersion` in
+  `@/lib/chat`; bumped by `useUnreadMessages` on Realtime events and by `ChatView` after
+  a read or send) per `router.bfcacheId` and refreshes a restored, older list once
+  (F-33). Code that changes the user's messages in the browser must call
+  `noteMessagesChanged()`.
   Banned users cannot mark read (the RPC returns 0).
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages

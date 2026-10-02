@@ -5,6 +5,7 @@ import {
   fetchUnreadMessageCount,
   MESSAGES_CHANGED_EVENT,
   MESSAGES_READ_EVENT,
+  noteMessagesChanged,
 } from "@/lib/chat";
 import { createClient } from "@/lib/supabase/client";
 
@@ -71,6 +72,9 @@ export function useUnreadMessages({
       }, UNREAD_RELOAD_DELAY_MS);
     };
     const onChange = () => {
+      // At once, not after the batch: a list restored by the Back button
+      // meanwhile must see it (RefreshOnMessages).
+      noteMessagesChanged();
       changed = true;
       schedule();
     };

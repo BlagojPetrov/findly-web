@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { markConversationRead, sendMessage } from "@/actions/messages";
 import {
   type ChatMessage,
+  currentMessagesVersion,
   fetchMessagesAfter,
   fetchMessagesBefore,
   MESSAGES_READ_EVENT,
@@ -332,10 +333,13 @@ describe("ChatView", () => {
       setter.call(field, "Еве ме");
       field.dispatchEvent(new Event("input", { bubbles: true }));
     });
+    const version = currentMessagesVersion();
     await act(async () =>
       container.querySelector<HTMLButtonElement>('[type="submit"]')!.click(),
     );
     expect(bubbles().at(-1)).toEqual({ own: true, body: "Еве ме" });
+    // The conversation list is stale now (F-33).
+    expect(currentMessagesVersion()).toBe(version + 1);
     await emit(row(sent));
     expect(bodies().filter((body) => body === "Еве ме")).toHaveLength(1);
   });
@@ -464,10 +468,13 @@ describe("ChatView", () => {
     it("marks the other participant's messages read when opened", async () => {
       const events = vi.fn();
       window.addEventListener(MESSAGES_READ_EVENT, events);
+      const version = currentMessagesVersion();
       render({ messages: [read(older), yesterday, today] });
       await settle();
       expect(marked()).toEqual([{ conversationId }]);
       expect(events).toHaveBeenCalledTimes(1);
+      // The conversation list is stale now (F-33).
+      expect(currentMessagesVersion()).toBe(version + 1);
       window.removeEventListener(MESSAGES_READ_EVENT, events);
     });
 
@@ -531,12 +538,14 @@ describe("ChatView", () => {
         ok: false,
         error: "database",
       });
+      const version = currentMessagesVersion();
       render();
       await settle();
       await settle();
       // No retry loop and no event.
       expect(marked()).toHaveLength(1);
       expect(events).not.toHaveBeenCalled();
+      expect(currentMessagesVersion()).toBe(version);
       window.removeEventListener(MESSAGES_READ_EVENT, events);
     });
 

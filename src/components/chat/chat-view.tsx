@@ -19,6 +19,7 @@ import {
   fetchMessagesBefore,
   MESSAGES_READ_EVENT,
   mergeMessages,
+  noteMessagesChanged,
   realtimeMessage,
   unreadFrom,
 } from "@/lib/chat";
@@ -123,6 +124,7 @@ export function ChatView({
           : message,
       ),
     );
+    noteMessagesChanged();
     window.dispatchEvent(new Event(MESSAGES_READ_EVENT));
     if (
       unreadFrom(messagesRef.current, viewerId).some(
@@ -437,7 +439,10 @@ export function ChatView({
         {canSend ? (
           <MessageComposer
             conversationId={conversationId}
-            onSent={(message) => add([message])}
+            onSent={(message) => {
+              noteMessagesChanged();
+              add([message]);
+            }}
           />
         ) : (
           <p className="text-sm text-muted-foreground">{t("readOnly")}</p>

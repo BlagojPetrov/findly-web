@@ -39,6 +39,21 @@ export const messageColumns = "id, sender_id, body, created_at, read_at";
 export const MESSAGES_READ_EVENT = "findly:messages-read";
 export const MESSAGES_CHANGED_EVENT = "findly:messages-changed";
 
+// How often the user's messages changed in this tab (Realtime events from
+// the header's subscription, reads and sends in the chat). The browser's Back
+// button restores /messages from the router cache without asking the server;
+// the list compares this counter with the value it was shown at and renders
+// again when it is older (F-33).
+let messagesVersion = 0;
+
+export function noteMessagesChanged(): void {
+  messagesVersion++;
+}
+
+export function currentMessagesVersion(): number {
+  return messagesVersion;
+}
+
 export function toChatMessage(row: MessageRow): ChatMessage {
   return {
     id: row.id,
