@@ -30,9 +30,9 @@ status and the next step. Read it before any work.
   match notifications trigger (P7.S2), header bell with Realtime (P7.S3), `/notifications`
   page (P7.S4); Phase 7 completed, optional match email (P7.S5) deferred. Phase 8 started:
   messaging schema with a daily conversation limit (P8.S1), contact from the item page
-  with a minimal `/messages/[id]` (P8.S2, deployed and verified on Vercel at `e449c06`).
-  Conversation list `/messages` with a header link (P8.S3). Chat view with Realtime on
-  `/messages/[id]` (P8.S4). Next: P8.S5 (read state and unread badge).
+  (P8.S2). Conversation list `/messages` with a header link (P8.S3). Chat view with
+  Realtime on `/messages/[id]` (P8.S4). P8.S1–P8.S4 deployed and verified on Vercel at
+  `7ae4ae4` (2026-10-02). Next: P8.S5 (read state and unread badge).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
