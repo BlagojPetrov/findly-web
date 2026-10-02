@@ -14,7 +14,7 @@
     "dashboard": "My reports",
     "browse": "Browse",
     "map": "Map",
-    "messages": "Messages"
+    "messagesLabel": "{count, plural, =0 {Messages} one {Messages, # unread} other {Messages, # unread}}"
   },
   "Home": {
     "title": "Find what was lost, return what was found",

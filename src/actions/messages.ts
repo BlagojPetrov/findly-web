@@ -12,6 +12,7 @@ import { requireUser } from "@/lib/auth";
 import { type ChatMessage, messageColumns, toChatMessage } from "@/lib/chat";
 import { createClient } from "@/lib/supabase/server";
 import {
+  markConversationReadSchema,
   sendMessageSchema,
   startConversationSchema,
 } from "@/lib/validation/conversations";
@@ -144,4 +145,32 @@ export async function sendMessage(
     }
   }
   return ok(toChatMessage(data));
+}
+
+// Marks the other participant's unread messages in a conversation read and
+// returns how many changed (§16). The chat calls it while it is visible.
+// Non-participants and banned users change nothing (0). No refresh(): it
+// would re-render the open chat; the header badge reloads through a window
+// event and Realtime, and /messages is rendered fresh when opened.
+export async function markConversationRead(
+  formData: FormData,
+): Promise<ActionResult<number>> {
+  const parsed = markConversationReadSchema.safeParse({
+    conversationId: formData.get("conversationId"),
+  });
+  if (!parsed.success) return validationError(parsed.error);
+  const { conversationId } = parsed.data;
+  await requireUser(`/messages/${conversationId}`);
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("mark_conversation_read", {
+    conversation_id: conversationId,
+  });
+  if (error) {
+    console.error(
+      `Marking conversation ${conversationId} read failed: ${error.code}: ${error.message}`,
+    );
+    return fail("database");
+  }
+  return ok(data);
 }

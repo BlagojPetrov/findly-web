@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import type { Locale } from "next-intl";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { ConversationList } from "@/components/chat/conversation-list";
+import { RefreshOnMessages } from "@/components/chat/refresh-on-messages";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { requireUser } from "@/lib/auth";
@@ -26,6 +27,8 @@ export async function generateMetadata({
 
 // The signed-in user's conversations, newest activity first, with unread
 // counts (§16). A failed query shows a message instead of breaking the page.
+// New messages and reads re-render it (events from the header's
+// subscription).
 export default async function MessagesPage({
   params,
 }: PageProps<"/[locale]/messages">) {
@@ -45,6 +48,7 @@ export default async function MessagesPage({
 
   return (
     <div className="mx-auto grid w-full max-w-2xl gap-6">
+      <RefreshOnMessages />
       <div className="grid gap-1">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           {t("title")}

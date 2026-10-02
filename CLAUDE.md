@@ -32,7 +32,8 @@ status and the next step. Read it before any work.
   messaging schema with a daily conversation limit (P8.S1), contact from the item page
   (P8.S2). Conversation list `/messages` with a header link (P8.S3). Chat view with
   Realtime on `/messages/[id]` (P8.S4). P8.S1–P8.S4 deployed and verified on Vercel at
-  `7ae4ae4` (2026-10-02). Next: P8.S5 (read state and unread badge).
+  `7ae4ae4` (2026-10-02). Read state and live unread badge in the header (P8.S5, local).
+  Next: P8.S6 (message notifications).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -171,6 +172,15 @@ status and the next step. Read it before any work.
   `message_rate_limit`). Form data turns line breaks into `\r\n`: schemas for multi-line
   text normalize them before length checks (`sendMessageSchema`). Times of day:
   `clockTime()` (`@/lib/dates`, Europe/Skopje, same on server and browser).
+  Read state: `ChatView` marks the other side's messages read only through
+  `markConversationRead` (action; never while rendering), only in a visible tab, batched;
+  then dispatches `MESSAGES_READ_EVENT`. The header's `MessagesLink`/`useUnreadMessages`
+  (key = user id; first count `getUnreadMessageCount`) is the only subscription to all of
+  the user's messages (INSERT, UPDATE with `sender_id=neq.<user>`); it reloads
+  `fetchUnreadMessageCount` (equals the sum of `my_conversations()` counts) and passes
+  Realtime events on as `MESSAGES_CHANGED_EVENT`, which `RefreshOnMessages` on
+  `/messages` answers with `router.refresh()`. Never add a second all-messages channel.
+  Banned users cannot mark read (the RPC returns 0).
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
   (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals) or render on the server.

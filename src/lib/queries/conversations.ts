@@ -1,6 +1,6 @@
 import "server-only";
 import { z } from "zod";
-import { fetchMessagesBefore } from "@/lib/chat";
+import { fetchMessagesBefore, fetchUnreadMessageCount } from "@/lib/chat";
 import { toConversationSummaries } from "@/lib/conversations";
 import { createClient } from "@/lib/supabase/server";
 
@@ -78,4 +78,17 @@ export type ConversationDetail = NonNullable<
 export async function getLatestMessages(conversationId: string) {
   const supabase = await createClient();
   return fetchMessagesBefore(supabase, conversationId);
+}
+
+// The header badge's first value: unread messages from others in all of the
+// user's conversations, or null when it cannot be loaded (the header then
+// shows no badge instead of failing; the browser reloads it).
+export async function getUnreadMessageCount(userId: string) {
+  const supabase = await createClient();
+  try {
+    return await fetchUnreadMessageCount(supabase, userId);
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
 }

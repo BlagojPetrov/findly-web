@@ -18,6 +18,8 @@ export type ChatMessage = {
   senderId: string;
   body: string;
   createdAt: string;
+  // When the recipient read it (null while unread).
+  readAt: string | null;
 };
 
 export type MessageRow = {
@@ -25,9 +27,17 @@ export type MessageRow = {
   sender_id: string;
   body: string;
   created_at: string;
+  read_at: string | null;
 };
 
-export const messageColumns = "id, sender_id, body, created_at";
+export const messageColumns = "id, sender_id, body, created_at, read_at";
+
+// Window events between the header's messages link (the only subscription
+// to all of the user's messages) and the pages: the chat marked messages
+// read (the badge reloads at once), and the user's messages changed (the
+// conversation list re-renders).
+export const MESSAGES_READ_EVENT = "findly:messages-read";
+export const MESSAGES_CHANGED_EVENT = "findly:messages-changed";
 
 export function toChatMessage(row: MessageRow): ChatMessage {
   return {
@@ -35,7 +45,15 @@ export function toChatMessage(row: MessageRow): ChatMessage {
     senderId: row.sender_id,
     body: row.body,
     createdAt: row.created_at,
+    readAt: row.read_at,
   };
+}
+
+// Messages from the other participant that the viewer has not read yet.
+export function unreadFrom(messages: ChatMessage[], viewerId: string) {
+  return messages.filter(
+    (message) => message.senderId !== viewerId && message.readAt === null,
+  );
 }
 
 function time(message: ChatMessage) {
@@ -115,11 +133,32 @@ export function realtimeMessage(
   ) {
     return null;
   }
-  const message = toChatMessage(value as MessageRow);
+  const message = toChatMessage({
+    ...(value as MessageRow),
+    read_at: typeof value.read_at === "string" ? value.read_at : null,
+  });
   // Without an offset Date.parse() would read the time as local time; the
   // database stores and sends UTC.
   if (!/(Z|[+-]\d\d(:?\d\d)?)$/.test(message.createdAt)) {
     message.createdAt += "Z";
   }
   return message;
+}
+
+// Unread messages from others in all of the user's conversations: the same
+// rule as my_conversations()'s unread_count (RLS limits the rows to the
+// user's conversations), so it is the sum of the list's counts.
+export async function fetchUnreadMessageCount(
+  supabase: Client,
+  userId: string,
+) {
+  const { count, error } = await supabase
+    .from("messages")
+    .select("id", { count: "exact", head: true })
+    .neq("sender_id", userId)
+    .is("read_at", null);
+  if (error) {
+    throw new Error(`Failed to count unread messages: ${error.message}`);
+  }
+  return count ?? 0;
 }

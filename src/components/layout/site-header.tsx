@@ -1,17 +1,14 @@
-import {
-  Map as MapIcon,
-  MessageCircle,
-  Search,
-  SearchCheck,
-} from "lucide-react";
+import { Map as MapIcon, Search, SearchCheck } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
+import { MessagesLink } from "@/components/chat/messages-link";
 import { LocaleSwitcher } from "@/components/layout/locale-switcher";
 import { NotificationBell } from "@/components/notifications/notification-bell";
 import { UserMenu } from "@/components/layout/user-menu";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { getCurrentUser } from "@/lib/auth";
+import { getUnreadMessageCount } from "@/lib/queries/conversations";
 import { getUnreadNotificationCount } from "@/lib/queries/notifications";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +17,12 @@ export async function SiteHeader() {
     getTranslations("Header"),
     getCurrentUser(),
   ]);
-  const unread = user ? await getUnreadNotificationCount(user.id) : null;
+  const [unread, unreadMessages] = user
+    ? await Promise.all([
+        getUnreadNotificationCount(user.id),
+        getUnreadMessageCount(user.id),
+      ])
+    : [null, null];
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
@@ -52,15 +54,11 @@ export async function SiteHeader() {
             <>
               {/* A new key per account: no state or subscription of the
                   previous user survives an account switch. */}
-              {/* The unread badge comes with read state (P8.S5). */}
-              <Link
-                href="/messages"
-                aria-label={t("messages")}
-                title={t("messages")}
-                className={buttonVariants({ variant: "ghost", size: "icon" })}
-              >
-                <MessageCircle aria-hidden />
-              </Link>
+              <MessagesLink
+                key={`messages-${user.id}`}
+                userId={user.id}
+                initialUnread={unreadMessages}
+              />
               <NotificationBell
                 key={user.id}
                 userId={user.id}

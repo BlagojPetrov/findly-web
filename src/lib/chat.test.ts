@@ -5,13 +5,15 @@ import {
   fetchMessagesBefore,
   MESSAGE_PAGE_SIZE,
   mergeMessages,
+  fetchUnreadMessageCount,
   realtimeMessage,
+  unreadFrom,
 } from "./chat";
 
 const conversationId = "49000000-0000-4000-8000-000000000001";
 
 function message(id: string, createdAt: string, body = id): ChatMessage {
-  return { id, senderId: "u", body, createdAt };
+  return { id, senderId: "u", body, createdAt, readAt: null };
 }
 
 function row(index: number) {
@@ -20,6 +22,7 @@ function row(index: number) {
     sender_id: "u",
     body: `body ${index}`,
     created_at: new Date(Date.UTC(2026, 9, 1, 0, index)).toISOString(),
+    read_at: index === 1 ? "2026-10-01T12:00:00+00:00" : null,
   };
 }
 
@@ -96,6 +99,7 @@ describe("realtimeMessage", () => {
       senderId: "u",
       body: "Hello",
       createdAt: "2026-10-01T10:00:00.123456+00:00",
+      readAt: null,
     });
   });
 
@@ -125,7 +129,7 @@ describe("fetchMessagesBefore", () => {
     const page = await fetchMessagesBefore(supabase, conversationId);
     expect(from).toHaveBeenCalledWith("messages");
     expect(calls).toEqual([
-      ["select", "id, sender_id, body, created_at"],
+      ["select", "id, sender_id, body, created_at, read_at"],
       ["eq", "conversation_id", conversationId],
       ["order", "created_at", { ascending: false }],
       ["limit", MESSAGE_PAGE_SIZE + 1],
@@ -137,6 +141,7 @@ describe("fetchMessagesBefore", () => {
       senderId: "u",
       body: "body 1",
       createdAt: rows[2].created_at,
+      readAt: "2026-10-01T12:00:00+00:00",
     });
   });
 
@@ -169,7 +174,7 @@ describe("fetchMessagesAfter", () => {
     const after = "2026-10-01T00:00:30Z";
     const messages = await fetchMessagesAfter(supabase, conversationId, after);
     expect(calls).toEqual([
-      ["select", "id, sender_id, body, created_at"],
+      ["select", "id, sender_id, body, created_at, read_at"],
       ["eq", "conversation_id", conversationId],
       ["gt", "created_at", after],
       ["order", "created_at", { ascending: true }],
@@ -182,6 +187,85 @@ describe("fetchMessagesAfter", () => {
     const { supabase } = client({ data: null, error: { message: "boom" } });
     await expect(
       fetchMessagesAfter(supabase, conversationId, "x"),
+    ).rejects.toThrow("boom");
+  });
+});
+
+describe("unreadFrom", () => {
+  it("keeps the other participant's unread messages only", () => {
+    const messages: ChatMessage[] = [
+      { ...message("own", "2026-10-01T10:00:00Z"), senderId: "me" },
+      message("read", "2026-10-01T10:01:00Z"),
+      message("unread", "2026-10-01T10:02:00Z"),
+    ];
+    messages[1].readAt = "2026-10-01T10:05:00Z";
+    expect(unreadFrom(messages, "me").map((m) => m.id)).toEqual(["unread"]);
+  });
+});
+
+describe("realtimeMessage read state", () => {
+  it("keeps read_at and treats anything else as unread", () => {
+    const base = {
+      id: "m1",
+      conversation_id: conversationId,
+      sender_id: "u",
+      body: "Hi",
+      created_at: "2026-10-01T10:00:00+00:00",
+    };
+    expect(
+      realtimeMessage(
+        { ...base, read_at: "2026-10-01T10:01:00+00:00" },
+        conversationId,
+      )?.readAt,
+    ).toBe("2026-10-01T10:01:00+00:00");
+    expect(realtimeMessage(base, conversationId)?.readAt).toBeNull();
+  });
+});
+
+describe("fetchUnreadMessageCount", () => {
+  function countClient(result: { count: number | null; error: unknown }) {
+    const calls: unknown[][] = [];
+    const query = {
+      select: (...args: unknown[]) => {
+        calls.push(["select", ...args]);
+        return query;
+      },
+      neq: (...args: unknown[]) => {
+        calls.push(["neq", ...args]);
+        return query;
+      },
+      is: async (...args: unknown[]) => {
+        calls.push(["is", ...args]);
+        return result;
+      },
+    };
+    const from = vi.fn(() => query);
+    return { supabase: { from } as never, from, calls };
+  }
+
+  it("counts others' unread messages without loading them", async () => {
+    const { supabase, from, calls } = countClient({ count: 7, error: null });
+    expect(await fetchUnreadMessageCount(supabase, "me")).toBe(7);
+    expect(from).toHaveBeenCalledWith("messages");
+    expect(calls).toEqual([
+      ["select", "id", { count: "exact", head: true }],
+      ["neq", "sender_id", "me"],
+      ["is", "read_at", null],
+    ]);
+  });
+
+  it("treats a missing count as 0 and throws on errors", async () => {
+    expect(
+      await fetchUnreadMessageCount(
+        countClient({ count: null, error: null }).supabase,
+        "me",
+      ),
+    ).toBe(0);
+    await expect(
+      fetchUnreadMessageCount(
+        countClient({ count: null, error: { message: "boom" } }).supabase,
+        "me",
+      ),
     ).rejects.toThrow("boom");
   });
 });

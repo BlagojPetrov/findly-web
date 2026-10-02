@@ -3,15 +3,16 @@ import { NextIntlClientProvider } from "next-intl";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { sendMessage } from "@/actions/messages";
+import { markConversationRead, sendMessage } from "@/actions/messages";
 import {
   type ChatMessage,
   fetchMessagesAfter,
   fetchMessagesBefore,
+  MESSAGES_READ_EVENT,
 } from "@/lib/chat";
 import en from "../../../messages/en.json";
 import mk from "../../../messages/mk.json";
-import { ChatView } from "./chat-view";
+import { ChatView, MARK_READ_DELAY_MS } from "./chat-view";
 
 // A fake Supabase browser client: channels record their handlers and status
 // callback so tests can emit Realtime events.
@@ -61,7 +62,18 @@ const { client, state } = vi.hoisted(() => {
 });
 
 vi.mock("@/lib/supabase/client", () => ({ createClient: () => client }));
-vi.mock("@/actions/messages", () => ({ sendMessage: vi.fn() }));
+vi.mock("@/actions/messages", () => ({
+  sendMessage: vi.fn(),
+  markConversationRead: vi.fn(),
+}));
+
+// jsdom's document is not "visible" by default; the chat only marks
+// messages read in a visible tab.
+let visibility: DocumentVisibilityState = "visible";
+Object.defineProperty(document, "visibilityState", {
+  configurable: true,
+  get: () => visibility,
+});
 vi.mock("@/lib/chat", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/chat")>()),
   fetchMessagesBefore: vi.fn(),
@@ -89,6 +101,7 @@ function message(
     senderId,
     body,
     createdAt,
+    readAt: null,
   };
 }
 
@@ -98,7 +111,7 @@ function row(m: ChatMessage, conversation = conversationId) {
     conversation_id: conversation,
     sender_id: m.senderId,
     body: m.body,
-    read_at: null,
+    read_at: m.readAt,
     created_at: m.createdAt,
   };
 }
@@ -119,6 +132,10 @@ beforeEach(() => {
     .mockReset()
     .mockResolvedValue({ messages: [], hasMore: false });
   vi.mocked(sendMessage).mockReset();
+  vi.mocked(markConversationRead)
+    .mockReset()
+    .mockResolvedValue({ ok: true, data: 0 });
+  visibility = "visible";
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -424,5 +441,111 @@ describe("ChatView", () => {
     // Events after unmount are ignored.
     await act(async () => current.emit(row(message(14, today.createdAt))));
     root = createRoot(container);
+  });
+
+  describe("read state", () => {
+    const read = (m: ChatMessage): ChatMessage => ({
+      ...m,
+      readAt: "2026-10-02T09:59:00Z",
+    });
+    // Lets the mark-read delay pass and the request finish.
+    const settle = () =>
+      act(
+        () =>
+          new Promise((resolve) =>
+            setTimeout(resolve, MARK_READ_DELAY_MS + 30),
+          ),
+      );
+    const marked = () =>
+      vi
+        .mocked(markConversationRead)
+        .mock.calls.map(([data]) => Object.fromEntries(data.entries()));
+
+    it("marks the other participant's messages read when opened", async () => {
+      const events = vi.fn();
+      window.addEventListener(MESSAGES_READ_EVENT, events);
+      render({ messages: [read(older), yesterday, today] });
+      await settle();
+      expect(marked()).toEqual([{ conversationId }]);
+      expect(events).toHaveBeenCalledTimes(1);
+      window.removeEventListener(MESSAGES_READ_EVENT, events);
+    });
+
+    it("does not mark anything when nothing from the other side is unread", async () => {
+      // yesterday is the viewer's own (unread by the other side).
+      render({ messages: [read(older), yesterday, read(today)] });
+      await settle();
+      expect(markConversationRead).not.toHaveBeenCalled();
+    });
+
+    it("marks new messages from the other side once, not own ones", async () => {
+      render({ messages: [read(older), read(today)] });
+      await subscribe();
+      await emit(row(message(20, "2026-10-02T09:40:00Z", me)));
+      await settle();
+      expect(markConversationRead).not.toHaveBeenCalled();
+      await emit(row(message(21, "2026-10-02T09:41:00Z")));
+      await emit(row(message(22, "2026-10-02T09:42:00Z")));
+      await settle();
+      // Two messages together, one request.
+      expect(marked()).toHaveLength(1);
+      await settle();
+      expect(marked()).toHaveLength(1);
+    });
+
+    it("waits for the tab to become visible", async () => {
+      visibility = "hidden";
+      render();
+      await settle();
+      expect(markConversationRead).not.toHaveBeenCalled();
+      visibility = "visible";
+      await act(async () => {
+        document.dispatchEvent(new Event("visibilitychange"));
+      });
+      await settle();
+      expect(marked()).toEqual([{ conversationId }]);
+    });
+
+    it("marks messages that arrive during the request with another one", async () => {
+      let finish!: (value: { ok: true; data: number }) => void;
+      vi.mocked(markConversationRead).mockReturnValueOnce(
+        new Promise((resolve) => (finish = resolve)),
+      );
+      render({ messages: [read(older), today] });
+      await subscribe();
+      await settle();
+      expect(marked()).toHaveLength(1);
+      await emit(row(message(23, "2026-10-02T09:43:00Z")));
+      await settle();
+      // Still the first request.
+      expect(marked()).toHaveLength(1);
+      await act(async () => finish({ ok: true, data: 1 }));
+      await settle();
+      expect(marked()).toHaveLength(2);
+    });
+
+    it("leaves the messages unread when marking fails", async () => {
+      const events = vi.fn();
+      window.addEventListener(MESSAGES_READ_EVENT, events);
+      vi.mocked(markConversationRead).mockResolvedValue({
+        ok: false,
+        error: "database",
+      });
+      render();
+      await settle();
+      await settle();
+      // No retry loop and no event.
+      expect(marked()).toHaveLength(1);
+      expect(events).not.toHaveBeenCalled();
+      window.removeEventListener(MESSAGES_READ_EVENT, events);
+    });
+
+    it("does not mark after unmounting", async () => {
+      render();
+      act(() => root.unmount());
+      await settle();
+      expect(markConversationRead).not.toHaveBeenCalled();
+      root = createRoot(container);
+    });
   });
 });

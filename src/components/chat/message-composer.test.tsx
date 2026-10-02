@@ -22,6 +22,7 @@ const sent: ChatMessage = {
   senderId: "00000000-0000-4000-8000-00000000000a",
   body: "Здраво",
   createdAt: "2026-10-02T10:00:00.123456+00:00",
+  readAt: null,
 };
 
 let container: HTMLDivElement;

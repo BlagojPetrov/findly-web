@@ -7,8 +7,8 @@
 > updating it.
 
 - **Last updated:** 2026-10-02
-- **Current phase:** Phase 8 — Messaging (in progress: P8.S1–P8.S4 completed; Phase 7 completed, optional P7.S5 deferred)
-- **Next step:** P8.S5 (§22, §25)
+- **Current phase:** Phase 8 — Messaging (in progress: P8.S1–P8.S5 completed; Phase 7 completed, optional P7.S5 deferred)
+- **Next step:** P8.S6 (§22, §25)
 
 ---
 
@@ -164,7 +164,7 @@ to these IDs. "Next step" always means the step named in
 | P8.S2  | Start conversation from item                   | `COMPLETED`   |
 | P8.S3  | Conversation list                              | `COMPLETED`   |
 | P8.S4  | Chat view with Realtime                        | `COMPLETED`   |
-| P8.S5  | Read state and unread badge                    | `NOT STARTED` |
+| P8.S5  | Read state and unread badge                    | `COMPLETED`   |
 | P8.S6  | Message notifications                          | `NOT STARTED` |
 | P9.S1  | Favorites schema                               | `NOT STARTED` |
 | P9.S2  | Favorite toggle                                | `NOT STARTED` |
@@ -1424,6 +1424,33 @@ decay, Cyrillic vs Latin text.
 - Read state: opening a conversation calls RPC `mark_conversation_read(id)` which
   sets `read_at` on messages from the other participant. Header shows the total
   unread count.
+  - Implemented in P8.S5 ✓: `ChatView` marks the other participant's unread
+    messages read through the Server Action `markConversationRead(formData)`
+    (`src/actions/messages.ts`; validates the id, `requireUser`, the RPC, returns the
+    count; errors → `database`, logged; no `refresh()`, which would re-render the
+    open chat) — on opening, for messages that arrive while open, and when the tab
+    becomes visible again; only while `document.visibilityState` is `visible`;
+    several arrivals within 300 ms are one request; messages that arrive during a
+    request get another one; a failure leaves them unread (no retry loop). Loaded
+    messages carry `readAt` (`messageColumns` includes `read_at`; `unreadFrom()` in
+    `@/lib/chat`). After a successful mark the chat dispatches `MESSAGES_READ_EVENT`.
+    Header: `MessagesLink` (`src/components/chat/messages-link.tsx`, key = user id)
+    with a badge like the bell's (0 hidden, 99+, label "Пораки, N непрочитани" via
+    `Header.messagesLabel`), first count from `getUnreadMessageCount`
+    (`@/lib/queries/conversations`; null on error = no badge) and `useUnreadMessages`
+    (`src/components/chat/use-unread-messages.ts`): the only subscription to all of
+    the user's messages — one channel per mount with a unique topic, `INSERT` (RLS
+    limits it to the user's conversations) and `UPDATE` filtered by
+    `sender_id=neq.<user>` (others' messages read, e.g. in another tab); events,
+    `MESSAGES_READ_EVENT`, focus and `online` are batched into one reload of
+    `fetchUnreadMessageCount` (`@/lib/chat`: head count of others' messages with
+    `read_at` null under RLS — the same rule as `my_conversations()`, so it equals the
+    sum of the list's counts); session check and sign-out handling like the bell;
+    Realtime events are passed on as `MESSAGES_CHANGED_EVENT`, which
+    `RefreshOnMessages` on `/messages` answers with `router.refresh()` (live list
+    without a second channel). Banned users cannot write, so reading does not mark
+    anything for them (`mark_conversation_read()` returns 0, P8.S1); their badge
+    stays until they are unbanned.
 - Anti-abuse: messages per user per minute limited by trigger; reporting a user
   is part of moderation (P10).
 - Schema implemented in P8.S1 ✓ (details in §9 `conversations`/`messages`): a
@@ -2111,9 +2138,12 @@ weights and results documented.
 - **Verified:** 64 new unit/component tests (537 → 601): `@/lib/chat` (merge order/dedupe/offsets, Realtime payload checks and UTC fallback, page and catch-up queries, `hasMore`, errors), `sendMessageSchema` (trim, CRLF → LF, 2000 with a line break, whitespace only, ids), `clockTime`/`previousDay`, `sendMessage` (sender never from the form, validation before auth, banned, every error code, no raw text, logging), `MessageComposer` in jsdom (empty disabled, Enter/Shift+Enter/button, read-only while pending, no double send, error kept with the text, field error, counter without digit grouping, English) and `ChatView` in jsdom (sides, times, screen-reader senders, day labels mk/en, wrapping classes, beginning/empty states, subscription filter, catch-up after subscribing, Realtime append once and other conversations ignored, sent message merged with its echo, older page with the scroll position kept, retry, following at the bottom vs. "2 new messages", own message always followed, reconnecting note, read-only, channel removed on unmount). Lint, typecheck, Prettier, `npm run build` and `--webpack`. Browser check (production build on port 3100, headless Edge `mk-MK`, A at 1280 px and B at 390 px in separate browser contexts, temporary `chat4-*@findly.test` users, a report in Struga with no matches, a conversation with 120 messages over 2.5 days and an empty one, all deleted afterwards): 55/55 — guests to login with `next`; header, report link, `noindex`, note gone; newest 50 in order on both sides, own on the right, `HH:MM` in Macedonia, day separators ending with "Денес", opened at the bottom, composer visible without page scrolling (desktop and mobile); scrolling up loads 50 + 20 older messages keeping the view, then "Почеток на разговорот", 1…120 without gaps; B's message reaches A in about 1 s over Realtime (left side, current time; Realtime sends `created_at` with an offset), A scrolled up gets "1 нова порака" and the button scrolls down; no duplicate from the echo, one row; Shift+Enter keeps the line break on the other side; trimmed; whitespace only disabled; 2000 characters (counter, no 2001st) and 2000 with a line break stored with `\n`; long text wraps without horizontal overflow on desktop and mobile; the 31st message in a minute is refused with the Macedonian rate-limit message, the text kept, no raw database text; a message sent while A was offline appears once after reconnecting (headless Edge kept the socket, so the reconnecting note did not show); reload shows the live messages; the empty conversation's state is replaced by the first message; someone else's chat is 404; a banned user reads without a composer; English texts; back link to `/messages`; no browser errors. Found and fixed during the check: line breaks were stored as `\r\n` (form data), which would also have made a 2000-character message with line breaks too long; the composer sat partly below the fold on a 1280×900 desktop.
 - **Production (2026-10-02):** `7baa745`, `6129c41`, `7ae4ae4` pushed to `main` as a fast-forward (`e449c06..7ae4ae4`, no rewrite; P8.S1, the F-31 fix, the conversation limit and P8.S2 were already on `origin/main` since 2026-10-01). The three commits change only docs, translations and the P8.S3/P8.S4 app code and tests (no migrations; all 20 migrations already applied on the hosted project). Deployment confirmed by the served code, not only HTTP 200: a signed-in, uncached render (`X-Vercel-Cache: MISS`, `fra1`) of a temporary conversation contains the P8.S4 chat markup, which exists only from `7ae4ae4`, the tip of `main` (the Vercel CLI is logged out and `gh` is not installed, so the deployment's commit is inferred from that markup). Browser checks against https://findly-web-nine.vercel.app (headless Edge `mk-MK`, temporary `chat-*`/`list-*`/`chat4-*@findly.test` users and reports in Struga with no matches, all deleted afterwards; 0 matches or notifications created): P8.S2 contact 45/45 and stale pages 10/10, P8.S3 list 35/35, P8.S4 chat 55/55 (B → A in about 0.4 s over Realtime; same assertions as the local run, desktop 1280 px and mobile 390 px, mk/en). The only console error was the expected 404 of the stranger check, which the scripts count separately. The conversation list has no paging by design (§16), so there was none to check. The offline step passed by catch-up; headless Edge kept the socket open, so the "reconnecting" note was not seen in a browser (covered by component tests). No problems found.
 
-#### P8.S5 — Read state and unread badge
+#### P8.S5 — Read state and unread badge — `COMPLETED`
 
 - **Verify:** opening a chat clears its unread count; the header badge updates.
+- **Implemented:** `markConversationRead` and `markConversationReadSchema`, mark-read logic in `ChatView` (`MARK_READ_DELAY_MS`), `readAt` on `ChatMessage`, `unreadFrom`/`fetchUnreadMessageCount`/`MESSAGES_READ_EVENT`/`MESSAGES_CHANGED_EVENT` in `src/lib/chat.ts`, `getUnreadMessageCount`, `src/components/chat/{messages-link,use-unread-messages,refresh-on-messages}.tsx|ts`, `SiteHeader` renders `MessagesLink` (both counts loaded in parallel), `RefreshOnMessages` on `/messages`, translation `Header.messagesLabel` (mk/en; the unused `Header.messages` removed). No database change (`mark_conversation_read()`, the `read_at` grant and Realtime for `messages` exist since P8.S1). Design in §16.
+- **Decisions:** reads are marked from the browser through a Server Action (writes only through actions), never while rendering the page (prefetches would mark chats read); only in a visible tab, so a chat left open in a background tab keeps new messages unread; the header hook is the only all-messages subscription and the list follows it through a window event; `markConversationRead` does not call `refresh()` (it would re-render the open chat with every incoming message) — `/messages` is dynamic, so opening it renders fresh, and the list re-renders on Realtime events (also after the browser's back button, checked).
+- **Verified:** 26 new unit/component tests (601 → 627): `unreadFrom`, Realtime `read_at`, `fetchUnreadMessageCount` (head count, filters, null, errors), `markConversationRead` (RPC arguments, count, invalid id before auth, hidden and logged errors), `ChatView` read state in jsdom (marks on opening and dispatches the event; nothing when only own or read messages; one request for two arrivals, none for own; waits for a visible tab; arrivals during a request get a second one; failure: no event, no loop; nothing after unmount), `MessagesLink` (link, badge from the server, 0/null hidden, 99+, mk/en labels with plurals, subscription filters, catch-up on subscribe, one reload per burst plus `MESSAGES_CHANGED_EVENT`, reload on `MESSAGES_READ_EVENT` without telling the page, last count kept on errors, hidden for another session and on sign-out, channel removed) and `RefreshOnMessages`. Lint, typecheck, Prettier, `npm run build` and `--webpack`. Browser check (production build on port 3100, headless Edge `mk-MK`, temporary `chat5-*@findly.test` users A (desktop), B and C (390 px), one report in Struga with no matches, two conversations with 3 + 2 unread for A and 1 for C, deleted afterwards): 26/26 — guests have no link; header badge 5 and label "Пораки, 5 непрочитани" from the server; list 3 and 2; opening c1 drops the badge to 2 and marks only B's messages in c1 (C's and A's own untouched); back link and the browser's back button both show the list read; B's new message while A is on `/messages` shows badge 1 and moves c1 to the top with 1 unread; a second tab of A on `/map` follows the read made in the first tab (Realtime UPDATE); with the chat open, a new message is marked read at once and no badge appears; B has no badge; mobile header link visible without overflow; English label "Messages, 1 unread"; a banned user's messages stay unread and the badge stays, after unbanning opening the chat clears it; a stranger gets 404 and nothing is marked; no browser errors. Regression: the P8.S4 chat check 55/55 and the P8.S3 list check 36/36 locally (its expectations updated for P8.S5: the header label now carries the count, and the conversation it opens is read afterwards, so the summary shows 2 instead of 3 unread conversations; plus a check that it is read).
 
 #### P8.S6 — Message notifications
 
@@ -2272,6 +2302,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-02 | P8.S5       | Read state: the open chat marks the other participant's messages read (visible tab, batched, `markConversationRead`), header messages link with a live unread badge (one Realtime channel, reloads on reads and in other tabs), live `/messages` through a window event; 26 new tests; browser check 26/26, P8.S4 55/55 and P8.S3 36/36 locally.                                                                                                                      |
 | 2026-10-02 | P8.S4 prod  | Pushed `7baa745`, `6129c41`, `7ae4ae4` (fast-forward `e449c06..7ae4ae4`); deployment confirmed by served P8.S4 markup (uncached); Vercel browser checks: P8.S2 45/45 + stale 10/10, P8.S3 35/35, P8.S4 55/55; temporary data deleted.                                                                                                                                                                                                                                 |
 | 2026-10-02 | P8.S4       | Chat on `/messages/[id]`: newest 50 from the server, Realtime INSERTs per conversation with catch-up after (re)subscribing, older pages on scroll keeping the position, "N new messages" jump, day separators and Macedonian times without `Intl`, `sendMessage` (CRLF → LF, trim, 1–2000, rate limit → readable error), composer with Enter/Shift+Enter and counter, read-only for banned users; 64 new tests; browser check 55/55 (two browsers, desktop + mobile). |
 | 2026-10-01 | P8.S3       | `/messages`: the user's conversations from `my_conversations()` (latest activity first, other participant, report or "not available", last message with "You:", unread highlight and badge), summary, empty and error states, header messages link; 20 new tests; browser check 35/35 (desktop + mobile).                                                                                                                                                             |
@@ -2342,18 +2373,19 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P8.S5 — Read state and unread badge** (see §22, Phase 8; design in §16).
+**P8.S6 — Message notifications** (see §22, Phase 8; design in §15/§16).
 
-Why next: users can now chat in real time (P8.S4), but nothing marks messages as
-read: `/messages` keeps showing them as unread and the header's messages link has
-no badge. P8.S5 calls `rpc("mark_conversation_read")` when a conversation is open
-(on load and for messages that arrive while it is visible), and adds the total
-unread count to the header messages link with live updates (like the notification
-bell: one Realtime subscription, no second channel per page).
+Why next: messages now have read state and a live header badge (P8.S5), but a user
+who is not looking at the header learns about a new message only from the badge.
+P8.S6 adds notifications for new messages through the Phase 7 system: one unread
+notification per conversation and recipient, not one per message (a `security
+definer` trigger on `messages`, ids-only `data`), rendered in the bell, and read
+or removed when the conversation is read.
 
 Deployed: `7ae4ae4` (P8.S4) is on Vercel, verified 2026-10-02 (P8.S2 45/45 + 10/10,
-P8.S3 35/35, P8.S4 55/55 against production). Local, not pushed: the docs-only
-commit that records this verification; push it with the next step.
+P8.S3 35/35, P8.S4 55/55 against production). Local, not pushed: `2e3666c` (P8.S4
+deployment record) and P8.S5; push when approved, then run the P8.S5 check (and the
+P8.S3/P8.S4 regressions) against Vercel.
 
 Open manual items:
 

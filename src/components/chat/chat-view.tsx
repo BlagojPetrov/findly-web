@@ -11,13 +11,16 @@ import {
   useRef,
   useState,
 } from "react";
+import { markConversationRead } from "@/actions/messages";
 import { Button } from "@/components/ui/button";
 import {
   type ChatMessage,
   fetchMessagesAfter,
   fetchMessagesBefore,
+  MESSAGES_READ_EVENT,
   mergeMessages,
   realtimeMessage,
+  unreadFrom,
 } from "@/lib/chat";
 import { previousDay, todayInAppTimeZone } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/client";
@@ -27,6 +30,8 @@ import { MessageComposer } from "./message-composer";
 // Within this distance of the end the chat counts as "at the bottom" and
 // follows new messages.
 const BOTTOM_THRESHOLD_PX = 80;
+// New messages that arrive together are marked read with one request.
+export const MARK_READ_DELAY_MS = 300;
 
 type LiveState = "connecting" | "live" | "reconnecting";
 
@@ -35,6 +40,8 @@ type LiveState = "connecting" | "live" | "reconnecting";
 // decides who receives them), older pages when the top is scrolled into
 // view (or with the button), and the composer. Missed messages are fetched
 // after every (re)subscription and when the tab becomes visible again.
+// While the tab is visible, the other participant's messages are marked
+// read (on opening and as they arrive); the header badge is told at once.
 export function ChatView({
   conversationId,
   viewerId,
@@ -70,10 +77,82 @@ export function ChatView({
   // Scroll position before older messages were added above.
   const prepended = useRef<{ height: number; top: number } | null>(null);
   const loadingOlder = useRef(false);
+  const mounted = useRef(true);
+  const marking = useRef(false);
+  const markTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     messagesRef.current = messages;
   });
+
+  // Marks the loaded unread messages read; ones that arrive during the
+  // request get a request of their own. A failure is left alone (the
+  // messages stay unread and the next new message or visit tries again).
+  const markReadRef = useRef<() => Promise<void>>(async () => {});
+  const scheduleMarkRead = useCallback(() => {
+    clearTimeout(markTimer.current);
+    markTimer.current = setTimeout(
+      () => void markReadRef.current(),
+      MARK_READ_DELAY_MS,
+    );
+  }, []);
+
+  const markRead = useCallback(async () => {
+    if (marking.current || document.visibilityState !== "visible") return;
+    const unread = unreadFrom(messagesRef.current, viewerId);
+    if (unread.length === 0) return;
+    marking.current = true;
+    const ids = new Set(unread.map((message) => message.id));
+    const data = new FormData();
+    data.set("conversationId", conversationId);
+    let marked = false;
+    try {
+      const result = await markConversationRead(data);
+      marked = result.ok;
+    } catch (error) {
+      console.error(error);
+    } finally {
+      marking.current = false;
+    }
+    if (!mounted.current || !marked) return;
+    const readAt = new Date().toISOString();
+    setMessages((current) =>
+      current.map((message) =>
+        ids.has(message.id) && message.readAt === null
+          ? { ...message, readAt }
+          : message,
+      ),
+    );
+    window.dispatchEvent(new Event(MESSAGES_READ_EVENT));
+    if (
+      unreadFrom(messagesRef.current, viewerId).some(
+        (message) => !ids.has(message.id),
+      )
+    ) {
+      scheduleMarkRead();
+    }
+  }, [conversationId, viewerId, scheduleMarkRead]);
+
+  useEffect(() => {
+    markReadRef.current = markRead;
+  }, [markRead]);
+
+  useEffect(() => {
+    if (unreadFrom(messages, viewerId).length > 0) scheduleMarkRead();
+  }, [messages, viewerId, scheduleMarkRead]);
+
+  useEffect(() => {
+    mounted.current = true;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") scheduleMarkRead();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      mounted.current = false;
+      clearTimeout(markTimer.current);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [scheduleMarkRead]);
 
   const add = useCallback((list: ChatMessage[]) => {
     if (list.length > 0) {

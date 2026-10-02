@@ -23,3 +23,8 @@ export const sendMessageSchema = z.object({
     .min(1, msg("required"))
     .max(MESSAGE_MAX_LENGTH, msg("messageTooLong")),
 });
+
+// Marks the other participant's messages in a conversation read.
+export const markConversationReadSchema = z.object({
+  conversationId: z.uuid({ error: msg("invalidValue") }),
+});

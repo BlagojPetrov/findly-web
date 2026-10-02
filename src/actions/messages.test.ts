@@ -1,13 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { sendMessage, startConversation } from "./messages";
+import {
+  markConversationRead,
+  sendMessage,
+  startConversation,
+} from "./messages";
 
-const { requireUser, itemQuery, conversationQuery, insert, redirect } =
+const { requireUser, itemQuery, conversationQuery, insert, redirect, rpc } =
   vi.hoisted(() => ({
     requireUser: vi.fn(),
     itemQuery: vi.fn(),
     conversationQuery: vi.fn(),
     insert: vi.fn(),
     redirect: vi.fn(),
+    rpc: vi.fn(),
   }));
 
 vi.mock("@/lib/auth", () => ({ requireUser }));
@@ -19,6 +24,7 @@ vi.mock("@/i18n/navigation", () => ({ redirect }));
 // from("conversations").insert(values).select("id").single()
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
+    rpc,
     from: (table: string) => {
       const filters: [string, string][] = [];
       const query = {
@@ -269,6 +275,7 @@ describe("sendMessage", () => {
     sender_id: userId,
     body,
     created_at: "2026-10-02T10:00:00.123456+00:00",
+    read_at: null,
   };
 
   beforeEach(() => {
@@ -286,6 +293,7 @@ describe("sendMessage", () => {
         senderId: userId,
         body,
         createdAt: row.created_at,
+        readAt: null,
       },
     });
     expect(requireUser).toHaveBeenCalledWith(`/messages/${conversationId}`);
@@ -350,6 +358,47 @@ describe("sendMessage", () => {
     await sendMessage(form({ conversationId, body }));
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining("XX000: boom"),
+    );
+  });
+});
+
+describe("markConversationRead", () => {
+  beforeEach(() => {
+    rpc.mockReset().mockResolvedValue({ data: 3, error: null });
+  });
+
+  it("marks the conversation read and returns how many changed", async () => {
+    expect(await markConversationRead(form({ conversationId }))).toEqual({
+      ok: true,
+      data: 3,
+    });
+    expect(requireUser).toHaveBeenCalledWith(`/messages/${conversationId}`);
+    expect(rpc).toHaveBeenCalledWith("mark_conversation_read", {
+      conversation_id: conversationId,
+    });
+  });
+
+  it("rejects an invalid id before signing in", async () => {
+    expect(await markConversationRead(form({ conversationId: "abc" }))).toEqual(
+      {
+        ok: false,
+        error: "validation",
+        fieldErrors: { conversationId: ["invalidValue"] },
+      },
+    );
+    expect(requireUser).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("hides and logs database errors", async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { code: "XX000", message: "raw database text" },
+    });
+    const result = await markConversationRead(form({ conversationId }));
+    expect(result).toEqual({ ok: false, error: "database" });
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining("XX000: raw database text"),
     );
   });
 });
