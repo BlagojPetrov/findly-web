@@ -78,7 +78,7 @@ as $$
   ) with ordinality as r
   (id, type, status, title, occurred_on, location_name, created_at, category_id,
    category_slug, category_name_mk, category_name_en, category_icon, cover_path,
-   distance_m, rank, total_count, ord);
+   distance_m, is_favorite, rank, total_count, ord);
 $$;
 grant execute on function pg_temp.titles to anon, authenticated;
 

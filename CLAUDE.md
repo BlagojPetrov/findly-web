@@ -36,7 +36,8 @@ status and the next step. Read it before any work.
   Message notifications (P8.S6). F-33 (stale `/messages` after the browser's Back
   button) fixed; conversation times as a client component. Phase 8 completed and
   deployed: Vercel serves `a62c026` (2026-10-03), production smoke tests passed.
-  Next: P9.S1 (favorites schema), only after the user's go-ahead.
+  Phase 9 started: favorites schema with `is_favorite` in `search_items` (P9.S1).
+  Next: P9.S2 (favorite toggle), only after the user's go-ahead.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -200,6 +201,11 @@ item_id?, sender_id }`, one per recipient and conversation
   (F-33). Code that changes the user's messages in the browser must call
   `noteMessagesChanged()`.
   Banned users cannot mark read (the RPC returns 0).
+- Favorites (§17): `favorites (user_id, item_id)` PK, cascades from items and profiles.
+  Users select/insert/delete only their own (no update); insert needs `can_write()` and a
+  visible item that is not hidden. `anon` has `select` (no policy, no rows) because
+  `search_items` (security invoker) returns `is_favorite` for `auth.uid()`. A favorite
+  stays when its item is hidden later: lists must show only visible items.
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
   (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals) or render on the server.

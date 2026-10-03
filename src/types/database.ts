@@ -93,6 +93,39 @@ export type Database = {
           },
         ]
       }
+      favorites: {
+        Row: {
+          created_at: string
+          item_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          item_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "favorites_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       item_images: {
         Row: {
           created_at: string
@@ -471,6 +504,7 @@ export type Database = {
           created_at: string
           distance_m: number
           id: string
+          is_favorite: boolean
           location_name: string
           occurred_on: string
           rank: number

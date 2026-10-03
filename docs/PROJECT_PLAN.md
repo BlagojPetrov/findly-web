@@ -6,9 +6,9 @@
 > progress of the Findly web project. Every step starts by reading it and ends by
 > updating it.
 
-- **Last updated:** 2026-10-02
-- **Current phase:** Phase 8 — Messaging completed (P8.S1–P8.S6; Phase 7 completed, optional P7.S5 deferred); Phase 9 next
-- **Next step:** P9.S1 (§22, §25)
+- **Last updated:** 2026-10-03
+- **Current phase:** Phase 9 — Favorites in progress (P9.S1 completed; Phase 8 completed, optional P7.S5 deferred)
+- **Next step:** P9.S2 (§22, §25)
 
 ---
 
@@ -101,7 +101,7 @@ to these IDs. "Next step" always means the step named in
 | 6     | Automatic matching                    | `COMPLETED`   |
 | 7     | Notifications                         | `COMPLETED`   |
 | 8     | Messaging                             | `COMPLETED`   |
-| 9     | Favorites                             | `NOT STARTED` |
+| 9     | Favorites                             | `IN PROGRESS` |
 | 10    | Admin and moderation                  | `NOT STARTED` |
 | 11    | UI polish, testing and final delivery | `NOT STARTED` |
 
@@ -166,7 +166,7 @@ to these IDs. "Next step" always means the step named in
 | P8.S4  | Chat view with Realtime                        | `COMPLETED`   |
 | P8.S5  | Read state and unread badge                    | `COMPLETED`   |
 | P8.S6  | Message notifications                          | `COMPLETED`   |
-| P9.S1  | Favorites schema                               | `NOT STARTED` |
+| P9.S1  | Favorites schema                               | `COMPLETED`   |
 | P9.S2  | Favorite toggle                                | `NOT STARTED` |
 | P9.S3  | Favorites page                                 | `NOT STARTED` |
 | P10.S1 | Reports schema and admin policies              | `NOT STARTED` |
@@ -739,7 +739,7 @@ insert as `sender_id = auth.uid()` into an own conversation with `can_write()`;
 update by the recipient (`sender_id <> auth.uid()`, participant) with `can_write()`.
 In the `supabase_realtime` publication.
 
-### `favorites` (P9.S1)
+### `favorites` ✓ (P9.S1)
 
 | Column       | Type        | Notes                  |
 | ------------ | ----------- | ---------------------- |
@@ -747,7 +747,8 @@ In the `supabase_realtime` publication.
 | `item_id`    | uuid        | FK → items, cascade    |
 | `created_at` | timestamptz |                        |
 
-PK `(user_id, item_id)`.
+PK `(user_id, item_id)`. Indexes `(user_id, created_at desc)` (favorites page) and
+`(item_id)` (cascade). Migration `20261003144124_favorites.sql`.
 
 ### `reports` (P10.S1)
 
@@ -883,7 +884,7 @@ password" always reports success, so emails cannot be enumerated).
 | notifications ✓ | own                                                                                                                 | definer functions only                          | own, only `read_at`, `can_write()`                           | own                       |
 | conversations ✓ | participant                                                                                                         | requester = self, not item owner, `can_write()` | none (trigger updates `last_message_at`)                     | none                      |
 | messages ✓      | participant                                                                                                         | participant, `sender_id = self`, `can_write()`  | recipient, only `read_at`, `can_write()`                     | none                      |
-| favorites       | own                                                                                                                 | own                                             | —                                                            | own                       |
+| favorites ✓     | own (anon: select grant for `search_items`, no rows)                                                                | own, item visible and not hidden, `can_write()` | none                                                         | own                       |
 | reports         | own or admin                                                                                                        | self, `can_write()`                             | admin                                                        | none                      |
 
 ### Security verification per step
@@ -1505,8 +1506,14 @@ decay, Cyrillic vs Latin text.
 - For guests the button links to `/login?next=…`.
 - `/favorites` lists favorite items that are still visible; hidden/deleted items
   disappear through RLS/cascade.
-- Feed queries return an `is_favorite` flag for the current user (join in
-  `search_items` when `auth.uid()` is set).
+- Feed queries return an `is_favorite` flag for the current user (P9.S1 ✓:
+  `search_items` returns `is_favorite`, an `exists` on `favorites` with
+  `auth.uid()`; always false for visitors). `search_items` is `security invoker`,
+  so `anon` has `select` on `favorites` (no policy for `anon`, so no rows).
+- Adding requires `can_write()` and an item the user can see that is not hidden
+  (also not an own hidden item); removing does not require `can_write()`. A
+  favorite stays when its item is hidden later: the favorites page must show only
+  visible items (P9.S3). Admins have no access to other users' favorites.
 
 ---
 
@@ -2194,14 +2201,59 @@ weights and results documented.
 
 **Definition of done — Phase 8:** real-time chat per item, secure (RLS tests), with unread state and notifications.
 
+**Deployment (Phase 8).** Phase 8 is deployed to production (2026-10-03): `2e3666c`, `8e2f7c5`, `c44877a`,
+`defcc18`, `903553d` (F-33 fix) and `a62c026` (conversation times) pushed to `main` as
+a fast-forward (`7ae4ae4..a62c026`, no rewrite); Vercel serves `a62c026`. Confirmed by
+markup only that commit renders: a signed-in, uncached render of `/messages`
+(`X-Vercel-Cache: MISS`, `fra1`) carries `ConversationTime`'s `serverNow` prop and the
+P8.S5 header badge. All 21 migrations were already applied (P8.S6 since 2026-10-02).
+Smoke tests against https://findly-web-nine.vercel.app (headless Edge `mk-MK`, desktop
+and mobile, temporary `@findly.test` users deleted afterwards): conversation list
+36/36, chat 55/55, message notifications and sending 33/33, read state and header
+badge 26/26, F-33 read → Back (also after a hard refresh) 25/25, timestamps mk/en
+without hydration errors or `useNow` warnings in the browser 9/9. After Back the
+restored list shows the old unread count for about 0.2 s until its refresh arrives
+(the header badge is already right); accepted.
+
+Open manual items:
+
+- Set the minimum password length to 8 in the Supabase dashboard (F-07).
+- Decide on locale detection (F-13).
+- Optional: leaked password protection (F-19).
+- Optional: load the matching demo data on the dev project (it would appear on the
+  public site; P6.S6).
+
 ---
 
 ### Phase 9 — Favorites — `NOT STARTED`
 
-#### P9.S1 — Favorites schema
+#### P9.S1 — Favorites schema — `COMPLETED`
 
 - **Affects:** migration `*_favorites.sql`; `search_items` returns `is_favorite`.
 - **Verify:** SQL tests: only own favorites visible/changeable.
+- **Implemented:** migration `20261003144124_favorites.sql` (table, indexes, RLS,
+  grants; `search_items` recreated with the same arguments and `is_favorite boolean`
+  after `distance_m`), SQL tests `supabase/tests/favorites.sql`, column lists in
+  `search_items.sql`/`search_items_radius.sql` updated, `src/types/database.ts`
+  regenerated. The app does not read `is_favorite` yet (P9.S2). Design in §17.
+- **Decisions:** `anon` gets `select` on `favorites` (with no policy, so no rows)
+  because `search_items` is `security invoker` and visitors call it; adding a
+  favorite requires `can_write()` (banned users cannot add, but can remove) and a
+  visible item that is not hidden, checked in the insert policy; own items may be
+  saved (the UI decides whether to offer it).
+- **Verified:** migration and the favorites/search/bounds tests dry-run together in
+  rolled-back transactions (a deliberately wrong assert fails the run), then pushed;
+  `db:test` 19/19. `favorites.sql`: defaults, duplicate and unknown item/user
+  rejected, indexes; visitors see no rows, cannot add/remove, `is_favorite` false
+  and never null; A sees only own, adds resolved and own items, cannot add for B, a
+  hidden or unknown item, cannot update, cannot remove B's rows, removes own;
+  `search_items` flags exactly the user's favorites; B does not see who saved B's
+  items and cannot save an own hidden item; admins see/remove nothing and cannot
+  save hidden items; banned users cannot add but remove; deleting an item or an
+  account removes its favorites. REST as a visitor: `search_items` returns
+  `is_favorite: false`, `favorites` returns `[]`. Advisors: only the known
+  `current_profile` warnings and F-19. Lint, typecheck, 654 unit tests,
+  `npm run build`.
 
 #### P9.S2 — Favorite toggle
 
@@ -2345,6 +2397,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-03 | P9.S1       | Favorites schema: `favorites` table with RLS (own rows; adding needs `can_write()` and a visible, not hidden item), `search_items` returns `is_favorite`; SQL tests `favorites.sql` (19/19).                                                                                                                                                                                                                                                                          |
 | 2026-10-03 | Time fix    | `ConversationList` no longer calls `useNow({ updateInterval })` in a Server Component (ignored, console warning): times are rendered by the client component `ConversationTime` (server time for hydration, then a shared one-minute browser clock; mk/en wording and F-30 unchanged); 7 new tests; browser check: no hydration errors, no warning in the dev server log.                                                                                             |
 | 2026-10-02 | F-33 fix    | `/messages` refreshes once when the browser's Back/Forward restores a list older than the user's latest message change (per-tab version from the existing header hook and chat, keyed by `router.bfcacheId`); 7 new tests; browser regression 3 × 25/25 (old build failed every Back check), P8.S3–P8.S6 checks pass; P8.S6 reviewed.                                                                                                                                 |
 | 2026-10-02 | P8.S6       | Message notifications: one per recipient and conversation (unread until read; the first message after reading replaces it with a new unread one), read automatically when the chat is read, removed with the conversation; bell entry with sender, report and chat link, no toast for the open chat; 13 new tests, SQL tests; browser check 33/33; Phase 8 completed; F-33 logged.                                                                                    |
@@ -2419,30 +2472,13 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P9.S1 — Favorites schema** (see §22, Phase 9; design in §17).
+**P9.S2 — Favorite toggle** (see §22, Phase 9; design in §17).
 
-Why next: Phase 8 is complete (real-time chat with read state and notifications).
-Phase 9 starts with the `favorites` table, its RLS (only own favorites) and
-`is_favorite` in `search_items`.
+Why next: P9.S1 added the `favorites` table, its RLS and `is_favorite` in
+`search_items`. P9.S2 adds the optimistic toggle button (`addFavorite` /
+`removeFavorite` actions) on item cards and the item page, with a login link for
+guests; `searchItems()` then maps `is_favorite` into `ItemSummary`.
 
-Phase 8 is deployed to production (2026-10-03): `2e3666c`, `8e2f7c5`, `c44877a`,
-`defcc18`, `903553d` (F-33 fix) and `a62c026` (conversation times) pushed to `main` as
-a fast-forward (`7ae4ae4..a62c026`, no rewrite); Vercel serves `a62c026`. Confirmed by
-markup only that commit renders: a signed-in, uncached render of `/messages`
-(`X-Vercel-Cache: MISS`, `fra1`) carries `ConversationTime`'s `serverNow` prop and the
-P8.S5 header badge. All 21 migrations were already applied (P8.S6 since 2026-10-02).
-Smoke tests against https://findly-web-nine.vercel.app (headless Edge `mk-MK`, desktop
-and mobile, temporary `@findly.test` users deleted afterwards): conversation list
-36/36, chat 55/55, message notifications and sending 33/33, read state and header
-badge 26/26, F-33 read → Back (also after a hard refresh) 25/25, timestamps mk/en
-without hydration errors or `useNow` warnings in the browser 9/9. After Back the
-restored list shows the old unread count for about 0.2 s until its refresh arrives
-(the header badge is already right); accepted.
-
-Open manual items:
-
-- Set the minimum password length to 8 in the Supabase dashboard (F-07).
-- Decide on locale detection (F-13).
-- Optional: leaked password protection (F-19).
-- Optional: load the matching demo data on the dev project (it would appear on the
-  public site; P6.S6).
+Phase 8 is deployed to production (2026-10-03, `a62c026`; details under Phase 8 in §22). The
+P9.S1 migration is applied to the hosted project; the app on Vercel ignores the
+new `is_favorite` column until P9.S1 is pushed.
