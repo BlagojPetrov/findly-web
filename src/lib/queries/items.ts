@@ -8,12 +8,13 @@ import type { Enums } from "@/types/database";
 
 // Columns of an item page (lat/lng are generated from the PostGIS
 // location); profiles has column privileges, so only its public columns are
-// selected.
+// selected. The owner is named by its foreign key: favorites also links
+// items and profiles (many-to-many), so a plain "profiles" is ambiguous.
 const itemDetailColumns = `
   id, user_id, type, status, title, description, occurred_on,
   location_name, lat, lng, resolved_at, created_at, updated_at,
   category:categories (id, slug, name_mk, name_en, icon),
-  owner:profiles (id, display_name, avatar_path, created_at),
+  owner:profiles!items_user_id_fkey (id, display_name, avatar_path, created_at),
   images:item_images (id, storage_path, position)
 `;
 
