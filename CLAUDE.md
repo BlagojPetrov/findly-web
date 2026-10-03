@@ -172,7 +172,9 @@ item_id?, sender_id }`, one per recipient and conversation
   maps `rpc("my_conversations")` with `toConversationSummaries` from `@/lib/conversations`,
   client-safe: item null when deleted/hidden, last message null before the first).
   `/messages` renders `ConversationList` (`src/components/chat/`) in the RPC's order;
-  times via `elapsedSince` + `Messages.list.time` (no `Intl`, F-30).
+  times via `ConversationTime` (client; `elapsedSince` + `Messages.list.time`, no `Intl`,
+  F-30; server time for hydration, then a shared one-minute clock). Server Components
+  must not pass `updateInterval` to `useNow` (ignored, logs a warning).
   Chat: the page loads `getLatestMessages` (newest 50) into `ChatView`
   (`src/components/chat/`; one channel per mount with a unique topic, INSERT filtered by
   `conversation_id`, catch-up after every `SUBSCRIBED`/visible tab, older pages by

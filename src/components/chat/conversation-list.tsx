@@ -1,30 +1,24 @@
 import { useNow, useTranslations } from "next-intl";
+import { ConversationTime } from "@/components/chat/conversation-time";
 import { ItemTypeBadge } from "@/components/items/item-type-badge";
 import { UserAvatar } from "@/components/profile/user-avatar";
 import { Link } from "@/i18n/navigation";
 import type { ConversationSummary } from "@/lib/conversations";
-import { elapsedSince } from "@/lib/dates";
 import { badgeCount } from "@/lib/notifications";
 import { cn } from "@/lib/utils";
 
 // The user's conversations, newest activity first (the order of
-// my_conversations()). Each row links to the chat. Times are worded with
-// messages, not Intl (F-30), so the component also works in the browser
-// once the list becomes live (P8.S5).
+// my_conversations()). Each row links to the chat. A Server Component: only
+// the relative times are client components (ConversationTime), which start
+// from the server's time and then follow the browser's clock.
 export function ConversationList({
   conversations,
 }: {
   conversations: ConversationSummary[];
 }) {
   const t = useTranslations("Messages.list");
-  const now = useNow({ updateInterval: 60_000 });
-
-  function time(iso: string) {
-    const elapsed = elapsedSince(new Date(iso), now);
-    if (elapsed.unit === "now") return t("time.now");
-    if (elapsed.unit === "date") return t("time.date", elapsed);
-    return t(`time.${elapsed.unit}`, { count: elapsed.count });
-  }
+  // Server Components cannot update over time (no `updateInterval`).
+  const serverNow = useNow().toISOString();
 
   return (
     <ul className="divide-y overflow-hidden rounded-xl border bg-card shadow-xs">
@@ -58,17 +52,16 @@ export function ConversationList({
                   >
                     {conversation.other.displayName}
                   </Link>
-                  <time
+                  <ConversationTime
                     dateTime={conversation.activityAt}
+                    serverNow={serverNow}
                     className={cn(
                       "shrink-0 text-xs",
                       unread
                         ? "font-medium text-primary"
                         : "text-muted-foreground",
                     )}
-                  >
-                    {time(conversation.activityAt)}
-                  </time>
+                  />
                 </div>
                 <div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
                   {item ? (

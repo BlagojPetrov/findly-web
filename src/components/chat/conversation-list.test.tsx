@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { NextIntlClientProvider } from "next-intl";
+import { NextIntlClientProvider, useNow } from "next-intl";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,6 +8,10 @@ import en from "../../../messages/en.json";
 import mk from "../../../messages/mk.json";
 import { ConversationList } from "./conversation-list";
 
+vi.mock("next-intl", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next-intl")>();
+  return { ...actual, useNow: vi.fn(actual.useNow) };
+});
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, ...props }: { href: string }) => <a href={href} {...props} />,
 }));
@@ -43,6 +47,10 @@ let container: HTMLDivElement;
 let root: Root;
 
 beforeEach(() => {
+  // The times follow the browser's clock once mounted (ConversationTime).
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(now);
+  vi.mocked(useNow).mockClear();
   container = document.createElement("div");
   document.body.append(container);
   root = createRoot(container);
@@ -50,6 +58,7 @@ beforeEach(() => {
 afterEach(() => {
   act(() => root.unmount());
   container.remove();
+  vi.useRealTimers();
 });
 
 function render(
@@ -171,6 +180,17 @@ describe("ConversationList", () => {
       "пред 2 дена",
       "1.9.2026",
     ]);
+  });
+
+  // In a Server Component, next-intl ignores `updateInterval` and logs a
+  // warning; the list takes the time once and leaves updates to
+  // ConversationTime.
+  it("reads the time without an update interval", () => {
+    render([conversation()]);
+    expect(useNow).toHaveBeenCalled();
+    for (const args of vi.mocked(useNow).mock.calls) {
+      expect(args[0]?.updateInterval).toBeUndefined();
+    }
   });
 
   it("uses English texts", () => {
