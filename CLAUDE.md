@@ -32,11 +32,11 @@ status and the next step. Read it before any work.
   messaging schema with a daily conversation limit (P8.S1), contact from the item page
   (P8.S2). Conversation list `/messages` with a header link (P8.S3). Chat view with
   Realtime on `/messages/[id]` (P8.S4). P8.S1–P8.S4 deployed and verified on Vercel at
-  `7ae4ae4` (2026-10-02). Read state and live unread badge in the header (P8.S5, local).
-  Message notifications (P8.S6, local; its migration is already on the hosted project).
-  Phase 8 completed. F-33 (stale `/messages` after the browser's Back button) fixed
-  locally. Nothing after `7ae4ae4` is pushed yet (P8.S4 record, P8.S5, P8.S6, F-33 fix):
-  push only with the user's approval, then verify on Vercel. Next: P9.S1 (favorites schema).
+  `7ae4ae4` (2026-10-02). Read state and live unread badge in the header (P8.S5).
+  Message notifications (P8.S6). F-33 (stale `/messages` after the browser's Back
+  button) fixed; conversation times as a client component. Phase 8 completed and
+  deployed: Vercel serves `a62c026` (2026-10-03), production smoke tests passed.
+  Next: P9.S1 (favorites schema), only after the user's go-ahead.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup

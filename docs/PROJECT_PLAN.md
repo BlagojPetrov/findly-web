@@ -2425,14 +2425,19 @@ Why next: Phase 8 is complete (real-time chat with read state and notifications)
 Phase 9 starts with the `favorites` table, its RLS (only own favorites) and
 `is_favorite` in `search_items`.
 
-Before it: push and verify the deployment (waiting for approval). F-33 is fixed
-locally. Deployed: `7ae4ae4` (P8.S4), verified 2026-10-02. Local, not pushed:
-`2e3666c` (P8.S4 deployment record), `8e2f7c5` (P8.S5), `c44877a` (composer hint),
-`defcc18` (P8.S6) and the F-33 fix. The P8.S6 migration is already applied to the
-hosted project, so production's bell already receives message notifications (linking
-to the report until the new code is deployed). After pushing: confirm the deployment
-by markup only the new code renders, then run `bc_back` (F-33), the P8.S6 and P8.S5
-checks and the P8.S3/P8.S4 regressions against Vercel.
+Phase 8 is deployed to production (2026-10-03): `2e3666c`, `8e2f7c5`, `c44877a`,
+`defcc18`, `903553d` (F-33 fix) and `a62c026` (conversation times) pushed to `main` as
+a fast-forward (`7ae4ae4..a62c026`, no rewrite); Vercel serves `a62c026`. Confirmed by
+markup only that commit renders: a signed-in, uncached render of `/messages`
+(`X-Vercel-Cache: MISS`, `fra1`) carries `ConversationTime`'s `serverNow` prop and the
+P8.S5 header badge. All 21 migrations were already applied (P8.S6 since 2026-10-02).
+Smoke tests against https://findly-web-nine.vercel.app (headless Edge `mk-MK`, desktop
+and mobile, temporary `@findly.test` users deleted afterwards): conversation list
+36/36, chat 55/55, message notifications and sending 33/33, read state and header
+badge 26/26, F-33 read → Back (also after a hard refresh) 25/25, timestamps mk/en
+without hydration errors or `useNow` warnings in the browser 9/9. After Back the
+restored list shows the old unread count for about 0.2 s until its refresh arrives
+(the header badge is already right); accepted.
 
 Open manual items:
 
