@@ -1,6 +1,7 @@
 import { CalendarDays, MapPin, Navigation } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { CategoryIcon } from "@/components/items/category-icon";
 import { ItemTypeBadge } from "@/components/items/item-type-badge";
 import { Link } from "@/i18n/navigation";
@@ -19,12 +20,15 @@ const statusStyles = {
 // A report in a grid: cover photo (or the category icon), type and status,
 // title, category, date, place and (in a search around a point) distance. The whole card links to the item page;
 // `actions` (e.g. the owner's quick actions) sit in a footer above the link.
+// With `favorite`, a heart over the photo saves the report (guests: login).
 export function ItemCard({
   item,
   actions,
+  favorite,
 }: {
   item: ItemSummary;
   actions?: ReactNode;
+  favorite?: { signedIn: boolean };
 }) {
   const t = useTranslations("Items");
   const format = useFormatter();
@@ -65,6 +69,14 @@ export function ItemCard({
             </span>
           )}
         </div>
+        {favorite && (
+          <FavoriteButton
+            itemId={item.id}
+            isFavorite={item.isFavorite ?? false}
+            signedIn={favorite.signedIn}
+            className="absolute top-2 right-2 z-10"
+          />
+        )}
       </div>
 
       <div className="grid flex-1 content-start gap-2 p-4">

@@ -16,6 +16,7 @@ import {
 } from "next-intl/server";
 import type { ReactNode } from "react";
 import { ContactButton } from "@/components/chat/contact-button";
+import { FavoriteButton } from "@/components/favorites/favorite-button";
 import { CategoryIcon } from "@/components/items/category-icon";
 import { ImageGallery } from "@/components/items/image-gallery";
 import { ItemOwnerActions } from "@/components/items/item-owner-actions";
@@ -32,6 +33,7 @@ import { itemImageUrl } from "@/lib/item-images";
 import { osmUrl } from "@/lib/map";
 import { categoryName } from "@/lib/queries/categories";
 import { getOwnConversationId } from "@/lib/queries/conversations";
+import { isFavorite } from "@/lib/queries/favorites";
 import { getItem } from "@/lib/queries/items";
 import { getItemMatches, type ItemMatches } from "@/lib/queries/matches";
 import { localeAlternates, metaDescription, openGraphBase } from "@/lib/seo";
@@ -146,13 +148,24 @@ export default async function ItemPage({
   // report is resolved). A failed query falls back to the contact button,
   // whose action finds the conversation itself.
   let conversationId: string | null = null;
+  // Saving: other users' reports that are not hidden (the database refuses
+  // hidden ones; owners have theirs on the dashboard). A failed query shows
+  // the report as not saved.
+  const showFavorite = !isOwner && item.status !== "hidden";
+  let saved = false;
   if (viewer && !isOwner) {
-    conversationId = await getOwnConversationId(item.id, viewer.id).catch(
-      (error) => {
+    [conversationId, saved] = await Promise.all([
+      getOwnConversationId(item.id, viewer.id).catch((error) => {
         console.error(error);
         return null;
-      },
-    );
+      }),
+      showFavorite
+        ? isFavorite(item.id, viewer.id).catch((error) => {
+            console.error(error);
+            return false;
+          })
+        : false,
+    ]);
   }
   // Contacting the author: an active report of someone else (guests sign in
   // first), or a conversation that already exists. The database decides
@@ -192,6 +205,15 @@ export default async function ItemPage({
                 <span className="inline-flex items-center rounded-full border bg-muted px-2.5 py-0.5 text-xs font-semibold text-muted-foreground">
                   {t("status.resolved")}
                 </span>
+              )}
+              {showFavorite && (
+                <FavoriteButton
+                  itemId={item.id}
+                  isFavorite={saved}
+                  signedIn={viewer !== null}
+                  variant="full"
+                  className="ml-auto"
+                />
               )}
             </div>
             <h1 className="text-2xl font-semibold tracking-tight break-words sm:text-3xl">

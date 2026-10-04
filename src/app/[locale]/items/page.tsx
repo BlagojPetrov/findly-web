@@ -13,6 +13,7 @@ import { Pagination } from "@/components/search/pagination";
 import { SearchFilters } from "@/components/search/search-filters";
 import { buttonVariants } from "@/components/ui/button";
 import { getPathname, Link, redirect } from "@/i18n/navigation";
+import { getCurrentUser } from "@/lib/auth";
 import { todayInAppTimeZone } from "@/lib/dates";
 import { pageCount } from "@/lib/pagination";
 import { categoryName, getCategories } from "@/lib/queries/categories";
@@ -83,9 +84,10 @@ export default async function ItemsPage({
     redirect({ href: { pathname: "/items", query }, locale });
   }
 
-  const [{ items, total }, t] = await Promise.all([
+  const [{ items, total }, t, viewer] = await Promise.all([
     searchItems(filters),
     getTranslations("Search"),
+    getCurrentUser(),
   ]);
 
   // A page past the end (an old link after items were resolved or deleted)
@@ -154,7 +156,10 @@ export default async function ItemsPage({
                 <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {items.map((item) => (
                     <li key={item.id} className="grid">
-                      <ItemCard item={item} />
+                      <ItemCard
+                        item={item}
+                        favorite={{ signedIn: viewer !== null }}
+                      />
                     </li>
                   ))}
                 </ul>

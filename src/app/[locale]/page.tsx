@@ -15,6 +15,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getPathname, Link } from "@/i18n/navigation";
+import { getCurrentUser } from "@/lib/auth";
 import { categoryName, getCategories } from "@/lib/queries/categories";
 import { type ItemSummary, searchItems } from "@/lib/queries/items";
 import { localeAlternates } from "@/lib/seo";
@@ -53,12 +54,14 @@ function latest(type: "lost" | "found") {
 export default async function HomePage({ params }: PageProps<"/[locale]">) {
   const { locale } = (await params) as { locale: Locale };
   setRequestLocale(locale);
-  const [t, categories, lost, found] = await Promise.all([
+  const [t, categories, lost, found, viewer] = await Promise.all([
     getTranslations("Home"),
     getCategories(),
     latest("lost"),
     latest("found"),
+    getCurrentUser(),
   ]);
+  const signedIn = viewer !== null;
 
   return (
     <div className="mx-auto max-w-6xl px-4">
@@ -109,8 +112,8 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
         </div>
       </section>
 
-      <LatestItems type="lost" items={lost.items} />
-      <LatestItems type="found" items={found.items} />
+      <LatestItems type="lost" items={lost.items} signedIn={signedIn} />
+      <LatestItems type="found" items={found.items} signedIn={signedIn} />
 
       <section aria-labelledby="home-categories" className="pb-16">
         <h2 id="home-categories" className="text-2xl font-semibold">
@@ -166,9 +169,11 @@ export default async function HomePage({ params }: PageProps<"/[locale]">) {
 function LatestItems({
   type,
   items,
+  signedIn,
 }: {
   type: "lost" | "found";
   items: ItemSummary[];
+  signedIn: boolean;
 }) {
   const t = useTranslations("Home");
   const id = `home-latest-${type}`;
@@ -212,7 +217,7 @@ function LatestItems({
               key={item.id}
               className="grid max-sm:w-[78%] max-sm:shrink-0 max-sm:snap-start"
             >
-              <ItemCard item={item} />
+              <ItemCard item={item} favorite={{ signedIn }} />
             </li>
           ))}
         </ul>

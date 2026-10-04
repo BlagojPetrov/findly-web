@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { getItem } from "./items";
+import { DEFAULT_SEARCH_FILTERS } from "@/lib/validation/search";
+import { getItem, searchItems } from "./items";
 
-const { query } = vi.hoisted(() => ({ query: vi.fn() }));
+const { query, rpc } = vi.hoisted(() => ({ query: vi.fn(), rpc: vi.fn() }));
 
 vi.mock("server-only", () => ({}));
-// from("items").select(columns).eq("id", id).maybeSingle() → query(...)'s result.
+// from("items").select(columns).eq("id", id).maybeSingle() → query(...)'s result;
+// rpc(name, args) → rpc(...)'s result.
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
+    rpc: async (name: string, args: object) => rpc(name, args),
     from: (table: string) => ({
       select: (columns: string) => ({
         eq: (column: string, value: string) => ({
@@ -57,6 +60,7 @@ function itemRow() {
 
 beforeEach(() => {
   query.mockReset();
+  rpc.mockReset();
 });
 
 describe("getItem", () => {
@@ -97,5 +101,50 @@ describe("getItem", () => {
     await expect(getItem(itemId)).rejects.toThrow(
       `Failed to load item ${itemId}: Could not embed`,
     );
+  });
+});
+
+describe("searchItems", () => {
+  function searchRow(overrides: object = {}) {
+    return {
+      id: itemId,
+      type: "lost",
+      status: "active",
+      title: "Црн паричник",
+      occurred_on: "2026-10-01",
+      location_name: null,
+      created_at: "2026-10-01T13:11:47+00:00",
+      category_id: 3,
+      category_slug: "wallet",
+      category_name_mk: "Паричник",
+      category_name_en: "Wallet",
+      category_icon: "wallet",
+      cover_path: null,
+      distance_m: null,
+      is_favorite: false,
+      total_count: 1,
+      ...overrides,
+    };
+  }
+
+  it("maps is_favorite of the signed-in user to isFavorite", async () => {
+    rpc.mockResolvedValue({
+      data: [
+        searchRow({ is_favorite: true }),
+        searchRow({ id: "other", is_favorite: false }),
+      ],
+      error: null,
+    });
+    const { items, total } = await searchItems(DEFAULT_SEARCH_FILTERS);
+    expect(rpc.mock.calls[0][0]).toBe("search_items");
+    expect(items.map((item) => item.isFavorite)).toEqual([true, false]);
+    expect(items[0]).toMatchObject({
+      id: itemId,
+      location_name: null,
+      coverPath: null,
+      distance: null,
+      category: { id: 3, slug: "wallet" },
+    });
+    expect(total).toBe(1);
   });
 });

@@ -83,7 +83,8 @@
     "conversation_own_item": "This is your own report. You cannot start a conversation with yourself.",
     "conversation_item_inactive": "This report is no longer active, so its author cannot be contacted.",
     "conversation_limit": "You have started too many new conversations (at most 20 in 24 hours). Please try again later. Your existing conversations stay available.",
-    "message_rate_limit": "You sent too many messages in a short time. Please wait a moment and try again."
+    "message_rate_limit": "You sent too many messages in a short time. Please wait a moment and try again.",
+    "favorite_unavailable": "This report cannot be saved: it may have been hidden or deleted."
   },
   "Validation": {
     "required": "This field is required.",
@@ -512,6 +513,14 @@
       "counter": "{count} / {max}",
       "readOnly": "You can read the messages but cannot send new ones."
     }
+  },
+  "Favorites": {
+    "label": "Save to favorites",
+    "save": "Save",
+    "saved": "Saved",
+    "addHint": "Save to favorites",
+    "removeHint": "Remove from favorites",
+    "guestLabel": "Sign in to save this report"
   },
   "Search": {
     "title": "Lost and found items",

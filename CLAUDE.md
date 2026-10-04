@@ -37,8 +37,8 @@ status and the next step. Read it before any work.
   button) fixed; conversation times as a client component. Phase 8 completed and
   deployed: Vercel serves `a62c026` (2026-10-03), production smoke tests passed.
   Phase 9 started: favorites schema with `is_favorite` in `search_items` (P9.S1). Item page
-  embed fixed after P9.S1 (F-34).
-  Next: P9.S2 (favorite toggle), only after the user's go-ahead.
+  embed fixed after P9.S1 (F-34). Favorite toggle on cards and the item page (P9.S2).
+  Next: P9.S3 (favorites page), only after the user's go-ahead.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -210,6 +210,12 @@ item_id?, sender_id }`, one per recipient and conversation
   `favorites` makes PostgREST see a many-to-many `items` ↔ `profiles`: embeds between
   `items` and `profiles` must name the foreign key (`owner:profiles!items_user_id_fkey`), as
   must every embed between two tables that more than one path links (F-34).
+  Toggle: `FavoriteButton` (`src/components/favorites/`; `useOptimistic`, guests get a
+  login link back to the report) → `addFavorite`/`removeFavorite`
+  (`src/actions/favorites.ts`; idempotent, `refresh()` on success, RLS `42501` →
+  `favorite_unavailable`). Cards show it with `ItemCard favorite={{ signedIn }}` and
+  `ItemSummary.isFavorite` (from `search_items`); the item page reads `isFavorite()`
+  (`@/lib/queries/favorites`) and hides it for owners and hidden reports.
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
   (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals) or render on the server.

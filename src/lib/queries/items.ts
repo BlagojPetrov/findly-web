@@ -60,6 +60,8 @@ export type ItemSummary = {
   coverPath: string | null;
   // Meters from the feed's center (only feed searches around a point).
   distance?: number | null;
+  // Whether the signed-in user saved it (feed queries; false for visitors).
+  isFavorite?: boolean;
 };
 
 // Columns of an item card for a table query: the photos only for the cover.
@@ -149,6 +151,7 @@ export async function searchItems(
       },
       coverPath: row.cover_path ?? null,
       distance: row.distance_m ?? null,
+      isFavorite: row.is_favorite,
     })),
     total: data[0]?.total_count ?? 0,
   };

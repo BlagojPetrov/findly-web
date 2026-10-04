@@ -6,9 +6,9 @@
 > progress of the Findly web project. Every step starts by reading it and ends by
 > updating it.
 
-- **Last updated:** 2026-10-03
-- **Current phase:** Phase 9 — Favorites in progress (P9.S1 completed; Phase 8 completed, optional P7.S5 deferred)
-- **Next step:** P9.S2 (§22, §25)
+- **Last updated:** 2026-10-04
+- **Current phase:** Phase 9 — Favorites in progress (P9.S1–P9.S2 completed; Phase 8 completed, optional P7.S5 deferred)
+- **Next step:** P9.S3 (§22, §25)
 
 ---
 
@@ -167,7 +167,7 @@ to these IDs. "Next step" always means the step named in
 | P8.S5  | Read state and unread badge                    | `COMPLETED`   |
 | P8.S6  | Message notifications                          | `COMPLETED`   |
 | P9.S1  | Favorites schema                               | `COMPLETED`   |
-| P9.S2  | Favorite toggle                                | `NOT STARTED` |
+| P9.S2  | Favorite toggle                                | `COMPLETED`   |
 | P9.S3  | Favorites page                                 | `NOT STARTED` |
 | P10.S1 | Reports schema and admin policies              | `NOT STARTED` |
 | P10.S2 | Report item UI                                 | `NOT STARTED` |
@@ -1502,8 +1502,15 @@ decay, Cyrillic vs Latin text.
 
 - Table `favorites (user_id, item_id)`; RLS: own rows only.
 - Toggle button (Client Component, optimistic via `useOptimistic`) on item cards
-  and item pages → Server Actions `addFavorite` / `removeFavorite`.
-- For guests the button links to `/login?next=…`.
+  and item pages → Server Actions `addFavorite` / `removeFavorite` (P9.S2 ✓:
+  `FavoriteButton` in `src/components/favorites/`; heart over the photo on feed and
+  home cards, button with text on the item page for other users' reports that are
+  not hidden; not on the dashboard). Both actions are idempotent (saving twice and
+  removing an unsaved report succeed), call `refresh()` so the stored state takes
+  over from the optimistic one, and map the insert policy's `42501` to
+  `favorite_unavailable` (hidden, deleted or invisible report, or a banned user).
+- For guests the button links to `/login?next=/items/<id>` (the report, also from
+  feed cards).
 - `/favorites` lists favorite items that are still visible; hidden/deleted items
   disappear through RLS/cascade.
 - Feed queries return an `is_favorite` flag for the current user (P9.S1 ✓:
@@ -2255,10 +2262,32 @@ Open manual items:
   `current_profile` warnings and F-19. Lint, typecheck, 654 unit tests,
   `npm run build`.
 
-#### P9.S2 — Favorite toggle
+#### P9.S2 — Favorite toggle — `COMPLETED`
 
 - **Affects:** `src/components/favorites/favorite-button.tsx`, `src/actions/favorites.ts`, item card and item page.
 - **Verify:** optimistic toggle; guests redirected to login.
+- **Implemented:** `addFavorite`/`removeFavorite` (`src/actions/favorites.ts`,
+  `favoriteSchema` in `@/lib/validation/favorites`), `FavoriteButton` (variants
+  `icon` for cards, `full` for the item page; `aria-pressed`; error toast and
+  rollback on failure), `ItemSummary.isFavorite` mapped from `search_items` in
+  `searchItems()`, `ItemCard` prop `favorite={{ signedIn }}` (feed `/items` and home
+  page), `isFavorite()` in `@/lib/queries/favorites` for the item page, messages
+  `Favorites` and error `favorite_unavailable` (mk/en).
+- **Decisions:** the item page shows no button to the owner or on a hidden report
+  (the database refuses hidden ones; admins see hidden reports); cards show it on
+  every report because `search_items` returns no owner (saving own reports is
+  allowed, P9.S1). The dashboard (own reports) shows no heart. Guests' login link
+  returns to the report, not the feed. No success toast: the heart is the feedback.
+- **Verified:** lint, typecheck, 675 unit tests (658 → 675: actions, button,
+  `searchItems` mapping), `npm run build`, Prettier. Headless Edge against
+  `next start` (mk-MK, temporary `@findly.test` user created with SQL and deleted
+  afterwards) 19/19: guests see login hearts on the feed and the item page, the
+  link goes to `/login?next=/items/<id>` and signing in returns to the report;
+  signed in, the item page button turns "Зачувано" at once, stays after the action
+  and after reload; the feed card shows it saved, un-saves at once without
+  navigating, stays un-saved after reload; home page hearts save and un-save (en
+  label "Save to favorites"); no hearts on the dashboard; no console errors.
+  Advisors: only the known `current_profile` warnings and F-19.
 
 #### P9.S3 — Favorites page
 
@@ -2398,6 +2427,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-04 | P9.S2       | Favorite toggle: `addFavorite`/`removeFavorite` actions, optimistic `FavoriteButton` on feed/home cards and the item page, login link for guests, `isFavorite` from `search_items`; 675 unit tests; browser check 19/19.                                                                                                                                                                                                                                              |
 | 2026-10-03 | F-34 fix    | Item page failed after P9.S1 (`PGRST201`: `favorites` made `items` ↔ `profiles` ambiguous); `getItem` embeds the owner as `profiles!items_user_id_fkey`; regression test (654 → 658 unit tests); browser check of two item pages mk/en 17/17. No schema change.                                                                                                                                                                                                       |
 | 2026-10-03 | P9.S1       | Favorites schema: `favorites` table with RLS (own rows; adding needs `can_write()` and a visible, not hidden item), `search_items` returns `is_favorite`; SQL tests `favorites.sql` (19/19).                                                                                                                                                                                                                                                                          |
 | 2026-10-03 | Time fix    | `ConversationList` no longer calls `useNow({ updateInterval })` in a Server Component (ignored, console warning): times are rendered by the client component `ConversationTime` (server time for hydration, then a shared one-minute browser clock; mk/en wording and F-30 unchanged); 7 new tests; browser check: no hydration errors, no warning in the dev server log.                                                                                             |
@@ -2474,14 +2504,15 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P9.S2 — Favorite toggle** (see §22, Phase 9; design in §17).
+**P9.S3 — Favorites page** (see §22, Phase 9; design in §17).
 
-Why next: P9.S1 added the `favorites` table, its RLS and `is_favorite` in
-`search_items`. P9.S2 adds the optimistic toggle button (`addFavorite` /
-`removeFavorite` actions) on item cards and the item page, with a login link for
-guests; `searchItems()` then maps `is_favorite` into `ItemSummary`.
+Why next: P9.S2 lets users save reports (`FavoriteButton`, `addFavorite` /
+`removeFavorite`). P9.S3 adds `/favorites` (signed in; add it to
+`PROTECTED_PREFIXES` and `robots.ts`) listing the user's saved reports that are
+still visible (a favorite stays when its report is hidden later), with the heart to
+remove them and a header/menu link.
 
 Phase 8 is deployed to production (2026-10-03, `a62c026`; details under Phase 8 in §22). The
 P9.S1 migration is applied to the hosted project. Because production uses the
 same project, item pages on Vercel (still `a62c026`) return 500 since then (F-34:
-ambiguous `profiles` embed) until the P9.S1 and F-34 commits are pushed.
+ambiguous `profiles` embed) until the P9.S1, F-34 and P9.S2 commits are pushed.
