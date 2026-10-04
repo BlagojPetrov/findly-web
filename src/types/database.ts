@@ -391,11 +391,87 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          created_at: string
+          details: string | null
+          id: string
+          item_id: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reporter_id: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["report_status"]
+        }
+        Insert: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          item_id: string
+          reason: Database["public"]["Enums"]["report_reason"]
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Update: {
+          created_at?: string
+          details?: string | null
+          id?: string
+          item_id?: string
+          reason?: Database["public"]["Enums"]["report_reason"]
+          reporter_id?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["report_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reports_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      admin_set_banned: {
+        Args: { banned: boolean; target_user_id: string }
+        Returns: boolean
+      }
+      admin_stats: {
+        Args: never
+        Returns: {
+          active_found_items: number
+          active_lost_items: number
+          banned_users: number
+          confirmed_matches: number
+          hidden_items: number
+          matches: number
+          open_reports: number
+          reported_items: number
+          users: number
+        }[]
+      }
       create_item: {
         Args: {
           category_id: number
@@ -535,6 +611,8 @@ export type Database = {
       item_type: "lost" | "found"
       match_status: "suggested" | "dismissed" | "confirmed"
       notification_type: "match" | "message" | "moderation"
+      report_reason: "spam" | "inappropriate" | "fraud" | "duplicate" | "other"
+      report_status: "open" | "resolved" | "dismissed"
       user_role: "user" | "admin"
     }
     CompositeTypes: {
@@ -667,6 +745,8 @@ export const Constants = {
       item_type: ["lost", "found"],
       match_status: ["suggested", "dismissed", "confirmed"],
       notification_type: ["match", "message", "moderation"],
+      report_reason: ["spam", "inappropriate", "fraud", "duplicate", "other"],
+      report_status: ["open", "resolved", "dismissed"],
       user_role: ["user", "admin"],
     },
   },

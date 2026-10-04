@@ -7,8 +7,8 @@
 > updating it.
 
 - **Last updated:** 2026-10-04
-- **Current phase:** Phase 9 — Favorites completed (P9.S1–P9.S3; Phase 8 completed, optional P7.S5 deferred); Phase 10 next
-- **Next step:** P10.S1 (§22, §25)
+- **Current phase:** Phase 10 — Admin and moderation in progress (P10.S1 completed; Phase 9 completed, optional P7.S5 deferred)
+- **Next step:** P10.S2 (§22, §25)
 
 ---
 
@@ -102,7 +102,7 @@ to these IDs. "Next step" always means the step named in
 | 7     | Notifications                         | `COMPLETED`   |
 | 8     | Messaging                             | `COMPLETED`   |
 | 9     | Favorites                             | `COMPLETED`   |
-| 10    | Admin and moderation                  | `NOT STARTED` |
+| 10    | Admin and moderation                  | `IN PROGRESS` |
 | 11    | UI polish, testing and final delivery | `NOT STARTED` |
 
 ### Step status
@@ -169,7 +169,7 @@ to these IDs. "Next step" always means the step named in
 | P9.S1  | Favorites schema                               | `COMPLETED`   |
 | P9.S2  | Favorite toggle                                | `COMPLETED`   |
 | P9.S3  | Favorites page                                 | `COMPLETED`   |
-| P10.S1 | Reports schema and admin policies              | `NOT STARTED` |
+| P10.S1 | Reports schema and admin policies              | `COMPLETED`   |
 | P10.S2 | Report item UI                                 | `NOT STARTED` |
 | P10.S3 | Admin area layout and dashboard                | `NOT STARTED` |
 | P10.S4 | Reports queue and item moderation              | `NOT STARTED` |
@@ -514,6 +514,8 @@ Legend: **PK** primary key, **FK** foreign key, ✓ implemented.
 | `compute_matches(item_id)`         | Recomputes matches for one item.                                                       | 6     |
 | `my_conversations()`               | The caller's conversations for `/messages` (see §9 `conversations`). ✓                 | 8     |
 | `mark_conversation_read(id)`       | Marks the other participant's messages read, returns the count. ✓                      | 8     |
+| `admin_set_banned(user_id, bool)`  | Bans/unbans a user (not self, not admins); `42501` for non-admins. ✓                   | 10    |
+| `admin_stats()`                    | One row of counts for the admin dashboard; `42501` for non-admins. ✓                   | 10    |
 
 ### Enums
 
@@ -750,7 +752,7 @@ In the `supabase_realtime` publication.
 PK `(user_id, item_id)`. Indexes `(user_id, created_at desc)` (favorites page) and
 `(item_id)` (cascade). Migration `20261003144124_favorites.sql`.
 
-### `reports` (P10.S1)
+### `reports` ✓ (P10.S1)
 
 | Column        | Type             | Notes                        |
 | ------------- | ---------------- | ---------------------------- |
@@ -765,6 +767,18 @@ PK `(user_id, item_id)`. Indexes `(user_id, created_at desc)` (favorites page) a
 | `created_at`  | timestamptz      |                              |
 
 Unique `(reporter_id, item_id)` where `status = 'open'` (one open report per user per item).
+
+Implemented in P10.S1 (`20261004150645_moderation.sql`): `reporter_id` defaults to
+`auth.uid()` and cascades from profiles; `resolved_by` is `on delete set null`;
+`details` is null or at most 500 characters with a non-whitespace character; check
+`(status = 'open') = (resolved_at is null)`. Trigger `reports_set_resolution`
+(before insert or update of `status`): inserts are always `open`; closing sets
+`resolved_by = auth.uid()` and `resolved_at = now()`, reopening clears both.
+Indexes: `reports_open_reporter_item_key` (the unique one),
+`reports_open_created_at_idx` (queue), `reports_item_id_idx`,
+`reports_reporter_id_idx`, `reports_resolved_by_idx`. Privileges: `authenticated`
+selects, inserts `(reporter_id, item_id, reason, details)` and updates only
+`status`; `anon` has none; no delete.
 
 ### Entity relationships
 
@@ -874,18 +888,18 @@ password" always reports success, so emails cannot be enumerated).
 
 ### Policy matrix
 
-| Table           | select                                                                                                              | insert                                          | update                                                       | delete                    |
-| --------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------ | ------------------------- |
-| categories ✓    | everyone                                                                                                            | admin (P10.S6)                                  | admin (P10.S6)                                               | admin (P10.S6)            |
-| profiles        | everyone, public columns only (`id, display_name, avatar_path, created_at`); own full row via `current_profile()` ✓ | trigger only                                    | own row, allowed columns; admin: `role`, `is_banned` via RPC | none (cascade from auth)  |
-| items ✓         | `status in (active, resolved)` or own or admin                                                                      | own `user_id` and `can_write()`                 | own, not hidden, `can_write()`; admin any (hide/restore)     | own or admin              |
-| item_images ✓   | if parent item visible                                                                                              | parent owned, not hidden, own folder, can_write | `position` only; parent owned, not hidden, `can_write()`     | parent owned or admin     |
-| matches ✓       | owner of either item (not admins, not anon)                                                                         | definer functions only                          | owner of either item, only `status`, `can_write()`           | none (cascade from items) |
-| notifications ✓ | own                                                                                                                 | definer functions only                          | own, only `read_at`, `can_write()`                           | own                       |
-| conversations ✓ | participant                                                                                                         | requester = self, not item owner, `can_write()` | none (trigger updates `last_message_at`)                     | none                      |
-| messages ✓      | participant                                                                                                         | participant, `sender_id = self`, `can_write()`  | recipient, only `read_at`, `can_write()`                     | none                      |
-| favorites ✓     | own (anon: select grant for `search_items`, no rows)                                                                | own, item visible and not hidden, `can_write()` | none                                                         | own                       |
-| reports         | own or admin                                                                                                        | self, `can_write()`                             | admin                                                        | none                      |
+| Table           | select                                                                                                              | insert                                          | update                                                       | delete                     |
+| --------------- | ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------ | -------------------------- |
+| categories ✓    | everyone                                                                                                            | admin (P10.S1)                                  | admin (P10.S1)                                               | admin, not in use (P10.S1) |
+| profiles        | everyone, public columns only (`id, display_name, avatar_path, created_at`); own full row via `current_profile()` ✓ | trigger only                                    | own row, allowed columns; admin: `role`, `is_banned` via RPC | none (cascade from auth)   |
+| items ✓         | `status in (active, resolved)` or own or admin                                                                      | own `user_id` and `can_write()`                 | own, not hidden, `can_write()`; admin any (hide/restore)     | own or admin               |
+| item_images ✓   | if parent item visible                                                                                              | parent owned, not hidden, own folder, can_write | `position` only; parent owned, not hidden, `can_write()`     | parent owned or admin      |
+| matches ✓       | owner of either item (not admins, not anon)                                                                         | definer functions only                          | owner of either item, only `status`, `can_write()`           | none (cascade from items)  |
+| notifications ✓ | own                                                                                                                 | definer functions only                          | own, only `read_at`, `can_write()`                           | own                        |
+| conversations ✓ | participant                                                                                                         | requester = self, not item owner, `can_write()` | none (trigger updates `last_message_at`)                     | none                       |
+| messages ✓      | participant                                                                                                         | participant, `sender_id = self`, `can_write()`  | recipient, only `read_at`, `can_write()`                     | none                       |
+| favorites ✓     | own (anon: select grant for `search_items`, no rows)                                                                | own, item visible and not hidden, `can_write()` | none                                                         | own                        |
+| reports ✓       | own or admin                                                                                                        | self, `can_write()`, other user's visible item  | admin, only `status`                                         | none                       |
 
 ### Security verification per step
 
@@ -1547,6 +1561,21 @@ decay, Cyrillic vs Latin text.
   writes; the UI shows a banner. Hiding an item notifies its owner.
 - **Dashboard stats:** counts of users, active lost/found items, matches,
   confirmed matches, open reports (one RPC `admin_stats()`).
+- **Implemented in P10.S1** (`20261004150645_moderation.sql`): `reports` (§9) with
+  RLS; admin insert/update/delete policies on `categories` (deleting a category in
+  use fails with `23503`, `items.category_id` is `on delete restrict`);
+  `admin_set_banned(target_user_id, banned)` (admins cannot ban themselves or
+  other admins: `42501`; unknown user `P0002`; returns the new value);
+  `admin_stats()` returns `users, banned_users, active_lost_items,
+active_found_items, hidden_items, matches` (not dismissed), `confirmed_matches,
+open_reports, reported_items`. Both are `security definer` and raise `42501`
+  for non-admins (admins cannot read matches through RLS). Trigger
+  `items_notify_moderation`: when an item enters or leaves `hidden`, its owner gets
+  a `moderation` notification with `data = { item_id, action: "item_hidden" |
+"item_restored" }` (not for an admin's own item; editing a hidden item adds
+  none). Hidden items keep `resolved_at`, so restoring returns them to their
+  previous status: `resolved` when `resolved_at` is set (the original time is
+  kept), otherwise `active` (P10.S4 decides it from `resolved_at`).
 
 ---
 
@@ -2346,12 +2375,49 @@ MISS`, `fra1`) of `/items` contains the guest heart links, which exist only from
 
 ---
 
-### Phase 10 — Admin and moderation — `NOT STARTED`
+### Phase 10 — Admin and moderation — `IN PROGRESS`
 
 #### P10.S1 — Reports schema and admin policies
 
 - **Affects:** migration `*_moderation.sql` (enums, `reports`, admin policies on reports/categories/profiles — item admin policies already exist since P3.S1, and `deleteItem` already works for admins (P3.S7), `admin_set_banned()`, `admin_stats()`, moderation notification trigger).
 - **Verify:** SQL tests: non-admins cannot read others' reports or call admin RPCs; banned user cannot insert anything.
+- **Implemented:** migration `20261004150645_moderation.sql` (details in §9
+  `reports` and §18), SQL tests `supabase/tests/moderation.sql`,
+  `src/types/database.ts` regenerated. No app code yet (P10.S2+).
+- **Decisions:** reporting needs another user's item that is visible and not
+  hidden (resolved items can be reported); profiles get no admin update policy:
+  `role`/`is_banned` change only through `admin_set_banned()` (the first admin is
+  still set with SQL); the categories' admin policies are added here, the UI comes
+  in P10.S6; hidden items keep `resolved_at` (`items_set_resolved_at` replaced) so a
+  restore can return to the previous status; restoring also notifies the owner
+  (§18 only required hiding). No daily limit on reports (one open report per user
+  and item; revisit in P10.S2 if abuse shows).
+- **Verified:** migration and every SQL test file dry-run together in rolled-back
+  transactions first (all 20 passed; a deliberately wrong assert fails the run).
+  The dry runs found two bugs, fixed before the push: whitespace-only details
+  (`btrim` keeps newlines/tabs; now `~ '[^[:space:]]'` as in `messages`) and the
+  resolution trigger undoing `on delete set null` of `resolved_by` (it now runs
+  only on `status` changes). Pushed; `db:test` 20/20. `moderation.sql`: defaults,
+  one open report per user and item, closed reports allow a new one, inserts always
+  open, details limits, unknown item, indexes, cascades from item and reporter,
+  deleting the admin keeps the report; visitors read no reports, file none, call no
+  admin RPCs, add no categories but read them; users file reports (also about
+  resolved items) but not about hidden or own items, not for others and not with a
+  status, see only their own, cannot change status/reason or delete, cannot call
+  admin RPCs or change categories; owners do not see reports about their items;
+  banned users cannot insert reports, items, item images, favorites,
+  conversations, messages or storage objects, nor update their profile; admins
+  see all reports, resolve/reopen/dismiss (resolver and time recorded), change
+  nothing else, cannot report their own items, add/rename/reorder/delete unused
+  categories but not one in use; `admin_set_banned` bans (the next write is
+  blocked at once) and unbans, refuses self, other admins and unknown users;
+  `admin_stats` numbers compared before/after the test data; hiding notifies the
+  owner once and keeps `resolved_at`, restoring to active/resolved notifies and
+  keeps the original time, owner status changes and an admin's own item add none,
+  others do not see them. REST as a visitor: `reports` and `rpc/admin_stats` →
+  42501, categories still readable. Advisors: the `current_profile` warnings, two
+  new intended ones for the admin RPCs (F-12) and F-19. Lint, typecheck, 695 unit
+  tests, `npm run build`.
 
 #### P10.S2 — Report item UI
 
@@ -2450,7 +2516,7 @@ started (no auth code or profile tables exist yet).
 | F-11 | `supabase migration new` names files with the **UTC** time, but the init migration was named with the local date (`20260924000000`). Until 2026-09-24 00:00 UTC new files would sort before it.                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | New migrations must sort after the latest existing file; the profiles migration was renamed to `20260924000100`. Check the name after every `db:new`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Documented    |
 | F-13 | next-intl locale detection is on: a visitor whose browser prefers English (`Accept-Language`) or who last used English (`NEXT_LOCALE` cookie) is redirected from `/…` to `/en/…`. `/` is therefore not always Macedonian.                                                                                                                                                                                                                                                                                                                                                                                                                                              | **Decision needed.** Keep (standard, convenient) or set `localeDetection: false` in `src/i18n/routing.ts` so `/` is always Macedonian and English only via the switcher. Recommendation: disable, for a Macedonian-first site with predictable URLs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Open          |
 | F-14 | Next.js renders a hidden route announcer with `role="alert"`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Browser tests must look for alerts inside the form (`form [role=alert]`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Documented    |
-| F-12 | Advisors warn that `current_profile()` (a `security definer` function in `public`) is callable by `anon`/`authenticated`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Intentional: it returns only the caller's own row (nothing for anon). Accepted warning.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Accepted      |
+| F-12 | Advisors warn that `current_profile()` (a `security definer` function in `public`) is callable by `anon`/`authenticated`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Intentional: it returns only the caller's own row (nothing for anon). Accepted warning. P10.S1 adds the same warning (authenticated only) for `admin_set_banned()` and `admin_stats()`: admins call them through the API and both raise `42501` for anyone else.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | Accepted      |
 | F-19 | Advisors warn "Leaked password protection disabled" (HaveIBeenPwned check of new passwords). Noticed during P2.S8.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Optional: enable it in Supabase → Authentication (password security) if the plan allows it; rejected passwords already show `weak_password`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Open          |
 | F-20 | Deleting an auth user (dashboard or SQL) removes the profile but not the user's files in Storage: the owner's old avatar stayed in `avatars` as an orphan after the account was recreated (2026-09-26).                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Clean up files when account deletion is implemented (admin user management, P10.S5, or a self-service delete); the orphan was left in place (user data).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | Open          |
 | F-21 | Photos are uploaded before the item is saved (the item id is generated in the browser). If the user abandons the form, or the create action fails, the uploaded files stay in `item-images` without an `item_images` row. Removing a photo in the picker deletes its file; abandoned forms cannot. Noticed in P3.S4.                                                                                                                                                                                                                                                                                                                                                   | Acceptable for now (files are small). The create action does **not** delete them on failure, because the form keeps the photos for the next attempt (P3.S5). Deleting an item now removes every file in its folder, including such uploads (P3.S7). Option for abandoned new items: a periodic clean-up of files older than a day without an `item_images` row (scheduled SQL job or admin action, P10/P11).                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Open          |
@@ -2475,6 +2541,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-04 | P10.S1      | Moderation schema: `reports` with RLS and a resolution trigger, admin policies on categories, `admin_set_banned()`, `admin_stats()`, moderation notifications on hide/restore, hidden items keep `resolved_at`; SQL tests `moderation.sql` (20/20 files). Phase 10 started.                                                                                                                                                                                           |
 | 2026-10-04 | P9.S3       | Favorites page `/favorites` (newest saved first, 20 per page, only active/resolved reports, removal with the heart, empty and error states), user menu link, shared `parsePage`; 695 unit tests; browser check 41/41. Phase 9 completed.                                                                                                                                                                                                                              |
 | 2026-10-04 | deploy      | P9.S1, F-34 fix and P9.S2 deployed (`a165b1d`); item pages on Vercel healthy again; production favorites smoke test 60/60 (mk/en).                                                                                                                                                                                                                                                                                                                                    |
 | 2026-10-04 | P9.S2       | Favorite toggle: `addFavorite`/`removeFavorite` actions, optimistic `FavoriteButton` on feed/home cards and the item page, login link for guests, `isFavorite` from `search_items`; 675 unit tests; browser check 19/19.                                                                                                                                                                                                                                              |
@@ -2554,14 +2621,17 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P10.S1 — Reports schema and admin policies** (see §22, Phase 10; design in §18).
+**P10.S2 — Report item UI** (see §22, Phase 10; design in §18).
 
-Why next: Phase 9 is complete (favorites on cards, the item page and
-`/favorites`). Phase 10 starts with the moderation schema: `reports`, admin
-policies, `admin_set_banned()`, `admin_stats()` and the moderation notification
-trigger, with SQL tests.
+Why next: P10.S1 added `reports` (one open report per user and item, only about
+other users' visible reports). P10.S2 adds the report dialog on the item page
+(reason + optional details, for signed-in non-owners; guests get a login link) and
+the `reportItem` action (`src/actions/reports.ts`): `23505` → "already reported",
+`42501` → hidden/own report or banned user.
 
 Production serves `a165b1d` (2026-10-04): P9.S1, the F-34 fix and P9.S2 are
 deployed, item pages are healthy again (200 in mk and en) and the production smoke
-tests passed (details under P9.S2 in §22). P9.S3 is committed locally and not yet
-pushed; after a push, re-run the `/favorites` browser check against Vercel.
+tests passed (details under P9.S2 in §22). The P10.S1 migration is applied to the
+hosted project (additive; the deployed app does not use it yet). P9.S3 and P10.S1
+are committed locally and not yet pushed; after a push, re-run the `/favorites`
+browser check against Vercel.

@@ -39,7 +39,8 @@ status and the next step. Read it before any work.
   Phase 9 started: favorites schema with `is_favorite` in `search_items` (P9.S1). Item page
   embed fixed after P9.S1 (F-34). Favorite toggle on cards and the item page (P9.S2),
   deployed at `a165b1d` (2026-10-04). Favorites page `/favorites` (P9.S3, not pushed yet);
-  Phase 9 completed. Next: P10.S1 (reports schema), only after the user's go-ahead.
+  Phase 9 completed. Phase 10 started: moderation schema (P10.S1).
+  Next: P10.S2 (report item UI), only after the user's go-ahead.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -220,6 +221,16 @@ item_id?, sender_id }`, one per recipient and conversation
   `/favorites`: `getFavoritePage` (same file; inner join `item:items!inner (…)` plus
   `item.status in (active, resolved)`, because RLS still returns a user's own hidden
   reports). Paged lists read `?page=` with `parsePage()` (`@/lib/pagination`).
+- Moderation (§18): `reports (reporter_id, item_id, reason, details, status, …)`; users
+  insert only about another user's visible, not hidden item (`can_write()`), one open
+  report per user and item (`23505`), and see their own; admins see all and update only
+  `status` (trigger `reports_set_resolution` sets `resolved_by`/`resolved_at`). Admin
+  RPCs `admin_set_banned(target_user_id, banned)` and `admin_stats()` raise `42501` for
+  non-admins (accepted advisor warnings, F-12); `role`/`is_banned` change only through
+  RPCs or SQL. Categories: admin insert/update/delete (in use → `23503`). Hiding or
+  restoring an item notifies its owner (`moderation`, `data = { item_id, action:
+"item_hidden" | "item_restored" }`); hidden items keep `resolved_at`, so restore to
+  `resolved` when it is set, else `active`.
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
   (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals) or render on the server.
