@@ -7,8 +7,8 @@
 > updating it.
 
 - **Last updated:** 2026-10-04
-- **Current phase:** Phase 9 — Favorites in progress (P9.S1–P9.S2 completed; Phase 8 completed, optional P7.S5 deferred)
-- **Next step:** P9.S3 (§22, §25)
+- **Current phase:** Phase 9 — Favorites completed (P9.S1–P9.S3; Phase 8 completed, optional P7.S5 deferred); Phase 10 next
+- **Next step:** P10.S1 (§22, §25)
 
 ---
 
@@ -101,7 +101,7 @@ to these IDs. "Next step" always means the step named in
 | 6     | Automatic matching                    | `COMPLETED`   |
 | 7     | Notifications                         | `COMPLETED`   |
 | 8     | Messaging                             | `COMPLETED`   |
-| 9     | Favorites                             | `IN PROGRESS` |
+| 9     | Favorites                             | `COMPLETED`   |
 | 10    | Admin and moderation                  | `NOT STARTED` |
 | 11    | UI polish, testing and final delivery | `NOT STARTED` |
 
@@ -168,7 +168,7 @@ to these IDs. "Next step" always means the step named in
 | P8.S6  | Message notifications                          | `COMPLETED`   |
 | P9.S1  | Favorites schema                               | `COMPLETED`   |
 | P9.S2  | Favorite toggle                                | `COMPLETED`   |
-| P9.S3  | Favorites page                                 | `NOT STARTED` |
+| P9.S3  | Favorites page                                 | `COMPLETED`   |
 | P10.S1 | Reports schema and admin policies              | `NOT STARTED` |
 | P10.S2 | Report item UI                                 | `NOT STARTED` |
 | P10.S3 | Admin area layout and dashboard                | `NOT STARTED` |
@@ -1521,6 +1521,14 @@ decay, Cyrillic vs Latin text.
   (also not an own hidden item); removing does not require `can_write()`. A
   favorite stays when its item is hidden later: the favorites page must show only
   visible items (P9.S3). Admins have no access to other users' favorites.
+- `/favorites` (P9.S3 ✓): `getFavoritePage(userId, page)` (`@/lib/queries/favorites`)
+  reads `favorites` with an inner join `item:items!inner (card columns)` and
+  `item.status in (active, resolved)` (RLS still returns a user's own hidden
+  reports, so the status filter is what keeps hidden reports out; the inner join
+  also keeps them out of the count), most recently saved first, 20 per page
+  (`PGRST103` → count only, the page redirects to the last page). No migration.
+  Cards use `ItemCard favorite={{ signedIn: true }}`; the heart removes a report and
+  the action's `refresh()` re-renders the page without it. Link in the user menu.
 
 ---
 
@@ -2232,7 +2240,7 @@ Open manual items:
 
 ---
 
-### Phase 9 — Favorites — `NOT STARTED`
+### Phase 9 — Favorites — `COMPLETED`
 
 #### P9.S1 — Favorites schema — `COMPLETED`
 
@@ -2300,10 +2308,39 @@ MISS`, `fra1`) of `/items` contains the guest heart links, which exist only from
   optimistic, without navigation and kept after reload (mk/en); the item page agrees
   with the feed; no favorite UI on the dashboard; no console errors.
 
-#### P9.S3 — Favorites page
+#### P9.S3 — Favorites page — `COMPLETED`
 
 - **Affects:** `(app)/favorites/page.tsx`, `messages/*.json` (`Favorites`).
 - **Verify:** hidden/deleted items disappear from the list.
+- **Implemented:** `/favorites` page (title, description, ICU count, card grid,
+  `Pagination`, canonical `?page=` like `/notifications`, empty state with a link to
+  `/items`, error alert when the query fails); `getFavoritePage` and
+  `FAVORITES_PAGE_SIZE` in `@/lib/queries/favorites`; `itemCardColumns` exported
+  from `@/lib/queries/items`; `parsePage` moved from the notifications page to
+  `@/lib/pagination` (shared, behavior unchanged); "Favorites" entry with a heart in
+  the user menu; messages `Favorites.page.*` and `Header.favorites` (mk/en). No
+  migration (`/favorites` was already in `PROTECTED_PREFIXES` and `robots.txt`).
+- **Decisions:** newest saved first, no filters or other sorts; removal on the page
+  is immediate without an undo toast (the report can be saved again from its
+  page); menu link only, no header icon; resolved reports stay listed with their
+  badge.
+- **Verified:** lint, typecheck, 695 unit tests (675 → 695: `getFavoritePage` query
+  shape, later page, past-the-end count, errors, mapping; `isFavorite`;
+  `parsePage`), `npm run build`, Prettier; the query checked against the live REST
+  API. Headless Edge against `next start` (temporary `fav-p9s3-*@findly.test`
+  users with 23 found reports in Struga, 0 matches; all deleted afterwards, nothing
+  left) 41 checks: guests → login with `next` (mk/en, with `?page=2`); `robots.txt`;
+  empty state mk/en, `noindex`, browse link; menu link; 21 favorites → 20 newest
+  first on page 1, count, pressed hearts, page 2 link; `page=1`/`abc`/unknown
+  parameters/past the end redirect to the canonical URL; removing the only card on
+  page 2 lands on page 1; removing on page 1 drops the card and the count, also
+  after reload; saved on an item page → first; own report listed while active, gone
+  once hidden; another hidden and a deleted report gone, resolved listed with its
+  badge, count 18 while the hidden favorites stay in the table; unsaving on the item
+  page and going Back shows the updated list (no stale router cache); English title,
+  count and labels; 390 px without horizontal overflow; no console errors. One
+  assertion of the script was wrong, not the page: Macedonian plurals put 21 in the
+  `one` category, so "21 зачувана пријава" is correct.
 
 **Definition of done — Phase 9:** favorites tied to the account and consistent across devices.
 
@@ -2438,6 +2475,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-04 | P9.S3       | Favorites page `/favorites` (newest saved first, 20 per page, only active/resolved reports, removal with the heart, empty and error states), user menu link, shared `parsePage`; 695 unit tests; browser check 41/41. Phase 9 completed.                                                                                                                                                                                                                              |
 | 2026-10-04 | deploy      | P9.S1, F-34 fix and P9.S2 deployed (`a165b1d`); item pages on Vercel healthy again; production favorites smoke test 60/60 (mk/en).                                                                                                                                                                                                                                                                                                                                    |
 | 2026-10-04 | P9.S2       | Favorite toggle: `addFavorite`/`removeFavorite` actions, optimistic `FavoriteButton` on feed/home cards and the item page, login link for guests, `isFavorite` from `search_items`; 675 unit tests; browser check 19/19.                                                                                                                                                                                                                                              |
 | 2026-10-03 | F-34 fix    | Item page failed after P9.S1 (`PGRST201`: `favorites` made `items` ↔ `profiles` ambiguous); `getItem` embeds the owner as `profiles!items_user_id_fkey`; regression test (654 → 658 unit tests); browser check of two item pages mk/en 17/17. No schema change.                                                                                                                                                                                                       |
@@ -2516,14 +2554,14 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P9.S3 — Favorites page** (see §22, Phase 9; design in §17).
+**P10.S1 — Reports schema and admin policies** (see §22, Phase 10; design in §18).
 
-Why next: P9.S2 lets users save reports (`FavoriteButton`, `addFavorite` /
-`removeFavorite`). P9.S3 adds `/favorites` (signed in; add it to
-`PROTECTED_PREFIXES` and `robots.ts`) listing the user's saved reports that are
-still visible (a favorite stays when its report is hidden later), with the heart to
-remove them and a header/menu link.
+Why next: Phase 9 is complete (favorites on cards, the item page and
+`/favorites`). Phase 10 starts with the moderation schema: `reports`, admin
+policies, `admin_set_banned()`, `admin_stats()` and the moderation notification
+trigger, with SQL tests.
 
 Production serves `a165b1d` (2026-10-04): P9.S1, the F-34 fix and P9.S2 are
 deployed, item pages are healthy again (200 in mk and en) and the production smoke
-tests passed (details under P9.S2 in §22).
+tests passed (details under P9.S2 in §22). P9.S3 is committed locally and not yet
+pushed; after a push, re-run the `/favorites` browser check against Vercel.

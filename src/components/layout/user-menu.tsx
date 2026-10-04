@@ -1,6 +1,6 @@
 "use client";
 
-import { FilePlus2, LayoutList, LogOut, UserRound } from "lucide-react";
+import { FilePlus2, Heart, LayoutList, LogOut, UserRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { signOut } from "@/actions/auth";
@@ -50,6 +50,10 @@ export function UserMenu({
         <DropdownMenuLinkItem render={<Link href="/items/new" />}>
           <FilePlus2 aria-hidden />
           {t("Header.reportItem")}
+        </DropdownMenuLinkItem>
+        <DropdownMenuLinkItem render={<Link href="/favorites" />}>
+          <Heart aria-hidden />
+          {t("Header.favorites")}
         </DropdownMenuLinkItem>
         <DropdownMenuLinkItem render={<Link href="/profile" />}>
           <UserRound aria-hidden />

@@ -65,7 +65,7 @@ export type ItemSummary = {
 };
 
 // Columns of an item card for a table query: the photos only for the cover.
-const itemCardColumns = `
+export const itemCardColumns = `
   id, type, status, title, occurred_on, location_name, created_at,
   category:categories (id, slug, name_mk, name_en, icon),
   images:item_images (storage_path, position)

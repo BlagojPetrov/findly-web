@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pageCount, pageItems } from "./pagination";
+import { pageCount, pageItems, parsePage } from "./pagination";
 
 describe("pageCount", () => {
   it.each([
@@ -72,5 +72,30 @@ describe("pageItems", () => {
   it("clamps an out-of-range current page", () => {
     expect(pageItems(0, 20)).toEqual(pageItems(1, 20));
     expect(pageItems(99, 20)).toEqual(pageItems(20, 20));
+  });
+});
+
+describe("parsePage", () => {
+  it.each([
+    ["2", 2],
+    ["15", 15],
+    ["999999", 999999],
+  ])("reads page %j", (value, page) => {
+    expect(parsePage(value)).toBe(page);
+  });
+
+  it.each([
+    [undefined],
+    [""],
+    ["1"],
+    ["0"],
+    ["-2"],
+    ["02"],
+    ["2.5"],
+    ["abc"],
+    ["1000000"],
+    [["2", "3"]],
+  ])("treats %j as page 1", (value) => {
+    expect(parsePage(value)).toBe(1);
   });
 });

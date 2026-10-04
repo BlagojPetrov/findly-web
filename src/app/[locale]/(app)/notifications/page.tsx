@@ -7,7 +7,7 @@ import { Pagination } from "@/components/search/pagination";
 import { buttonVariants } from "@/components/ui/button";
 import { Link, redirect } from "@/i18n/navigation";
 import { requireUser } from "@/lib/auth";
-import { pageCount } from "@/lib/pagination";
+import { pageCount, parsePage } from "@/lib/pagination";
 import {
   getNotificationPage,
   getUnreadNotificationCount,
@@ -28,12 +28,6 @@ export async function generateMetadata({
 }
 
 // "?page=2" and up; page 1 has no parameter.
-function parsePage(value: string | string[] | undefined) {
-  return typeof value === "string" && /^[1-9]\d{0,5}$/.test(value)
-    ? Number(value)
-    : 1;
-}
-
 function pageHref(page: number) {
   return page > 1
     ? { pathname: "/notifications" as const, query: { page } }

@@ -12,6 +12,7 @@
     "profile": "Profile",
     "reportItem": "Report an item",
     "dashboard": "My reports",
+    "favorites": "Favorites",
     "browse": "Browse",
     "map": "Map",
     "messagesLabel": "{count, plural, =0 {Messages} one {Messages, # unread} other {Messages, # unread}}"
@@ -520,7 +521,15 @@
     "saved": "Saved",
     "addHint": "Save to favorites",
     "removeHint": "Remove from favorites",
-    "guestLabel": "Sign in to save this report"
+    "guestLabel": "Sign in to save this report",
+    "page": {
+      "title": "Favorites",
+      "description": "Reports you saved, most recently saved first. Hidden and deleted reports are not shown.",
+      "count": "{count, plural, one {# saved report} other {# saved reports}}",
+      "empty": "You have not saved any reports yet. Tap the heart on a report to keep it here.",
+      "browse": "Browse reports",
+      "error": "Your favorites could not be loaded. Please try again."
+    }
   },
   "Search": {
     "title": "Lost and found items",

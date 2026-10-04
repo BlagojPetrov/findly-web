@@ -1,5 +1,14 @@
 export type PageItem = number | "gap";
 
+// The `?page=` parameter of a paged list: "2" and up; anything else
+// (missing, "1", "abc", repeated) is page 1, and the page redirects to its
+// canonical URL.
+export function parsePage(value: string | string[] | undefined) {
+  return typeof value === "string" && /^[1-9]\d{0,5}$/.test(value)
+    ? Number(value)
+    : 1;
+}
+
 // Number of pages for `total` results (at least 1, so an empty result is
 // "page 1 of 1").
 export function pageCount(total: number, pageSize: number) {
