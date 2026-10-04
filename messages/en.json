@@ -85,7 +85,9 @@
     "conversation_item_inactive": "This report is no longer active, so its author cannot be contacted.",
     "conversation_limit": "You have started too many new conversations (at most 20 in 24 hours). Please try again later. Your existing conversations stay available.",
     "message_rate_limit": "You sent too many messages in a short time. Please wait a moment and try again.",
-    "favorite_unavailable": "This report cannot be saved: it may have been hidden or deleted."
+    "favorite_unavailable": "This report cannot be saved: it may have been hidden or deleted.",
+    "report_duplicate": "You have already flagged this report. The moderators will review it.",
+    "report_unavailable": "This report cannot be flagged: it may have been hidden or deleted."
   },
   "Validation": {
     "required": "This field is required.",
@@ -111,7 +113,9 @@
     "locationInvalid": "Choose a valid location.",
     "tooManyImages": "You can add at most 5 images.",
     "imageInvalid": "One of the images is invalid. Remove it and upload it again.",
-    "messageTooLong": "The message can be at most 2000 characters."
+    "messageTooLong": "The message can be at most 2000 characters.",
+    "reportReasonInvalid": "Choose a reason.",
+    "reportDetailsTooLong": "The details can be at most 500 characters."
   },
   "Auth": {
     "loginTitle": "Sign in",
@@ -529,6 +533,28 @@
       "empty": "You have not saved any reports yet. Tap the heart on a report to keep it here.",
       "browse": "Browse reports",
       "error": "Your favorites could not be loaded. Please try again."
+    }
+  },
+  "Moderation": {
+    "report": {
+      "button": "Flag this report",
+      "guestHint": "Sign in to flag this report",
+      "title": "Flag this report",
+      "description": "Tell the moderators what is wrong with this report. The author does not see who flagged it.",
+      "reasonLegend": "Reason",
+      "reasons": {
+        "spam": "Spam or advertising",
+        "inappropriate": "Inappropriate or offensive content",
+        "fraud": "Fraud or scam",
+        "duplicate": "Duplicate report",
+        "other": "Something else"
+      },
+      "details": "Details (optional)",
+      "detailsHint": "Up to 500 characters.",
+      "cancel": "Cancel",
+      "submit": "Send",
+      "success": "Thank you. The moderators will review this report.",
+      "reported": "You flagged this report. The moderators will review it."
     }
   },
   "Search": {

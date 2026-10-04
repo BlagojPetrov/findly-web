@@ -39,8 +39,9 @@ status and the next step. Read it before any work.
   Phase 9 started: favorites schema with `is_favorite` in `search_items` (P9.S1). Item page
   embed fixed after P9.S1 (F-34). Favorite toggle on cards and the item page (P9.S2),
   deployed at `a165b1d` (2026-10-04). Favorites page `/favorites` (P9.S3, not pushed yet);
-  Phase 9 completed. Phase 10 started: moderation schema (P10.S1).
-  Next: P10.S2 (report item UI), only after the user's go-ahead.
+  Phase 9 completed. Phase 10 started: moderation schema (P10.S1), report dialog on
+  the item page (P10.S2, not pushed yet).
+  Next: P10.S3 (admin area layout and dashboard), only after the user's go-ahead.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -231,6 +232,12 @@ item_id?, sender_id }`, one per recipient and conversation
   restoring an item notifies its owner (`moderation`, `data = { item_id, action:
 "item_hidden" | "item_restored" }`); hidden items keep `resolved_at`, so restore to
   `resolved` when it is set, else `active`.
+  Flagging (UI word "flag", since items are "reports"): `ReportDialog`
+  (`src/components/moderation/`) on the item page for the same reports as the favorite
+  button; `hasOpenReport` (`@/lib/queries/reports`) shows a note instead; writes only
+  through `reportItem` (`src/actions/reports.ts`, `reportItemSchema`; `23505` →
+  `report_duplicate`, `42501` → `report_unavailable`). Dialogs: shadcn `dialog`
+  (`@/components/ui/dialog`); mount the form inside `DialogContent` so it starts clean.
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
   (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals) or render on the server.

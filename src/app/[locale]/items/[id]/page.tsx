@@ -23,6 +23,7 @@ import { ItemOwnerActions } from "@/components/items/item-owner-actions";
 import { ItemTypeBadge } from "@/components/items/item-type-badge";
 import { ItemMap, MapFrame } from "@/components/map";
 import { MatchList } from "@/components/matches/match-list";
+import { ReportDialog } from "@/components/moderation/report-dialog";
 import { UserAvatar } from "@/components/profile/user-avatar";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
@@ -36,6 +37,7 @@ import { getOwnConversationId } from "@/lib/queries/conversations";
 import { isFavorite } from "@/lib/queries/favorites";
 import { getItem } from "@/lib/queries/items";
 import { getItemMatches, type ItemMatches } from "@/lib/queries/matches";
+import { hasOpenReport } from "@/lib/queries/reports";
 import { localeAlternates, metaDescription, openGraphBase } from "@/lib/seo";
 import { cn } from "@/lib/utils";
 
@@ -153,14 +155,25 @@ export default async function ItemPage({
   // the report as not saved.
   const showFavorite = !isOwner && item.status !== "hidden";
   let saved = false;
+  // Flagging for the moderators: the same reports as saving (RLS refuses
+  // own and hidden ones). A failed query shows the button; the database
+  // still keeps one open report per user and item.
+  const showReport = showFavorite;
+  let reported = false;
   if (viewer && !isOwner) {
-    [conversationId, saved] = await Promise.all([
+    [conversationId, saved, reported] = await Promise.all([
       getOwnConversationId(item.id, viewer.id).catch((error) => {
         console.error(error);
         return null;
       }),
       showFavorite
         ? isFavorite(item.id, viewer.id).catch((error) => {
+            console.error(error);
+            return false;
+          })
+        : false,
+      showReport
+        ? hasOpenReport(item.id, viewer.id).catch((error) => {
             console.error(error);
             return false;
           })
@@ -333,6 +346,14 @@ export default async function ItemPage({
                 </div>
               )}
             </section>
+          )}
+
+          {showReport && (
+            <ReportDialog
+              itemId={item.id}
+              signedIn={viewer !== null}
+              reported={reported}
+            />
           )}
 
           {isOwner && (

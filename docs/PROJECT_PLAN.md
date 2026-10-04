@@ -6,9 +6,9 @@
 > progress of the Findly web project. Every step starts by reading it and ends by
 > updating it.
 
-- **Last updated:** 2026-10-04
-- **Current phase:** Phase 10 — Admin and moderation in progress (P10.S1 completed; Phase 9 completed, optional P7.S5 deferred)
-- **Next step:** P10.S2 (§22, §25)
+- **Last updated:** 2026-10-05
+- **Current phase:** Phase 10 — Admin and moderation in progress (P10.S1–P10.S2 completed; Phase 9 completed, optional P7.S5 deferred)
+- **Next step:** P10.S3 (§22, §25)
 
 ---
 
@@ -170,7 +170,7 @@ to these IDs. "Next step" always means the step named in
 | P9.S2  | Favorite toggle                                | `COMPLETED`   |
 | P9.S3  | Favorites page                                 | `COMPLETED`   |
 | P10.S1 | Reports schema and admin policies              | `COMPLETED`   |
-| P10.S2 | Report item UI                                 | `NOT STARTED` |
+| P10.S2 | Report item UI                                 | `COMPLETED`   |
 | P10.S3 | Admin area layout and dashboard                | `NOT STARTED` |
 | P10.S4 | Reports queue and item moderation              | `NOT STARTED` |
 | P10.S5 | User management (ban/unban)                    | `NOT STARTED` |
@@ -2423,6 +2423,43 @@ MISS`, `fra1`) of `/items` contains the guest heart links, which exist only from
 
 - **Affects:** `src/components/moderation/report-dialog.tsx`, `src/actions/reports.ts`.
 - **Verify:** one open report per user per item; confirmation shown.
+- **Implemented:** `reportItem` (`src/actions/reports.ts`; `reportItemSchema` in
+  `@/lib/validation/reports`: reason from `REPORT_REASONS`, optional details with
+  line breaks normalized, trimmed, blank → null, ≤ 500; `23505` →
+  `report_duplicate`, `42501` → `report_unavailable`, `refresh()` on success);
+  `hasOpenReport` (`@/lib/queries/reports`); `ReportDialog`
+  (`src/components/moderation/`) on the item page for the same reports as the
+  favorite button (others' reports that are not hidden): a ghost "Flag this report"
+  button opens a dialog (5 reasons as required native radios, details textarea);
+  success closes it with a toast and the refreshed page shows "You flagged this
+  report" instead of the button; guests get a login link back to the report.
+  shadcn `dialog` added (`src/components/ui/dialog.tsx`). Messages: `Moderation.report`,
+  `Errors.report_duplicate`/`report_unavailable`, `Validation.reportReasonInvalid`/
+  `reportDetailsTooLong`. No migration.
+- **Decisions:** the UI calls it "flag" ("Flag this report" / "Пријави
+  неправилност") because item reports are already called "reports"/"пријави". The
+  form mounts inside the dialog, so reopening it starts clean. A closed (resolved or
+  dismissed) report shows the button again (the database allows a new one). Still
+  no daily limit on reports (§22 P10.S1).
+- **Verified:** 22 new unit/component tests (695 → 717): schema (every reason,
+  blank details → null, line-break normalization at the limit, too long, invalid
+  reason/item), action (inserts as the session user, `23505`/`42501`/other errors,
+  field errors without a write), dialog (reasons required, sends item/reason/details,
+  toast + close, error and values kept, field errors, note when reported, guest
+  link). Lint, typecheck, `npm run build`. Browser check (production build, headless
+  Edge, three temporary `rep-p10s2-*@findly.test` users, deleted afterwards): 24/24
+  relevant checks — guest login link with `next`; no button for the owner or on
+  one's own report; dialog with 5 reasons; submit without a reason blocked by the
+  browser (nothing stored); Escape and Cancel close; a report with details is
+  stored as the session user with trimmed `\n` details, toast shown, button
+  replaced by the note (also after reload); a report filed meanwhile in "another
+  tab" → `report_duplicate` in the dialog, values kept, still one open report; a
+  dismissed report shows the button again; resolved reports can be flagged; a report
+  hidden after the page loaded → `report_unavailable`; English at 375 px: dialog fits,
+  reported; a banned user is refused; no browser errors. Two checks of the script
+  were wrong, not the app: hiding/restoring the test item with SQL notified its owner
+  (P10.S1 trigger, expected), and the page overflows by 14 px at 375 px with or
+  without the dialog — the signed-in header, on every page (F-35).
 
 #### P10.S3 — Admin area layout and dashboard
 
@@ -2533,6 +2570,7 @@ started (no auth code or profile tables exist yet).
 | F-33 | After reading a chat and going back with the browser's back button, `/messages` can show the old unread badge: back navigation restores the list from the router cache, and it re-renders only if a Realtime event about the read arrives after the navigation (`RefreshOnMessages` listens only while mounted; `useUnreadMessages` merges the read's own `MESSAGES_READ_EVENT` with the Realtime UPDATE into one batch). Timing-dependent: the P8.S5 check passed on 2026-10-02, a build of the previous commit failed it 1 of 2 and the P8.S6 build 3 of 3. The header badge is always right; the in-app back link renders fresh. Found in the P8.S6 regression run. | Fixed in `RefreshOnMessages` (P8.S5 fix): `@/lib/chat` counts changes to the user's messages in the tab (`noteMessagesChanged()`/`currentMessagesVersion()`), fed by the existing producers only — `useUnreadMessages` on each Realtime event (at once, not after its 300 ms batch), `ChatView` after a successful read and after a sent message. `RefreshOnMessages` remembers per `router.bfcacheId` (new for every fresh visit, the same when Back/Forward restores it) the version the list showed, and calls `router.refresh()` on mount when a restored list is older. No new subscription. Deterministic regression: component tests (a remount with the same `bfcacheId` after a change refreshes once; fresh visits and unchanged restores do not) fail on the old component; browser check `bc_back` fails on the old build and passes 3 × 25/25 on the fix. | Fixed         |
 | F-32 | Server actions receive form data, which turns every line break of a textarea into `\r\n`. The browser's field counts a line break once (`maxLength`), the server twice. Found in P8.S4 (chat messages were stored with `\r\n`). Item descriptions (`itemSchema`, max 2000) still keep `\r\n`: a description that fits the field can fail with "too long" when it has many line breaks, and stored texts mix `\r\n`.                                                                                                                                                                                                                                                    | Fixed for messages in P8.S4 (`sendMessageSchema` normalizes to `\n` before trimming and length checks). For items: normalize the same way in `itemSchema`'s description (and check `search_text`/display are unaffected) in a separate fix or P11.S2.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | Open          |
 | F-34 | P9.S1 broke the item page (`Failed to load item …: Could not embed because more than one relationship was found for 'items' and 'profiles'`, `src/lib/queries/items.ts`). Foreign keys between the tables: `items_user_id_fkey` (`items.user_id` → `profiles.id`, the owner) and, since P9.S1, `favorites_item_id_fkey` + `favorites_user_id_fkey`; both `favorites` columns form its primary key, so PostgREST also sees a many-to-many `items` ↔ `profiles` through `favorites`, and the plain `owner:profiles (…)` embed of `getItem` became ambiguous (`PGRST201`). The P9.S1 SQL tests and the REST check only covered `search_items`, not embeds.                | The favorites relationship is intended, so the schema stays. `getItem` names the owner's foreign key: `owner:profiles!items_user_id_fkey (…)`. Every other embed checked against the live API (item cards, matches, conversations already name their keys; no other `items` → `profiles` embed). Regression test `src/lib/queries/items.test.ts` (fails on the old query). Convention in CLAUDE.md: embeds between tables that a junction table also links must name the foreign key.                                                                                                                                                                                                                                                                                                                                                                                  | Fixed         |
+| F-35 | At 375 px the signed-in header is 14 px wider than the viewport (page `scrollWidth` 389): the user menu avatar sits past the right edge, on every page (`/dashboard`, `/items`, item pages). Found in the P10.S2 browser check; the report dialog itself fits.                                                                                                                                                                                                                                                                                                                                                                                                         | Fix in Phase 11 (UI polish): let the header's icon group shrink or hide a control on narrow screens.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Open          |
 | F-10 | No automated tests yet.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Vitest added in P2.S1; SQL tests from P2.S2.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | Fixed         |
 
 ---
@@ -2541,6 +2579,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-05 | P10.S2      | Report item UI: `ReportDialog` on the item page (reason + optional details; note when the user has an open report; login link for guests), `reportItem` action (`report_duplicate`, `report_unavailable`), `hasOpenReport`, shadcn dialog; 22 unit tests; browser check passed; F-35 logged (header overflow at 375 px).                                                                                                                                              |
 | 2026-10-04 | P10.S1      | Moderation schema: `reports` with RLS and a resolution trigger, admin policies on categories, `admin_set_banned()`, `admin_stats()`, moderation notifications on hide/restore, hidden items keep `resolved_at`; SQL tests `moderation.sql` (20/20 files). Phase 10 started.                                                                                                                                                                                           |
 | 2026-10-04 | P9.S3       | Favorites page `/favorites` (newest saved first, 20 per page, only active/resolved reports, removal with the heart, empty and error states), user menu link, shared `parsePage`; 695 unit tests; browser check 41/41. Phase 9 completed.                                                                                                                                                                                                                              |
 | 2026-10-04 | deploy      | P9.S1, F-34 fix and P9.S2 deployed (`a165b1d`); item pages on Vercel healthy again; production favorites smoke test 60/60 (mk/en).                                                                                                                                                                                                                                                                                                                                    |
@@ -2621,17 +2660,17 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P10.S2 — Report item UI** (see §22, Phase 10; design in §18).
+**P10.S3 — Admin area layout and dashboard** (see §22, Phase 10; design in §18).
 
-Why next: P10.S1 added `reports` (one open report per user and item, only about
-other users' visible reports). P10.S2 adds the report dialog on the item page
-(reason + optional details, for signed-in non-owners; guests get a login link) and
-the `reportItem` action (`src/actions/reports.ts`): `23505` → "already reported",
-`42501` → hidden/own report or banned user.
+Why next: users can now flag reports (P10.S2). P10.S3 adds the `/admin` area:
+layout guarded by `requireAdmin()` (non-admins get 404; add `/admin` to
+`src/lib/auth-routes.ts` and `robots.ts`), navigation for the later admin pages and
+a dashboard with `rpc("admin_stats")` (users, banned users, active lost/found,
+hidden items, matches, confirmed matches, open reports, reported items). Manual:
+make your own account admin with SQL (`update profiles set role = 'admin' where id =
+'<uuid>'`).
 
-Production serves `a165b1d` (2026-10-04): P9.S1, the F-34 fix and P9.S2 are
-deployed, item pages are healthy again (200 in mk and en) and the production smoke
-tests passed (details under P9.S2 in §22). The P10.S1 migration is applied to the
-hosted project (additive; the deployed app does not use it yet). P9.S3 and P10.S1
-are committed locally and not yet pushed; after a push, re-run the `/favorites`
-browser check against Vercel.
+Production serves `a165b1d` (2026-10-04). P9.S3, P10.S1 and P10.S2 are committed
+locally and not yet pushed (the P10.S1 migration is already applied to the hosted
+project); after a push, re-run the `/favorites` and report-dialog browser checks
+against Vercel.
