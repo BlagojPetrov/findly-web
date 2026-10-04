@@ -2288,6 +2288,17 @@ Open manual items:
   navigating, stays un-saved after reload; home page hearts save and un-save (en
   label "Save to favorites"); no hearts on the dashboard; no console errors.
   Advisors: only the known `current_profile` warnings and F-19.
+- **Production (2026-10-04):** `f3e30e7` (P9.S1), `32f05dc` (F-34) and `a165b1d`
+  (P9.S2) pushed to `main` as a fast-forward (`7180792..a165b1d`, no rewrite).
+  Deployment confirmed by the served code: an uncached render (`X-Vercel-Cache:
+MISS`, `fra1`) of `/items` contains the guest heart links, which exist only from
+  `a165b1d`. All six item pages linked from the feed return 200 in mk and en (they
+  returned 500 since the P9.S1 migration, F-34). Headless Edge against
+  https://findly-web-nine.vercel.app (temporary `@findly.test` user, deleted
+  afterwards; no favorites left) 60/60: guest heart → login → back to the report
+  (mk/en); save and remove on the item page, `/items` and the home page, each
+  optimistic, without navigation and kept after reload (mk/en); the item page agrees
+  with the feed; no favorite UI on the dashboard; no console errors.
 
 #### P9.S3 — Favorites page
 
@@ -2427,6 +2438,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-04 | deploy      | P9.S1, F-34 fix and P9.S2 deployed (`a165b1d`); item pages on Vercel healthy again; production favorites smoke test 60/60 (mk/en).                                                                                                                                                                                                                                                                                                                                    |
 | 2026-10-04 | P9.S2       | Favorite toggle: `addFavorite`/`removeFavorite` actions, optimistic `FavoriteButton` on feed/home cards and the item page, login link for guests, `isFavorite` from `search_items`; 675 unit tests; browser check 19/19.                                                                                                                                                                                                                                              |
 | 2026-10-03 | F-34 fix    | Item page failed after P9.S1 (`PGRST201`: `favorites` made `items` ↔ `profiles` ambiguous); `getItem` embeds the owner as `profiles!items_user_id_fkey`; regression test (654 → 658 unit tests); browser check of two item pages mk/en 17/17. No schema change.                                                                                                                                                                                                       |
 | 2026-10-03 | P9.S1       | Favorites schema: `favorites` table with RLS (own rows; adding needs `can_write()` and a visible, not hidden item), `search_items` returns `is_favorite`; SQL tests `favorites.sql` (19/19).                                                                                                                                                                                                                                                                          |
@@ -2512,7 +2524,6 @@ Why next: P9.S2 lets users save reports (`FavoriteButton`, `addFavorite` /
 still visible (a favorite stays when its report is hidden later), with the heart to
 remove them and a header/menu link.
 
-Phase 8 is deployed to production (2026-10-03, `a62c026`; details under Phase 8 in §22). The
-P9.S1 migration is applied to the hosted project. Because production uses the
-same project, item pages on Vercel (still `a62c026`) return 500 since then (F-34:
-ambiguous `profiles` embed) until the P9.S1, F-34 and P9.S2 commits are pushed.
+Production serves `a165b1d` (2026-10-04): P9.S1, the F-34 fix and P9.S2 are
+deployed, item pages are healthy again (200 in mk and en) and the production smoke
+tests passed (details under P9.S2 in §22).
