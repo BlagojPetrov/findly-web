@@ -71,6 +71,7 @@ function view(
     matchStatus: "suggested",
     conversationId: null,
     sender: null,
+    moderationAction: null,
     ...overrides,
   };
 }

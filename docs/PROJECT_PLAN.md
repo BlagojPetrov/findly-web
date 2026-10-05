@@ -7,8 +7,8 @@
 > updating it.
 
 - **Last updated:** 2026-10-05
-- **Current phase:** Phase 10 — Admin and moderation in progress (P10.S1–P10.S3 completed; Phase 9 completed, optional P7.S5 deferred)
-- **Next step:** P10.S4 (§22, §25)
+- **Current phase:** Phase 10 — Admin and moderation in progress (P10.S1–P10.S4 completed; Phase 9 completed, optional P7.S5 deferred)
+- **Next step:** P10.S5 (§22, §25)
 
 ---
 
@@ -172,7 +172,7 @@ to these IDs. "Next step" always means the step named in
 | P10.S1 | Reports schema and admin policies              | `COMPLETED`   |
 | P10.S2 | Report item UI                                 | `COMPLETED`   |
 | P10.S3 | Admin area layout and dashboard                | `COMPLETED`   |
-| P10.S4 | Reports queue and item moderation              | `NOT STARTED` |
+| P10.S4 | Reports queue and item moderation              | `COMPLETED`   |
 | P10.S5 | User management (ban/unban)                    | `NOT STARTED` |
 | P10.S6 | Category management                            | `NOT STARTED` |
 | P11.S1 | Dark mode                                      | `NOT STARTED` |
@@ -327,22 +327,22 @@ Route groups `(auth)` and `(app)` do not change URLs; they only share layouts.
 
 ### Route map
 
-| Route                                                             | Access          | Phase |
-| ----------------------------------------------------------------- | --------------- | ----- |
-| `/`                                                               | public          | 1, 4  |
-| `/login`, `/register`, `/forgot-password`                         | guests          | 2     |
-| `/verify-email`, `/reset-password`                                | public          | 2     |
-| `/profile`                                                        | signed in       | 2     |
-| `/items`                                                          | public          | 4     |
-| `/items/[id]`                                                     | public (active) | 3, 4  |
-| `/items/new`, `/items/[id]/edit`                                  | signed in/owner | 3     |
-| `/dashboard`                                                      | signed in       | 3     |
-| `/map`                                                            | public          | 5     |
-| `/notifications` ✓ (`?page=` from 2)                              | signed in       | 7     |
-| `/messages/[id]` ✓ (chat since P8.S4)                             | participants    | 8     |
-| `/messages` ✓                                                     | signed in       | 8     |
-| `/favorites`                                                      | signed in       | 9     |
-| `/admin` ✓, `/admin/reports`, `/admin/users`, `/admin/categories` | admin           | 10    |
+| Route                                                                                          | Access          | Phase |
+| ---------------------------------------------------------------------------------------------- | --------------- | ----- |
+| `/`                                                                                            | public          | 1, 4  |
+| `/login`, `/register`, `/forgot-password`                                                      | guests          | 2     |
+| `/verify-email`, `/reset-password`                                                             | public          | 2     |
+| `/profile`                                                                                     | signed in       | 2     |
+| `/items`                                                                                       | public          | 4     |
+| `/items/[id]`                                                                                  | public (active) | 3, 4  |
+| `/items/new`, `/items/[id]/edit`                                                               | signed in/owner | 3     |
+| `/dashboard`                                                                                   | signed in       | 3     |
+| `/map`                                                                                         | public          | 5     |
+| `/notifications` ✓ (`?page=` from 2)                                                           | signed in       | 7     |
+| `/messages/[id]` ✓ (chat since P8.S4)                                                          | participants    | 8     |
+| `/messages` ✓                                                                                  | signed in       | 8     |
+| `/favorites`                                                                                   | signed in       | 9     |
+| `/admin` ✓, `/admin/reports` ✓ (`?view=hidden`, `?page=`), `/admin/users`, `/admin/categories` | admin           | 10    |
 
 All routes also exist under `/en/...`.
 
@@ -1305,7 +1305,12 @@ decay, Cyrillic vs Latin text.
     `conversations_delete_notifications` removes the message notifications of a
     conversation that goes with an account. Banned recipients are notified (their
     reading marks nothing, P8.S1). No backfill for messages sent before P8.S6.
-  - Moderation action on an item → owner (`type = moderation`) (P10.S4).
+  - Moderation action on an item → owner (`type = moderation`): trigger
+    `items_notify_moderation` (P10.S1), `data = { item_id, action }`. UI (P10.S4 ✓):
+    `parseNotificationData` reads `action` (`moderationAction`, unknown → null); the
+    entry's title says "A moderator hid your report" / "Your report is visible again"
+    (generic title for an unknown action), shows the report and links to it (owners
+    see their hidden reports).
   - UI (P8.S6 ✓): `parseNotificationData` also reads `conversation_id`/`sender_id`;
     `fetchNotifications`/`fetchNotificationPage` load the senders' public profile
     columns (`id, display_name`); a message entry shows "Нова порака", "Од {name}"
@@ -1576,6 +1581,17 @@ open_reports, reported_items`. Both are `security definer` and raise `42501`
   none). Hidden items keep `resolved_at`, so restoring returns them to their
   previous status: `resolved` when `resolved_at` is set (the original time is
   kept), otherwise `active` (P10.S4 decides it from `resolved_at`).
+- **Queue and item moderation (P10.S4 ✓):** `/admin/reports` lists items with open
+  flags, the one whose oldest open flag waits longest first (10 items per page), each
+  with its flags oldest first (reason, details, reporter, time) and the owner;
+  `?view=hidden` lists hidden reports (most recently changed first, 20 per page) with
+  "Restore" and what they return to. Actions (`src/actions/admin.ts`, each
+  `requireAdmin()`): `hideItem` (hides the report — no-op when already hidden — and
+  resolves the flags shown), `restoreItem` (`resolved` when `resolved_at` is set,
+  else `active`; no-op when not hidden), `closeReports` (resolve or dismiss the flags
+  shown). Only the flag ids the admin saw are closed, so a flag filed after the page
+  loaded stays open. Hide + resolve are two statements (no RPC): if the second fails,
+  the item stays in the queue as hidden with "Resolve" available.
 
 ---
 
@@ -2497,6 +2513,49 @@ MISS`, `fra1`) of `/items` contains the guest heart links, which exist only from
 
 - **Affects:** `admin/reports/page.tsx`, `src/actions/admin.ts`.
 - **Verify:** hide/restore item; resolve/dismiss report; owner gets a moderation notification.
+- **Implemented:** `src/app/[locale]/(app)/admin/reports/page.tsx` (calls
+  `requireAdmin()`; canonical URLs: `?view=hidden`, `?page=` from 2, unknown
+  parameters and pages past the end redirect) with two views (§18): open flags
+  grouped by item (`getReportQueue`: the oldest `REPORT_QUEUE_MAX_REPORTS` = 500 open
+  flags, grouped by `groupReports` from `@/lib/moderation`, 10 items per page; a note
+  when the limit cut the list) and hidden reports (`getHiddenItems`, 20 per page,
+  `PGRST103` handled); both in `@/lib/queries/admin`, embeds name their foreign keys
+  (`profiles!reports_reporter_id_fkey`, `profiles!items_user_id_fkey`). Actions
+  `hideItem`/`restoreItem`/`closeReports` (`src/actions/admin.ts`, schemas in
+  `@/lib/validation/admin`, `refresh()` on success, `not_found`/`database` errors);
+  buttons in `ModerationActions` (`src/components/admin/`: hide with a confirmation
+  dialog, resolve/dismiss with the number of flags, restore; toasts). "Flags" tab in
+  `AdminNav`. Moderation notifications show what happened (§15). Messages:
+  `Admin.nav.reports`, `Admin.reports`, `Admin.moderation`,
+  `Notifications.moderation.item_hidden`/`item_restored`; reasons reuse
+  `Moderation.report.reasons`. No migration (admins already update `items.status`
+  and `reports.status` through RLS since P3.S1/P10.S1).
+- **Decisions:** the queue acts per item on the flags shown (no per-flag buttons);
+  hiding resolves them, "dismiss" closes them without touching the report; for an
+  item that is already hidden the queue offers "resolve" instead of "hide".
+  Restoring lives in the hidden view (the item page gets no admin controls). The
+  queue loads at most 500 open flags instead of paging in SQL (no RPC; plenty for
+  this project). Entries use `overflow-wrap: anywhere` so long unbroken words in
+  details or names cannot widen the page.
+- **Verified:** 32 new unit/component tests (721 → 753): schemas, `groupReports`,
+  `restoredStatus`, `parseModerationAction`, actions (hide + resolve, already hidden,
+  not found, errors, restore to active/resolved, not hidden, close only the open
+  flags shown), queries (grouping, paging, limit, errors, `PGRST103`),
+  `ModerationActions` (confirmation, counts, toasts, errors), `AdminNav`, bell entries
+  for both actions. Lint, typecheck, `npm run build`. Browser check (production build,
+  headless Edge, temporary `mod-p10s4-*@findly.test` admin, owner and two flaggers,
+  deleted afterwards): 41/41 — guest → login with `next`; regular user 404; tab from
+  the dashboard, title, `noindex`; groups ordered by oldest flag with count, reasons,
+  details (line breaks kept), reporters, owner and status badges; hide: Cancel changes
+  nothing, confirm hides, resolves both flags (resolver = admin), notifies the owner
+  once, toast, group leaves the queue; dismiss closes only the flag shown (a flag
+  filed meanwhile stays open and appears after the refresh); resolve on an already
+  hidden item keeps it hidden; hiding a resolved item keeps `resolved_at`; hidden
+  view lists them, restore returns to active / resolved with the original time;
+  owner notifications (3 hidden, 2 restored) and `/notifications` texts and link;
+  canonical redirects (5); empty queue message; English at 375 px: no overflow (after
+  the `overflow-wrap` fix; the first run found a long word widening the page), dialog
+  fits; no browser errors. No migration, so no advisor run.
 
 #### P10.S5 — User management
 
@@ -2605,6 +2664,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-05 | P10.S4      | Moderation queue `/admin/reports`: open flags grouped by item (oldest first) with hide (confirmation; resolves the flags shown), resolve and dismiss, hidden reports view with restore (to active or resolved), "Flags" tab, moderation notification texts; 32 unit tests; browser check 41/41.                                                                                                                                                                       |
 | 2026-10-05 | P10.S3      | Admin area: `(app)/admin` layout (`requireAdmin`, 404 for non-admins, `AdminNav`) and dashboard with the `admin_stats()` tiles, `getAdminStats`, admin link in the user menu; owner account made admin with SQL; 4 unit tests; browser check 22/22.                                                                                                                                                                                                                   |
 | 2026-10-05 | P10.S2      | Report item UI: `ReportDialog` on the item page (reason + optional details; note when the user has an open report; login link for guests), `reportItem` action (`report_duplicate`, `report_unavailable`), `hasOpenReport`, shadcn dialog; 22 unit tests; browser check passed; F-35 logged (header overflow at 375 px).                                                                                                                                              |
 | 2026-10-04 | P10.S1      | Moderation schema: `reports` with RLS and a resolution trigger, admin policies on categories, `admin_set_banned()`, `admin_stats()`, moderation notifications on hide/restore, hidden items keep `resolved_at`; SQL tests `moderation.sql` (20/20 files). Phase 10 started.                                                                                                                                                                                           |
@@ -2687,17 +2747,15 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P10.S4 — Reports queue and item moderation** (see §22, Phase 10; design in §18).
+**P10.S5 — User management** (see §22, Phase 10; design in §18).
 
-Why next: admins can open `/admin` (P10.S3) and users can flag reports (P10.S2).
-P10.S4 adds `/admin/reports` (open flags grouped by item, oldest first, with reason,
-details and reporter) and `src/actions/admin.ts`: hide/restore an item (restore to
-`resolved` when `resolved_at` is set, else `active`; the owner gets the moderation
-notification from the P10.S1 trigger) and resolve/dismiss flags. It also adds the
-"Reports" tab to `AdminNav`, and the notification UI must render `moderation`
-entries.
+Why next: admins can review flags and hide/restore reports (P10.S4). P10.S5 adds
+`/admin/users` (the users with role and ban state) and
+ban/unban through `rpc("admin_set_banned")` (admins and self cannot be banned:
+`42501`), plus the banner that tells a banned user they can only read. It adds the
+"Users" tab to `AdminNav`.
 
-Production serves `a165b1d` (2026-10-04). P9.S3 and P10.S1–P10.S3 are committed
+Production serves `a165b1d` (2026-10-04). P9.S3 and P10.S1–P10.S4 are committed
 locally and not yet pushed (the P10.S1 migration is already applied to the hosted
 project); after a push, re-run the `/favorites`, report-dialog and admin browser
 checks against Vercel.

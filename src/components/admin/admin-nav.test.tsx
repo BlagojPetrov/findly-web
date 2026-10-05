@@ -64,4 +64,16 @@ describe("AdminNav", () => {
     expect(link.textContent).toBe(en.Admin.nav.overview);
     expect(link.hasAttribute("aria-current")).toBe(false);
   });
+
+  it("marks the reports section on its pages", () => {
+    pathname.current = "/admin/reports";
+    render();
+    const links = [...container.querySelectorAll("a")];
+    expect(links.map((link) => link.getAttribute("href"))).toEqual([
+      "/admin",
+      "/admin/reports",
+    ]);
+    expect(links[1].textContent).toBe(mk.Admin.nav.reports);
+    expect(links[1].getAttribute("aria-current")).toBe("page");
+  });
 });

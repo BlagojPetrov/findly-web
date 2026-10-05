@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import type { MatchStatus } from "@/lib/matches";
+import { type ModerationAction, parseModerationAction } from "@/lib/moderation";
 import type { Database, Enums } from "@/types/database";
 
 // Client-safe helpers for notifications (§15): reading the ids-only payload,
@@ -40,6 +41,8 @@ export type NotificationData = {
   // Message notifications: the conversation and who wrote.
   conversationId: string | null;
   senderId: string | null;
+  // Moderation notifications: what happened to the recipient's report.
+  moderationAction: ModerationAction | null;
 };
 
 // The public name of a message notification's sender.
@@ -58,6 +61,8 @@ export type NotificationView = {
   // Message notifications only.
   conversationId: string | null;
   sender: NotificationSender | null;
+  // Moderation notifications only (null: unknown action).
+  moderationAction: ModerationAction | null;
 };
 
 const uuid = z.uuid();
@@ -79,6 +84,7 @@ export function parseNotificationData(value: unknown): NotificationData {
     otherItemId: uuidField(data.other_item_id),
     conversationId: uuidField(data.conversation_id),
     senderId: uuidField(data.sender_id),
+    moderationAction: parseModerationAction(data.action),
   };
 }
 
@@ -110,6 +116,8 @@ export function toNotificationViews(
         row.type === "message" && data.senderId
           ? (senderById.get(data.senderId) ?? null)
           : null,
+      moderationAction:
+        row.type === "moderation" ? data.moderationAction : null,
     };
   });
 }

@@ -158,6 +158,7 @@ function view(
     matchStatus: "suggested",
     conversationId: null,
     sender: null,
+    moderationAction: null,
     ...overrides,
   };
 }
@@ -391,6 +392,29 @@ describe("NotificationBell", () => {
     expect(panelText()).toContain("Update about your report");
     expect(panelText()).toContain("Report: “Изгубени клучеви”");
     expect(panelText()).toContain("5 minutes ago");
+  });
+
+  it("says what a moderator did with the report", async () => {
+    const moderation = {
+      type: "moderation",
+      otherItem: null,
+      matchStatus: null,
+    } as const;
+    vi.mocked(fetchNotifications).mockResolvedValue([
+      view("01", { ...moderation, moderationAction: "item_hidden" }),
+      view("02", { ...moderation, moderationAction: "item_restored" }),
+    ]);
+    render(userA, 2);
+    await subscribe();
+    await openPanel();
+    expect(panelText()).toContain(mk.Notifications.moderation.item_hidden);
+    expect(panelText()).toContain(mk.Notifications.moderation.item_restored);
+    const links = [
+      ...document.querySelectorAll('[data-slot="popover-content"] li a'),
+    ];
+    expect(links.map((link) => link.getAttribute("href"))).toEqual(
+      Array(2).fill("/items/10000000-0000-4000-8000-000000000001"),
+    );
   });
 
   it("lists message notifications linking to the conversation", async () => {

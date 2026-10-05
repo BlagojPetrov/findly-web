@@ -31,7 +31,10 @@ export function NotificationEntry({
   const now = useNow({ updateInterval: 60_000 });
   const href = notificationHref(view);
   const Icon = icons[view.type];
-  const title = t(`${view.type}.title`);
+  const title =
+    view.type === "moderation" && view.moderationAction
+      ? t(`moderation.${view.moderationAction}`)
+      : t(`${view.type}.title`);
   const createdAt = new Date(view.createdAt);
   const elapsed = elapsedSince(createdAt, now);
   const time =

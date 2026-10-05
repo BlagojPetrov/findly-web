@@ -444,7 +444,9 @@
       "from": "From {name}"
     },
     "moderation": {
-      "title": "Update about your report"
+      "title": "Update about your report",
+      "item_hidden": "A moderator hid your report",
+      "item_restored": "Your report is visible again"
     },
     "other": {
       "item": "Report: “{title}”"
@@ -562,7 +564,8 @@
     "area": "Administration",
     "nav": {
       "label": "Administration sections",
-      "overview": "Overview"
+      "overview": "Overview",
+      "reports": "Flags"
     },
     "dashboard": {
       "title": "Overview",
@@ -612,6 +615,45 @@
           "detail": "Reports with at least one open flag"
         }
       }
+    },
+    "reports": {
+      "title": "Flags",
+      "description": "Reports that users flagged, the one waiting longest first. Hiding a report notifies its owner; it can be restored later.",
+      "error": "The list could not be loaded. Please try again.",
+      "views": {
+        "label": "Show",
+        "open": "Open flags",
+        "hidden": "Hidden reports"
+      },
+      "owner": "Posted by {name}",
+      "open": {
+        "empty": "No open flags. New ones appear here when users flag a report.",
+        "count": "{items, plural, one {# report} other {# reports}} with {reports, plural, one {# open flag} other {# open flags}}",
+        "truncated": "Only the oldest {count} open flags are shown. Newer ones appear once these are handled.",
+        "flags": "{count, plural, one {# flag} other {# flags}}",
+        "flaggedBy": "Flagged by {name} · {time}"
+      },
+      "hidden": {
+        "empty": "No hidden reports.",
+        "count": "{count, plural, one {# hidden report} other {# hidden reports}}",
+        "changed": "Last changed {time}",
+        "restoresActive": "Restores as active",
+        "restoresResolved": "Restores as resolved"
+      }
+    },
+    "moderation": {
+      "hide": "Hide report",
+      "hideTitle": "Hide this report?",
+      "hideDescription": "Only the owner and the administrators will see it. {count, plural, one {The flag is} other {The # flags are}} marked as resolved and the owner is notified. You can restore it later.",
+      "confirmHide": "Hide",
+      "cancel": "Cancel",
+      "resolve": "{count, plural, one {Resolve flag} other {Resolve # flags}}",
+      "dismiss": "{count, plural, one {Dismiss flag} other {Dismiss # flags}}",
+      "restore": "Restore",
+      "hideToast": "The report is hidden and its owner was notified.",
+      "restoreToast": "The report is visible again and its owner was notified.",
+      "resolvedToast": "{count, plural, one {The flag was resolved.} other {# flags were resolved.}}",
+      "dismissedToast": "{count, plural, one {The flag was dismissed.} other {# flags were dismissed.}}"
     }
   },
   "Search": {

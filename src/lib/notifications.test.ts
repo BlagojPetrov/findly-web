@@ -69,6 +69,7 @@ describe("parseNotificationData", () => {
       otherItemId: other,
       conversationId: null,
       senderId: null,
+      moderationAction: null,
     });
     expect(parseNotificationData(messageRow().data)).toEqual({
       matchId: null,
@@ -76,6 +77,7 @@ describe("parseNotificationData", () => {
       otherItemId: null,
       conversationId,
       senderId: sender,
+      moderationAction: null,
     });
   });
 
@@ -93,6 +95,7 @@ describe("parseNotificationData", () => {
         otherItemId: null,
         conversationId: null,
         senderId: null,
+        moderationAction: null,
       });
     }
   });
@@ -117,6 +120,7 @@ describe("toNotificationViews", () => {
         matchStatus: "suggested",
         conversationId: null,
         sender: null,
+        moderationAction: null,
       },
     ]);
   });
@@ -178,6 +182,32 @@ describe("toNotificationViews", () => {
       [{ id: matchId, status: "dismissed" }],
     );
     expect(views[0].matchStatus).toBe("dismissed");
+  });
+
+  it("reads the action of moderation notifications", () => {
+    const views = toNotificationViews(
+      [
+        row({
+          type: "moderation",
+          data: { item_id: own, action: "item_hidden" },
+        }),
+        row({
+          type: "moderation",
+          data: { item_id: own, action: "item_restored" },
+        }),
+        row({ type: "moderation", data: { item_id: own, action: "deleted" } }),
+        row({ data: { item_id: own, action: "item_hidden" } }),
+      ],
+      [ownItem],
+      [],
+    );
+    expect(views.map((view) => view.moderationAction)).toEqual([
+      "item_hidden",
+      "item_restored",
+      null,
+      null,
+    ]);
+    expect(views[0].item).toEqual(ownItem);
   });
 
   it("uses only the item of other notification types", () => {
