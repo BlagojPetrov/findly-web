@@ -73,7 +73,9 @@ describe("AdminNav", () => {
       "/admin",
       "/admin/reports",
       "/admin/users",
+      "/admin/categories",
     ]);
+    expect(links[3].textContent).toBe(mk.Admin.nav.categories);
     expect(links[2].textContent).toBe(mk.Admin.nav.users);
     expect(links[2].hasAttribute("aria-current")).toBe(false);
     expect(links[1].textContent).toBe(mk.Admin.nav.reports);

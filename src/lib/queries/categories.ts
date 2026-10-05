@@ -14,7 +14,8 @@ export const getCategories = cache(async (): Promise<Category[]> => {
   const { data, error } = await supabase
     .from("categories")
     .select("id, slug, name_mk, name_en, icon")
-    .order("sort_order");
+    .order("sort_order")
+    .order("id");
   if (error) throw new Error(`Failed to load categories: ${error.message}`);
   return data;
 });

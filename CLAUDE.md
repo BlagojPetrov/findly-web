@@ -42,9 +42,10 @@ status and the next step. Read it before any work.
   Phase 9 completed. Phase 10 started: moderation schema (P10.S1), report dialog on
   the item page (P10.S2), admin area `/admin` with the stats dashboard (P10.S3),
   moderation queue `/admin/reports` with hide/restore and resolve/dismiss (P10.S4), user
-  management `/admin/users` with ban/unban and a banner for banned users (P10.S5); not
-  pushed yet. The owner's Google account (`petrovblaze48@gmail.com`) is admin.
-  Next: P10.S6 (category management), only after the user's go-ahead.
+  management `/admin/users` with ban/unban and a banner for banned users (P10.S5),
+  category management `/admin/categories` (P10.S6); Phase 10 completed, not pushed yet.
+  The owner's Google account (`petrovblaze48@gmail.com`) is admin.
+  Next: P11.S1 (dark mode), only after the user's go-ahead.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -256,9 +257,16 @@ item_id?, sender_id }`, one per recipient and conversation
   cannot read others' role/ban/email from `profiles`); URL filters via
   `parseUserFilters`/`userListQuery` (`@/lib/validation/admin`); ban/unban only through
   `setUserBanned` (`BanButton`). Banned users see `BannedNotice` (locale layout).
+  Categories: `/admin/categories` (`CategoryManager`, `CategoryForm`), writes only
+  through `src/actions/categories.ts`; slugs are fixed (no update privilege), `other`
+  cannot be deleted (`FL409`), order only through `rpc("admin_reorder_categories")`
+  with the full id list. Category icons must be in `CATEGORY_ICONS`
+  (`@/lib/category-icons`) and mapped in `CategoryIcon`.
   User text that may hold long unbroken words gets `[overflow-wrap:anywhere]` on its
   container (`break-words` does not stop a grid/flex item from widening the page).
-  Browser checks use a temporary `…@findly.test` user made admin with SQL.
+  Browser checks use a temporary `…@findly.test` user made admin with SQL. Visiting an
+  `/en` page sets the locale cookie for that browser context: check public English
+  pages in a separate context.
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
   (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals) or render on the server.

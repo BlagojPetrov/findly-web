@@ -183,3 +183,44 @@ export async function getUserPage(
     total: data[0]?.total_count ?? 0,
   };
 }
+
+export type AdminCategory = {
+  id: number;
+  slug: string;
+  nameMk: string;
+  nameEn: string;
+  icon: string;
+  // Reports in the category, hidden ones included (a category in use
+  // cannot be deleted).
+  itemCount: number;
+};
+
+// Every category in display order with the number of reports in it.
+export async function getAdminCategories(): Promise<AdminCategory[]> {
+  const supabase = await createClient();
+  const [categories, counts] = await Promise.all([
+    supabase
+      .from("categories")
+      .select("id, slug, name_mk, name_en, icon")
+      .order("sort_order")
+      .order("id"),
+    supabase.rpc("admin_category_item_counts"),
+  ]);
+  if (categories.error) {
+    throw new Error(`Failed to load categories: ${categories.error.message}`);
+  }
+  if (counts.error) {
+    throw new Error(`Failed to count category items: ${counts.error.message}`);
+  }
+  const countById = new Map(
+    counts.data.map((row) => [row.category_id, row.item_count]),
+  );
+  return categories.data.map((category) => ({
+    id: category.id,
+    slug: category.slug,
+    nameMk: category.name_mk,
+    nameEn: category.name_en,
+    icon: category.icon,
+    itemCount: countById.get(category.id) ?? 0,
+  }));
+}

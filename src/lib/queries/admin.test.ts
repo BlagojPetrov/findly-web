@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  getAdminCategories,
   getAdminStats,
   getHiddenItems,
   getReportQueue,
@@ -264,6 +265,68 @@ describe("getUserPage", () => {
     rpc.mockResolvedValueOnce({ data: null, error: { message: "admin only" } });
     await expect(getUserPage({ q: "", bannedOnly: false }, 1)).rejects.toThrow(
       "Failed to load users: admin only",
+    );
+  });
+});
+
+describe("getAdminCategories", () => {
+  it("adds the item counts to the categories in display order", async () => {
+    run.mockResolvedValue({
+      data: [
+        {
+          id: 2,
+          slug: "keys",
+          name_mk: "Клучеви",
+          name_en: "Keys",
+          icon: "key-round",
+        },
+        {
+          id: 8,
+          slug: "other",
+          name_mk: "Друго",
+          name_en: "Other",
+          icon: "package",
+        },
+      ],
+      error: null,
+    });
+    rpc.mockResolvedValue({
+      data: [{ category_id: 2, item_count: 5 }],
+      error: null,
+    });
+    expect(await getAdminCategories()).toEqual([
+      {
+        id: 2,
+        slug: "keys",
+        nameMk: "Клучеви",
+        nameEn: "Keys",
+        icon: "key-round",
+        itemCount: 5,
+      },
+      {
+        id: 8,
+        slug: "other",
+        nameMk: "Друго",
+        nameEn: "Other",
+        icon: "package",
+        itemCount: 0,
+      },
+    ]);
+    const [table, calls] = run.mock.calls[0];
+    expect(table).toBe("categories");
+    expect(calls).toContainEqual(["order", "sort_order"]);
+    expect(rpc).toHaveBeenCalledWith("admin_category_item_counts", undefined);
+  });
+
+  it("throws when either query fails", async () => {
+    run.mockResolvedValue({ data: [], error: null });
+    rpc.mockResolvedValue({ data: null, error: { message: "admin only" } });
+    await expect(getAdminCategories()).rejects.toThrow(
+      "Failed to count category items: admin only",
+    );
+    run.mockResolvedValue({ data: null, error: { message: "down" } });
+    await expect(getAdminCategories()).rejects.toThrow(
+      "Failed to load categories: down",
     );
   });
 });

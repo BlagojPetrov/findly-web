@@ -7,8 +7,8 @@
 > updating it.
 
 - **Last updated:** 2026-10-05
-- **Current phase:** Phase 10 — Admin and moderation in progress (P10.S1–P10.S5 completed; Phase 9 completed, optional P7.S5 deferred)
-- **Next step:** P10.S6 (§22, §25)
+- **Current phase:** Phase 10 — Admin and moderation completed (P10.S1–P10.S6); Phase 11 next (optional P7.S5 deferred)
+- **Next step:** P11.S1 (§22, §25)
 
 ---
 
@@ -102,7 +102,7 @@ to these IDs. "Next step" always means the step named in
 | 7     | Notifications                         | `COMPLETED`   |
 | 8     | Messaging                             | `COMPLETED`   |
 | 9     | Favorites                             | `COMPLETED`   |
-| 10    | Admin and moderation                  | `IN PROGRESS` |
+| 10    | Admin and moderation                  | `COMPLETED`   |
 | 11    | UI polish, testing and final delivery | `NOT STARTED` |
 
 ### Step status
@@ -174,7 +174,7 @@ to these IDs. "Next step" always means the step named in
 | P10.S3 | Admin area layout and dashboard                | `COMPLETED`   |
 | P10.S4 | Reports queue and item moderation              | `COMPLETED`   |
 | P10.S5 | User management (ban/unban)                    | `COMPLETED`   |
-| P10.S6 | Category management                            | `NOT STARTED` |
+| P10.S6 | Category management                            | `COMPLETED`   |
 | P11.S1 | Dark mode                                      | `NOT STARTED` |
 | P11.S2 | Responsive, accessibility, error boundaries    | `NOT STARTED` |
 | P11.S3 | Performance pass                               | `NOT STARTED` |
@@ -327,22 +327,22 @@ Route groups `(auth)` and `(app)` do not change URLs; they only share layouts.
 
 ### Route map
 
-| Route                                                                                                                           | Access          | Phase |
-| ------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----- |
-| `/`                                                                                                                             | public          | 1, 4  |
-| `/login`, `/register`, `/forgot-password`                                                                                       | guests          | 2     |
-| `/verify-email`, `/reset-password`                                                                                              | public          | 2     |
-| `/profile`                                                                                                                      | signed in       | 2     |
-| `/items`                                                                                                                        | public          | 4     |
-| `/items/[id]`                                                                                                                   | public (active) | 3, 4  |
-| `/items/new`, `/items/[id]/edit`                                                                                                | signed in/owner | 3     |
-| `/dashboard`                                                                                                                    | signed in       | 3     |
-| `/map`                                                                                                                          | public          | 5     |
-| `/notifications` ✓ (`?page=` from 2)                                                                                            | signed in       | 7     |
-| `/messages/[id]` ✓ (chat since P8.S4)                                                                                           | participants    | 8     |
-| `/messages` ✓                                                                                                                   | signed in       | 8     |
-| `/favorites`                                                                                                                    | signed in       | 9     |
-| `/admin` ✓, `/admin/reports` ✓ (`?view=hidden`, `?page=`), `/admin/users` ✓ (`?q=`, `?banned=1`, `?page=`), `/admin/categories` | admin           | 10    |
+| Route                                                                                                                             | Access          | Phase |
+| --------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----- |
+| `/`                                                                                                                               | public          | 1, 4  |
+| `/login`, `/register`, `/forgot-password`                                                                                         | guests          | 2     |
+| `/verify-email`, `/reset-password`                                                                                                | public          | 2     |
+| `/profile`                                                                                                                        | signed in       | 2     |
+| `/items`                                                                                                                          | public          | 4     |
+| `/items/[id]`                                                                                                                     | public (active) | 3, 4  |
+| `/items/new`, `/items/[id]/edit`                                                                                                  | signed in/owner | 3     |
+| `/dashboard`                                                                                                                      | signed in       | 3     |
+| `/map`                                                                                                                            | public          | 5     |
+| `/notifications` ✓ (`?page=` from 2)                                                                                              | signed in       | 7     |
+| `/messages/[id]` ✓ (chat since P8.S4)                                                                                             | participants    | 8     |
+| `/messages` ✓                                                                                                                     | signed in       | 8     |
+| `/favorites`                                                                                                                      | signed in       | 9     |
+| `/admin` ✓, `/admin/reports` ✓ (`?view=hidden`, `?page=`), `/admin/users` ✓ (`?q=`, `?banned=1`, `?page=`), `/admin/categories` ✓ | admin           | 10    |
 
 All routes also exist under `/en/...`.
 
@@ -542,6 +542,16 @@ Legend: **PK** primary key, **FK** foreign key, ✓ implemented.
 | `created_at` | timestamptz |                                            |
 
 Seed: electronics, documents, wallet, keys, accessories, clothing, pets, other.
+
+P10.S1 added admin insert/update/delete policies. P10.S6
+(`20261005204612_category_management.sql`): `slug` is no longer updatable (feed URLs
+and the matching functions use it); trigger `categories_protect_other` refuses to
+delete `other` (`FL409`, the matching rules treat it as "any category");
+`admin_reorder_categories(category_ids)` (security invoker, admins only: `42501`)
+sets `sort_order` to 10, 20, … in the array's order and refuses (`22023`) a list
+that does not hold every category exactly once; `admin_category_item_counts()`
+(security invoker, admins only) counts the reports per category, hidden included.
+Icons: `CATEGORY_ICONS` (`@/lib/category-icons`, 24 names) mapped in `CategoryIcon`.
 
 ### `profiles` ✓ (P2.S2)
 
@@ -1602,6 +1612,10 @@ open_reports, reported_items`. Both are `security definer` and raise `42501`
   `total_count` (a page past the end has no rows). Ban/unban only through
   `admin_set_banned()` (P10.S1). Banned users see `BannedNotice` under the header on
   every page (read per request).
+- **Categories (P10.S6 ✓):** `/admin/categories` adds (slug fixed afterwards, placed
+  last), renames (mk/en), changes the icon, reorders (up/down; the full order is
+  saved at once) and deletes unused categories; `other` and categories in use cannot
+  be deleted (database errors `FL409`/`23503` → readable messages).
 
 ---
 
@@ -2401,7 +2415,7 @@ MISS`, `fra1`) of `/items` contains the guest heart links, which exist only from
 
 ---
 
-### Phase 10 — Admin and moderation — `IN PROGRESS`
+### Phase 10 — Admin and moderation — `COMPLETED`
 
 #### P10.S1 — Reports schema and admin policies
 
@@ -2616,6 +2630,52 @@ MISS`, `fra1`) of `/items` contains the guest heart links, which exist only from
 
 - **Affects:** `admin/categories/page.tsx`, categories policies.
 - **Verify:** add/rename/reorder; a category in use cannot be deleted.
+- **Implemented:** migration `20261005204612_category_management.sql` (§9
+  `categories`), SQL tests `supabase/tests/categories.sql`, types regenerated.
+  `src/app/[locale]/(app)/admin/categories/page.tsx` (`requireAdmin()`) renders
+  `CategoryManager` (`src/components/admin/`: list in display order with icon, both
+  names, slug, number of reports and "required for matching" for `other`; up/down
+  buttons with `useOptimistic`; edit dialog; delete with confirmation, disabled for
+  `other` and categories in use; "Add category" dialog) and `CategoryForm` (slug only
+  when adding; names; icon picker over `CATEGORY_ICONS`; values kept after errors).
+  Reads: `getAdminCategories` (`@/lib/queries/admin`). Actions
+  (`src/actions/categories.ts`, schemas in `@/lib/validation/categories`, `refresh()`):
+  `createCategory` (sort order after the last), `updateCategory`, `deleteCategory`,
+  `reorderCategories`; errors `category_slug_taken` (`23505`), `category_in_use`
+  (`23503`), `category_protected` (`FL409`), `category_list_changed` (`22023`).
+  `CategoryIcon` gained 16 icons; `getCategories` also orders by id. "Categories" tab
+  in `AdminNav`. Messages: `Admin.nav.categories`, `Admin.categories`, four `Errors`,
+  three `Validation` keys.
+- **Decisions:** slugs are fixed after creation (enforced by revoking the column
+  privilege, not only in the UI); `other` is protected in the database; reordering
+  sends the full list to one RPC (atomic, refuses a stale page) instead of swapping
+  two rows; both new functions are security invoker (RLS applies, no advisor
+  warning). Icons are limited to a fixed list so the bundle stays small.
+- **Verified:** migration and SQL tests (`categories.sql` and `moderation.sql`)
+  dry-run in rolled-back transactions (a wrong assert fails); pushed; `db:test`
+  22/22 (`categories.sql`: visitors/users cannot call either function; counts include
+  hidden items; slug update refused, names/icon change; reorder sets 10, 20, …;
+  missing, duplicate, unknown and null lists refused and change nothing; `other`
+  cannot be deleted by an admin or the table owner; a category in use cannot; an
+  unused one can). Advisors: no new warnings. 25 new unit/component tests (767 →
+  792): schemas, actions (sort order, error mapping, fields only), query, `moved`,
+  `CategoryManager` (usage, delete availability, optimistic move and rollback,
+  delete confirmation, add with an error and retry, edit without slug), `AdminNav`.
+  Lint, typecheck, `npm run build`. Browser check (production build, headless Edge,
+  temporary `cat-p10s6-*@findly.test` admin and user and `p10s6-*` categories; the
+  original categories and order restored afterwards): 32/32 — guest → login with
+  `next`; user 404; tab, title, `noindex`; list order, counts and delete availability
+  equal the database; invalid slug shows a field error and keeps values; add stores
+  the category last with a toast; duplicate slug (other case) gives a readable error;
+  edit without slug stores name and icon; moving up twice stores the order (10, 20, …)
+  and the public feed filter (guest, English) shows the new name in the new order; a
+  category added meanwhile makes a reorder fail with a message and change nothing; a
+  category in use cannot be deleted, one that became used after the page loaded is
+  refused by the database; delete with confirmation; English at 375 px: content does
+  not overflow (the admin tabs scroll sideways by design; the header's 14 px is F-35),
+  dialog fits; no browser errors. One script error during the run: the public check
+  first ran in the admin's context, and visiting `/en` set the locale cookie (F-13
+  behaviour), so later Macedonian lookups failed; it now uses a guest context.
 
 **Definition of done — Phase 10:** moderation loop (report → review → action → notification) works and is protected by RLS.
 
@@ -2714,6 +2774,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-05 | P10.S6      | Category management: migration (fixed slugs, protected `other`, atomic `admin_reorder_categories`, `admin_category_item_counts`), `/admin/categories` with add/edit/reorder/delete and an icon picker (24 icons), "Categories" tab; 25 unit tests; SQL tests 22/22; browser check 32/32. Phase 10 completed.                                                                                                                                                          |
 | 2026-10-05 | P10.S5      | User management: `admin_list_users()` (migration, SQL tests), `/admin/users` with name/email search, banned filter, counts and ban/unban (`setUserBanned`, confirmation), "Users" tab, banner for banned users; 14 unit tests; browser check 40/40.                                                                                                                                                                                                                   |
 | 2026-10-05 | P10.S4      | Moderation queue `/admin/reports`: open flags grouped by item (oldest first) with hide (confirmation; resolves the flags shown), resolve and dismiss, hidden reports view with restore (to active or resolved), "Flags" tab, moderation notification texts; 32 unit tests; browser check 41/41.                                                                                                                                                                       |
 | 2026-10-05 | P10.S3      | Admin area: `(app)/admin` layout (`requireAdmin`, 404 for non-admins, `AdminNav`) and dashboard with the `admin_stats()` tiles, `getAdminStats`, admin link in the user menu; owner account made admin with SQL; 4 unit tests; browser check 22/22.                                                                                                                                                                                                                   |
@@ -2798,15 +2859,15 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P10.S6 — Category management** (see §22, Phase 10; design in §18).
+**P11.S1 — Dark mode** (see §22, Phase 11).
 
-Why next: the moderation loop and user management are done (P10.S4–P10.S5).
-P10.S6 adds `/admin/categories`: add, rename (mk/en), change the icon and reorder
-categories through the admin policies from P10.S1; deleting a category that items
-use fails with `23503` and must show a readable error. It adds the "Categories" tab
-to `AdminNav` and completes Phase 10.
+Why next: Phase 10 is complete (moderation loop, users, categories). Phase 11 starts
+with polish: `next-themes` `ThemeProvider` in the locale layout and a theme toggle
+in the header, with no flash of the wrong theme and toasts that follow the theme.
+The colour tokens in `globals.css` need a checked dark variant (including the
+`lost`/`found` colours and the map frame).
 
-Production serves `a165b1d` (2026-10-04). P9.S3 and P10.S1–P10.S5 are committed
-locally and not yet pushed (the P10.S1 and P10.S5 migrations are already applied to
-the hosted project); after a push, re-run the `/favorites`, report-dialog and admin
-browser checks against Vercel.
+Before that, a push is due: production serves `a165b1d` (2026-10-04); P9.S3 and
+P10.S1–P10.S6 are committed locally and not yet pushed (their migrations are already
+applied to the hosted project, which production shares). After a push, re-run the
+`/favorites`, report-dialog and admin browser checks against Vercel.

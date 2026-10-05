@@ -454,6 +454,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_category_item_counts: {
+        Args: never
+        Returns: {
+          category_id: number
+          item_count: number
+        }[]
+      }
       admin_list_users: {
         Args: {
           banned_only?: boolean
@@ -474,6 +481,10 @@ export type Database = {
           role: Database["public"]["Enums"]["user_role"]
           total_count: number
         }[]
+      }
+      admin_reorder_categories: {
+        Args: { category_ids: number[] }
+        Returns: undefined
       }
       admin_set_banned: {
         Args: { banned: boolean; target_user_id: string }

@@ -88,7 +88,11 @@
     "message_rate_limit": "You sent too many messages in a short time. Please wait a moment and try again.",
     "favorite_unavailable": "This report cannot be saved: it may have been hidden or deleted.",
     "report_duplicate": "You have already flagged this report. The moderators will review it.",
-    "report_unavailable": "This report cannot be flagged: it may have been hidden or deleted."
+    "report_unavailable": "This report cannot be flagged: it may have been hidden or deleted.",
+    "category_slug_taken": "A category with this address name already exists.",
+    "category_in_use": "Reports use this category, so it cannot be deleted.",
+    "category_protected": "This category is required and cannot be deleted.",
+    "category_list_changed": "The categories changed in the meantime. Refresh the page and try again."
   },
   "Validation": {
     "required": "This field is required.",
@@ -116,7 +120,10 @@
     "imageInvalid": "One of the images is invalid. Remove it and upload it again.",
     "messageTooLong": "The message can be at most 2000 characters.",
     "reportReasonInvalid": "Choose a reason.",
-    "reportDetailsTooLong": "The details can be at most 500 characters."
+    "reportDetailsTooLong": "The details can be at most 500 characters.",
+    "categoryNameTooLong": "The name can be at most 50 characters.",
+    "categorySlugInvalid": "Use 1–40 lower-case Latin letters, digits and single hyphens (e.g. sports-gear).",
+    "categoryIconInvalid": "Choose an icon."
   },
   "Auth": {
     "loginTitle": "Sign in",
@@ -570,7 +577,8 @@
       "label": "Administration sections",
       "overview": "Overview",
       "reports": "Flags",
-      "users": "Users"
+      "users": "Users",
+      "categories": "Categories"
     },
     "dashboard": {
       "title": "Overview",
@@ -688,6 +696,39 @@
       "cancel": "Cancel",
       "bannedToast": "{name} is banned.",
       "unbannedToast": "The ban on {name} was lifted."
+    },
+    "categories": {
+      "title": "Categories",
+      "description": "Categories of lost and found reports, in the order the site shows them. A category that reports use cannot be deleted.",
+      "error": "The categories could not be loaded. Please try again.",
+      "count": "{count, plural, one {# category} other {# categories}}",
+      "items": "{count, plural, =0 {not used} one {# report} other {# reports}}",
+      "protected": "required for matching",
+      "inUse": "Used by reports, cannot be deleted",
+      "add": "Add category",
+      "addTitle": "New category",
+      "addDescription": "It appears at the end of the list; move it afterwards if needed.",
+      "editTitle": "Edit “{name}”",
+      "editDescription": "Change the names or the icon.",
+      "slug": "Address name (slug)",
+      "slugHint": "Used in links such as /items?category=keys: lower-case Latin letters, digits and hyphens. It cannot be changed later.",
+      "slugFixed": "Address name: {slug} (cannot be changed)",
+      "nameMk": "Name in Macedonian",
+      "nameEn": "Name in English",
+      "icon": "Icon",
+      "cancel": "Cancel",
+      "create": "Add",
+      "save": "Save",
+      "createdToast": "The category was added.",
+      "updatedToast": "The category was saved.",
+      "moveUp": "Move “{name}” up",
+      "moveDown": "Move “{name}” down",
+      "edit": "Edit “{name}”",
+      "delete": "Delete “{name}”",
+      "deleteTitle": "Delete “{name}”?",
+      "deleteDescription": "No report uses this category. It disappears from forms and filters at once.",
+      "confirmDelete": "Delete",
+      "deletedToast": "“{name}” was deleted."
     }
   },
   "Search": {
