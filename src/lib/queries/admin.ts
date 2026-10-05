@@ -5,6 +5,7 @@ import {
   type QueueItem,
 } from "@/lib/moderation";
 import { createClient } from "@/lib/supabase/server";
+import type { UserListFilters } from "@/lib/validation/admin";
 import type { Database } from "@/types/database";
 
 export type AdminStats =
@@ -117,5 +118,68 @@ export async function getHiddenItems(
       owner: { id: item.owner.id, displayName: item.owner.display_name },
     })),
     total: count ?? 0,
+  };
+}
+
+// Users per page on /admin/users.
+export const USERS_PAGE_SIZE = 20;
+
+export type AdminUser = {
+  id: string;
+  displayName: string;
+  avatarPath: string | null;
+  email: string | null;
+  role: "user" | "admin";
+  isBanned: boolean;
+  createdAt: string;
+  lastSignInAt: string | null;
+  itemCount: number;
+  openReportCount: number;
+};
+
+// One page of users for the admin (newest accounts first), searched by name
+// or email, optionally only banned ones, with the number of matching users.
+// admin_list_users() raises 42501 for non-admins. A page past the end has no
+// rows (and so no total): the total then comes from a one-row first page.
+export async function getUserPage(
+  filters: UserListFilters,
+  page: number,
+): Promise<{ users: AdminUser[]; total: number }> {
+  const supabase = await createClient();
+  const list = (pageSize: number, offset: number) =>
+    supabase.rpc("admin_list_users", {
+      search: filters.q || undefined,
+      banned_only: filters.bannedOnly,
+      page_size: pageSize,
+      page_offset: offset,
+    });
+  const { data, error } = await list(
+    USERS_PAGE_SIZE,
+    (page - 1) * USERS_PAGE_SIZE,
+  );
+  if (error) throw new Error(`Failed to load users: ${error.message}`);
+  if (data.length === 0 && page > 1) {
+    const { data: first, error: countError } = await list(1, 0);
+    if (countError) {
+      throw new Error(`Failed to count users: ${countError.message}`);
+    }
+    return { users: [], total: first[0]?.total_count ?? 0 };
+  }
+  return {
+    // Generated types claim non-null results; avatar, email and the last
+    // sign-in can be null.
+    users: data.map((row) => ({
+      id: row.id,
+      displayName: row.display_name,
+      avatarPath: row.avatar_path ?? null,
+      email: row.email ?? null,
+      role: row.role,
+      isBanned: row.is_banned,
+      createdAt: row.created_at,
+      lastSignInAt: row.last_sign_in_at ?? null,
+      itemCount: row.item_count,
+      openReportCount: row.open_report_count,
+    })),
+    total: data[0]?.total_count ?? 0,
   };
 }

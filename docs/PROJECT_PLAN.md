@@ -7,8 +7,8 @@
 > updating it.
 
 - **Last updated:** 2026-10-05
-- **Current phase:** Phase 10 — Admin and moderation in progress (P10.S1–P10.S4 completed; Phase 9 completed, optional P7.S5 deferred)
-- **Next step:** P10.S5 (§22, §25)
+- **Current phase:** Phase 10 — Admin and moderation in progress (P10.S1–P10.S5 completed; Phase 9 completed, optional P7.S5 deferred)
+- **Next step:** P10.S6 (§22, §25)
 
 ---
 
@@ -173,7 +173,7 @@ to these IDs. "Next step" always means the step named in
 | P10.S2 | Report item UI                                 | `COMPLETED`   |
 | P10.S3 | Admin area layout and dashboard                | `COMPLETED`   |
 | P10.S4 | Reports queue and item moderation              | `COMPLETED`   |
-| P10.S5 | User management (ban/unban)                    | `NOT STARTED` |
+| P10.S5 | User management (ban/unban)                    | `COMPLETED`   |
 | P10.S6 | Category management                            | `NOT STARTED` |
 | P11.S1 | Dark mode                                      | `NOT STARTED` |
 | P11.S2 | Responsive, accessibility, error boundaries    | `NOT STARTED` |
@@ -327,22 +327,22 @@ Route groups `(auth)` and `(app)` do not change URLs; they only share layouts.
 
 ### Route map
 
-| Route                                                                                          | Access          | Phase |
-| ---------------------------------------------------------------------------------------------- | --------------- | ----- |
-| `/`                                                                                            | public          | 1, 4  |
-| `/login`, `/register`, `/forgot-password`                                                      | guests          | 2     |
-| `/verify-email`, `/reset-password`                                                             | public          | 2     |
-| `/profile`                                                                                     | signed in       | 2     |
-| `/items`                                                                                       | public          | 4     |
-| `/items/[id]`                                                                                  | public (active) | 3, 4  |
-| `/items/new`, `/items/[id]/edit`                                                               | signed in/owner | 3     |
-| `/dashboard`                                                                                   | signed in       | 3     |
-| `/map`                                                                                         | public          | 5     |
-| `/notifications` ✓ (`?page=` from 2)                                                           | signed in       | 7     |
-| `/messages/[id]` ✓ (chat since P8.S4)                                                          | participants    | 8     |
-| `/messages` ✓                                                                                  | signed in       | 8     |
-| `/favorites`                                                                                   | signed in       | 9     |
-| `/admin` ✓, `/admin/reports` ✓ (`?view=hidden`, `?page=`), `/admin/users`, `/admin/categories` | admin           | 10    |
+| Route                                                                                                                           | Access          | Phase |
+| ------------------------------------------------------------------------------------------------------------------------------- | --------------- | ----- |
+| `/`                                                                                                                             | public          | 1, 4  |
+| `/login`, `/register`, `/forgot-password`                                                                                       | guests          | 2     |
+| `/verify-email`, `/reset-password`                                                                                              | public          | 2     |
+| `/profile`                                                                                                                      | signed in       | 2     |
+| `/items`                                                                                                                        | public          | 4     |
+| `/items/[id]`                                                                                                                   | public (active) | 3, 4  |
+| `/items/new`, `/items/[id]/edit`                                                                                                | signed in/owner | 3     |
+| `/dashboard`                                                                                                                    | signed in       | 3     |
+| `/map`                                                                                                                          | public          | 5     |
+| `/notifications` ✓ (`?page=` from 2)                                                                                            | signed in       | 7     |
+| `/messages/[id]` ✓ (chat since P8.S4)                                                                                           | participants    | 8     |
+| `/messages` ✓                                                                                                                   | signed in       | 8     |
+| `/favorites`                                                                                                                    | signed in       | 9     |
+| `/admin` ✓, `/admin/reports` ✓ (`?view=hidden`, `?page=`), `/admin/users` ✓ (`?q=`, `?banned=1`, `?page=`), `/admin/categories` | admin           | 10    |
 
 All routes also exist under `/en/...`.
 
@@ -1592,6 +1592,16 @@ open_reports, reported_items`. Both are `security definer` and raise `42501`
   shown). Only the flag ids the admin saw are closed, so a flag filed after the page
   loaded stays open. Hide + resolve are two statements (no RPC): if the second fails,
   the item stays in the queue as hidden with "Resolve" available.
+- **User management (P10.S5 ✓, `20261005195331_admin_users.sql`):** admins cannot read
+  other users' `role`, `is_banned` or email (column privileges, `auth.users`), so
+  `/admin/users` reads `admin_list_users(search, banned_only, page_size, page_offset)`
+  (`security definer`, `42501` for non-admins, `22023` for page size outside 1–100 or
+  a negative offset): newest accounts first; `search` is a case-insensitive substring
+  of the display name or email (no wildcards); returns public profile columns, email,
+  role, ban state, last sign-in, number of reports, open flags about them and
+  `total_count` (a page past the end has no rows). Ban/unban only through
+  `admin_set_banned()` (P10.S1). Banned users see `BannedNotice` under the header on
+  every page (read per request).
 
 ---
 
@@ -2561,6 +2571,46 @@ MISS`, `fra1`) of `/items` contains the guest heart links, which exist only from
 
 - **Affects:** `admin/users/page.tsx`.
 - **Verify:** banning blocks writes immediately; the banned user sees a banner.
+- **Implemented:** migration `20261005195331_admin_users.sql` (`admin_list_users()`,
+  §18), SQL tests `supabase/tests/admin_users.sql`, types regenerated.
+  `src/app/[locale]/(app)/admin/users/page.tsx` (`requireAdmin()`; `next/form` GET
+  search with `q` and a "Banned only" checkbox `banned=1`; canonical URLs through
+  `parseUserFilters`/`userListQuery` in `@/lib/validation/admin`; pages past the end
+  redirect): rows with avatar, name, email, badges (You, Admin, Banned), joined and
+  last sign-in dates (server-formatted), number of reports and open flags, and
+  `BanButton` (`src/components/admin/`; ban after a confirmation dialog, lift without;
+  toasts) for users that are neither admins nor the viewer. Reads: `getUserPage`
+  (`@/lib/queries/admin`, 20 per page; total of an empty page from a one-row first
+  page). Action `setUserBanned` (`src/actions/admin.ts`, `setBannedSchema`; `42501` →
+  `forbidden`, `P0002` → `not_found`, `refresh()`). Banner: `BannedNotice`
+  (`src/components/layout/`, in the locale layout under the header). "Users" tab in
+  `AdminNav`. Messages: `Admin.nav.users`, `Admin.users`, `Moderation.banned`.
+- **Decisions:** a migration was needed although §22 listed only the page: the
+  list needs columns admins cannot read through the API, and the email (shown only to
+  admins) identifies accounts with similar names. Banning does not hide the user's
+  reports (the dialog says so; hide them in the queue if needed). The banner appears
+  on the next request after a ban (the database refuses writes at once).
+- **Verified:** migration and SQL test dry-run together in a rolled-back
+  transaction (a deliberately wrong assert fails the run); pushed; `db:test` 21/21
+  (`admin_users.sql`: visitors and users refused; email and Cyrillic name search,
+  case-insensitive, `%`/`_` literal; newest first; columns and counts (closed flags
+  not counted); banned filter; paging with total, past the end; invalid pages; blank
+  search lists everyone; a ban shows in the list and blocks the next write, an unban
+  allows it; `is_banned` still not readable through the table). Advisors: one new
+  intended warning for `admin_list_users` (as the other admin RPCs, F-12), plus the
+  known ones. 14 new unit/component tests (753 → 767): schemas and URL helpers, action
+  (ban/unban, refusals, invalid input), `getUserPage` (mapping, nullable columns, empty
+  page total, errors), `BanButton`, `BannedNotice`, `AdminNav`. Lint, typecheck,
+  `npm run build`. Browser check (production build, headless Edge, temporary
+  `usr-p10s5-*@findly.test` users, deleted afterwards): 40/40 — guest → login with
+  `next`; user 404; tab, title, `noindex`; count equals all profiles; search trimmed
+  and canonical, newest first; badges; no ban button for self or other admins; counts;
+  Cyrillic name search; banned-only filter and checkbox state; empty result; 5
+  canonical redirects; ban: Cancel keeps the user, confirm bans (row, toast,
+  database); the user's open session is refused at the next write (favorite) and sees
+  the banner after a reload on every page; unban removes the banner and writes work
+  again; banning a user who became admin after the page loaded is refused (database
+  unchanged); English at 375 px: no overflow, dialog and banner fit; no browser errors.
 
 #### P10.S6 — Category management
 
@@ -2664,6 +2714,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-05 | P10.S5      | User management: `admin_list_users()` (migration, SQL tests), `/admin/users` with name/email search, banned filter, counts and ban/unban (`setUserBanned`, confirmation), "Users" tab, banner for banned users; 14 unit tests; browser check 40/40.                                                                                                                                                                                                                   |
 | 2026-10-05 | P10.S4      | Moderation queue `/admin/reports`: open flags grouped by item (oldest first) with hide (confirmation; resolves the flags shown), resolve and dismiss, hidden reports view with restore (to active or resolved), "Flags" tab, moderation notification texts; 32 unit tests; browser check 41/41.                                                                                                                                                                       |
 | 2026-10-05 | P10.S3      | Admin area: `(app)/admin` layout (`requireAdmin`, 404 for non-admins, `AdminNav`) and dashboard with the `admin_stats()` tiles, `getAdminStats`, admin link in the user menu; owner account made admin with SQL; 4 unit tests; browser check 22/22.                                                                                                                                                                                                                   |
 | 2026-10-05 | P10.S2      | Report item UI: `ReportDialog` on the item page (reason + optional details; note when the user has an open report; login link for guests), `reportItem` action (`report_duplicate`, `report_unavailable`), `hasOpenReport`, shadcn dialog; 22 unit tests; browser check passed; F-35 logged (header overflow at 375 px).                                                                                                                                              |
@@ -2747,15 +2798,15 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P10.S5 — User management** (see §22, Phase 10; design in §18).
+**P10.S6 — Category management** (see §22, Phase 10; design in §18).
 
-Why next: admins can review flags and hide/restore reports (P10.S4). P10.S5 adds
-`/admin/users` (the users with role and ban state) and
-ban/unban through `rpc("admin_set_banned")` (admins and self cannot be banned:
-`42501`), plus the banner that tells a banned user they can only read. It adds the
-"Users" tab to `AdminNav`.
+Why next: the moderation loop and user management are done (P10.S4–P10.S5).
+P10.S6 adds `/admin/categories`: add, rename (mk/en), change the icon and reorder
+categories through the admin policies from P10.S1; deleting a category that items
+use fails with `23503` and must show a readable error. It adds the "Categories" tab
+to `AdminNav` and completes Phase 10.
 
-Production serves `a165b1d` (2026-10-04). P9.S3 and P10.S1–P10.S4 are committed
-locally and not yet pushed (the P10.S1 migration is already applied to the hosted
-project); after a push, re-run the `/favorites`, report-dialog and admin browser
-checks against Vercel.
+Production serves `a165b1d` (2026-10-04). P9.S3 and P10.S1–P10.S5 are committed
+locally and not yet pushed (the P10.S1 and P10.S5 migrations are already applied to
+the hosted project); after a push, re-run the `/favorites`, report-dialog and admin
+browser checks against Vercel.

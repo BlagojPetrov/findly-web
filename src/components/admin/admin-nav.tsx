@@ -1,14 +1,15 @@
 "use client";
 
-import { Flag, LayoutDashboard } from "lucide-react";
+import { Flag, LayoutDashboard, Users } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
-// Sections of the admin area. P10.S5–P10.S6 add users and categories here.
+// Sections of the admin area. P10.S6 adds categories here.
 const sections = [
   { href: "/admin", key: "overview", icon: LayoutDashboard },
   { href: "/admin/reports", key: "reports", icon: Flag },
+  { href: "/admin/users", key: "users", icon: Users },
 ] as const;
 
 // Tabs of the admin area; the current section is marked with aria-current.

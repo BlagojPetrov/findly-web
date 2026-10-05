@@ -3,6 +3,7 @@ import {
   getAdminStats,
   getHiddenItems,
   getReportQueue,
+  getUserPage,
   REPORT_QUEUE_MAX_REPORTS,
   REPORT_QUEUE_PAGE_SIZE,
 } from "./admin";
@@ -34,7 +35,11 @@ function query(table: string) {
 }
 vi.mock("@/lib/supabase/server", () => ({
   createClient: async () => ({
-    rpc: (name: string) => ({ single: async () => rpc(name) }),
+    rpc: (name: string, args?: object) => {
+      // Awaited directly (admin_list_users) or through single() (admin_stats).
+      const result = Promise.resolve().then(() => rpc(name, args));
+      return Object.assign(result, { single: async () => rpc(name) });
+    },
     from: (table: string) => query(table),
   }),
 }));
@@ -186,5 +191,79 @@ describe("getHiddenItems", () => {
       .mockResolvedValueOnce({ data: null, error: { code: "PGRST103" } })
       .mockResolvedValueOnce({ data: null, error: null, count: 3 });
     expect(await getHiddenItems(9)).toEqual({ items: [], total: 3 });
+  });
+});
+
+function userRow(n: number, total: number) {
+  return {
+    id: `user-${n}`,
+    display_name: `User ${n}`,
+    avatar_path: null,
+    email: n === 2 ? null : `user${n}@example.com`,
+    role: "user",
+    is_banned: n === 1,
+    created_at: "2026-10-05T10:00:00Z",
+    last_sign_in_at: null,
+    item_count: n,
+    open_report_count: 0,
+    total_count: total,
+  };
+}
+
+describe("getUserPage", () => {
+  it("maps a page of admin_list_users() with the total", async () => {
+    rpc.mockResolvedValue({
+      data: [userRow(1, 41), userRow(2, 41)],
+      error: null,
+    });
+    const result = await getUserPage({ q: "ana", bannedOnly: true }, 3);
+    expect(rpc).toHaveBeenCalledWith("admin_list_users", {
+      search: "ana",
+      banned_only: true,
+      page_size: 20,
+      page_offset: 40,
+    });
+    expect(result.total).toBe(41);
+    expect(result.users[0]).toEqual({
+      id: "user-1",
+      displayName: "User 1",
+      avatarPath: null,
+      email: "user1@example.com",
+      role: "user",
+      isBanned: true,
+      createdAt: "2026-10-05T10:00:00Z",
+      lastSignInAt: null,
+      itemCount: 1,
+      openReportCount: 0,
+    });
+    expect(result.users[1].email).toBeNull();
+  });
+
+  it("sends no search for an empty one and counts an empty page", async () => {
+    rpc
+      .mockResolvedValueOnce({ data: [], error: null })
+      .mockResolvedValueOnce({ data: [userRow(1, 7)], error: null });
+    expect(await getUserPage({ q: "", bannedOnly: false }, 5)).toEqual({
+      users: [],
+      total: 7,
+    });
+    expect(rpc.mock.calls[0][1]).toMatchObject({ search: undefined });
+    expect(rpc.mock.calls[1][1]).toMatchObject({
+      page_size: 1,
+      page_offset: 0,
+    });
+  });
+
+  it("returns an empty first page and throws on errors", async () => {
+    rpc.mockResolvedValueOnce({ data: [], error: null });
+    expect(await getUserPage({ q: "x", bannedOnly: false }, 1)).toEqual({
+      users: [],
+      total: 0,
+    });
+    expect(rpc).toHaveBeenCalledTimes(1);
+    rpc.mockResolvedValueOnce({ data: null, error: { message: "admin only" } });
+    await expect(getUserPage({ q: "", bannedOnly: false }, 1)).rejects.toThrow(
+      "Failed to load users: admin only",
+    );
   });
 });

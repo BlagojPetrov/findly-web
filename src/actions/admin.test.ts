@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { closeReports, hideItem, restoreItem } from "./admin";
+import { closeReports, hideItem, restoreItem, setUserBanned } from "./admin";
 
-const { requireAdmin, refresh, run } = vi.hoisted(() => ({
+const { requireAdmin, refresh, run, rpc } = vi.hoisted(() => ({
   requireAdmin: vi.fn(),
   refresh: vi.fn(),
   run: vi.fn(),
+  rpc: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({ requireAdmin }));
@@ -35,7 +36,10 @@ function query(table: string) {
   return builder;
 }
 vi.mock("@/lib/supabase/server", () => ({
-  createClient: async () => ({ from: (table: string) => query(table) }),
+  createClient: async () => ({
+    from: (table: string) => query(table),
+    rpc: async (name: string, args: object) => rpc(name, args),
+  }),
 }));
 
 const itemId = "10000000-0000-4000-8000-000000000001";
@@ -68,6 +72,7 @@ beforeEach(() => {
   requireAdmin.mockReset().mockResolvedValue({ id: "admin" });
   refresh.mockReset();
   run.mockReset();
+  rpc.mockReset();
   vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
@@ -253,5 +258,53 @@ describe("closeReports", () => {
       await closeReports(form({ itemId, reportIds, outcome: "resolved" })),
     ).toEqual({ ok: false, error: "database" });
     expect(refresh).not.toHaveBeenCalled();
+  });
+});
+
+describe("setUserBanned", () => {
+  const userId = "00000000-0000-4000-8000-00000000000b";
+
+  it("bans and unbans through admin_set_banned", async () => {
+    rpc.mockResolvedValue({ data: true, error: null });
+    expect(await setUserBanned(form({ userId, banned: "true" }))).toEqual({
+      ok: true,
+      data: undefined,
+    });
+    expect(rpc).toHaveBeenCalledWith("admin_set_banned", {
+      target_user_id: userId,
+      banned: true,
+    });
+    await setUserBanned(form({ userId, banned: "false" }));
+    expect(rpc).toHaveBeenLastCalledWith("admin_set_banned", {
+      target_user_id: userId,
+      banned: false,
+    });
+    expect(requireAdmin).toHaveBeenCalledTimes(2);
+    expect(refresh).toHaveBeenCalledTimes(2);
+  });
+
+  it("maps refusals and errors", async () => {
+    for (const [code, error] of [
+      ["42501", "forbidden"],
+      ["P0002", "not_found"],
+      ["XX000", "database"],
+    ]) {
+      rpc.mockResolvedValueOnce({ data: null, error: { code, message: code } });
+      expect(await setUserBanned(form({ userId, banned: "true" }))).toEqual({
+        ok: false,
+        error,
+      });
+    }
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("rejects invalid input without calling the database", async () => {
+    expect(
+      await setUserBanned(form({ userId: "x", banned: "true" })),
+    ).toMatchObject({ ok: false, error: "validation" });
+    expect(
+      await setUserBanned(form({ userId, banned: "maybe" })),
+    ).toMatchObject({ ok: false, error: "validation" });
+    expect(rpc).not.toHaveBeenCalled();
   });
 });

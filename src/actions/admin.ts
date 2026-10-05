@@ -15,6 +15,7 @@ import {
   closeReportsSchema,
   hideItemSchema,
   moderateItemSchema,
+  setBannedSchema,
 } from "@/lib/validation/admin";
 
 // Moderation actions of the admin area (§18). Each checks requireAdmin()
@@ -142,6 +143,33 @@ export async function closeReports(formData: FormData): Promise<ActionResult> {
     outcome,
   );
   if (error) return databaseFailure(`Closing flags of ${itemId}`, error);
+  refresh();
+  return ok();
+}
+
+// Bans or unbans a user (admin_set_banned). A banned user can sign in and
+// read, but the database blocks every write at once (can_write()). Admins
+// cannot ban themselves or other admins (42501 → forbidden); an unknown user
+// is P0002 → not_found.
+export async function setUserBanned(formData: FormData): Promise<ActionResult> {
+  await requireAdmin();
+  const parsed = setBannedSchema.safeParse({
+    userId: formData.get("userId"),
+    banned: formData.get("banned"),
+  });
+  if (!parsed.success) return validationError(parsed.error);
+
+  const { userId, banned } = parsed.data;
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("admin_set_banned", {
+    target_user_id: userId,
+    banned,
+  });
+  if (error) {
+    if (error.code === "42501") return fail("forbidden");
+    if (error.code === "P0002") return fail("not_found");
+    return databaseFailure(`Changing the ban of ${userId}`, error);
+  }
   refresh();
   return ok();
 }

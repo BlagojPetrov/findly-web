@@ -3,6 +3,10 @@ import {
   closeReportsSchema,
   hideItemSchema,
   MAX_REPORTS_PER_ACTION,
+  parseUserFilters,
+  setBannedSchema,
+  USER_SEARCH_MAX_LENGTH,
+  userListQuery,
 } from "./admin";
 
 const itemId = "10000000-0000-4000-8000-000000000001";
@@ -59,5 +63,50 @@ describe("closeReportsSchema", () => {
           .success,
       ).toBe(false);
     }
+  });
+});
+
+describe("setBannedSchema", () => {
+  it("reads the ban flag", () => {
+    const userId = "00000000-0000-4000-8000-00000000000a";
+    expect(setBannedSchema.parse({ userId, banned: "true" })).toEqual({
+      userId,
+      banned: true,
+    });
+    expect(setBannedSchema.parse({ userId, banned: "false" })).toEqual({
+      userId,
+      banned: false,
+    });
+    for (const banned of ["1", "", null, "yes"]) {
+      expect(setBannedSchema.safeParse({ userId, banned }).success).toBe(false);
+    }
+    expect(
+      setBannedSchema.safeParse({ userId: "x", banned: "true" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("parseUserFilters / userListQuery", () => {
+  it("normalizes the search and the banned filter", () => {
+    expect(parseUserFilters({})).toEqual({ q: "", bannedOnly: false });
+    expect(parseUserFilters({ q: "  Ана   Петрова ", banned: "1" })).toEqual({
+      q: "Ана Петрова",
+      bannedOnly: true,
+    });
+    expect(parseUserFilters({ q: ["a", "b"], banned: "true" })).toEqual({
+      q: "",
+      bannedOnly: false,
+    });
+    expect(
+      parseUserFilters({ q: "x".repeat(USER_SEARCH_MAX_LENGTH + 5) }).q,
+    ).toHaveLength(USER_SEARCH_MAX_LENGTH);
+  });
+
+  it("builds the canonical query", () => {
+    expect(userListQuery({ q: "", bannedOnly: false })).toBe("");
+    expect(userListQuery({ q: "", bannedOnly: false }, 1)).toBe("");
+    expect(userListQuery({ q: "ана b", bannedOnly: true }, 3)).toBe(
+      "q=%D0%B0%D0%BD%D0%B0+b&banned=1&page=3",
+    );
   });
 });

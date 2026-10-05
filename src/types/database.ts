@@ -454,6 +454,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_users: {
+        Args: {
+          banned_only?: boolean
+          page_offset?: number
+          page_size?: number
+          search?: string
+        }
+        Returns: {
+          avatar_path: string
+          created_at: string
+          display_name: string
+          email: string
+          id: string
+          is_banned: boolean
+          item_count: number
+          last_sign_in_at: string
+          open_report_count: number
+          role: Database["public"]["Enums"]["user_role"]
+          total_count: number
+        }[]
+      }
       admin_set_banned: {
         Args: { banned: boolean; target_user_id: string }
         Returns: boolean

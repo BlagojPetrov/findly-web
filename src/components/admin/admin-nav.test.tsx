@@ -72,7 +72,10 @@ describe("AdminNav", () => {
     expect(links.map((link) => link.getAttribute("href"))).toEqual([
       "/admin",
       "/admin/reports",
+      "/admin/users",
     ]);
+    expect(links[2].textContent).toBe(mk.Admin.nav.users);
+    expect(links[2].hasAttribute("aria-current")).toBe(false);
     expect(links[1].textContent).toBe(mk.Admin.nav.reports);
     expect(links[1].getAttribute("aria-current")).toBe("page");
   });

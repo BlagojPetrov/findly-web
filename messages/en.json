@@ -558,6 +558,10 @@
       "submit": "Send",
       "success": "Thank you. The moderators will review this report.",
       "reported": "You flagged this report. The moderators will review it."
+    },
+    "banned": {
+      "title": "Your account is restricted.",
+      "body": "You can still sign in and read reports and messages, but you cannot post, edit, send messages, save or flag reports."
     }
   },
   "Admin": {
@@ -565,7 +569,8 @@
     "nav": {
       "label": "Administration sections",
       "overview": "Overview",
-      "reports": "Flags"
+      "reports": "Flags",
+      "users": "Users"
     },
     "dashboard": {
       "title": "Overview",
@@ -654,6 +659,35 @@
       "restoreToast": "The report is visible again and its owner was notified.",
       "resolvedToast": "{count, plural, one {The flag was resolved.} other {# flags were resolved.}}",
       "dismissedToast": "{count, plural, one {The flag was dismissed.} other {# flags were dismissed.}}"
+    },
+    "users": {
+      "title": "Users",
+      "description": "All accounts, newest first. A banned user can still sign in and read, but cannot post, edit, message, save or flag anything until the ban is lifted.",
+      "searchLabel": "Search users",
+      "searchPlaceholder": "Name or email",
+      "search": "Search",
+      "bannedOnly": "Banned only",
+      "error": "The users could not be loaded. Please try again.",
+      "empty": "There are no users yet.",
+      "emptyFiltered": "No users match this search.",
+      "count": "{count, plural, one {# user} other {# users}}",
+      "you": "You",
+      "roleAdmin": "Admin",
+      "bannedBadge": "Banned",
+      "noEmail": "No email",
+      "joined": "Joined {date}",
+      "lastSignIn": "last sign-in {date}",
+      "neverSignedIn": "never signed in",
+      "items": "{count, plural, =0 {No reports} one {# report} other {# reports}}",
+      "openFlags": "{count, plural, one {# open flag} other {# open flags}}",
+      "ban": "Ban",
+      "unban": "Lift ban",
+      "banTitle": "Ban {name}?",
+      "banDescription": "They can still sign in and read, but every change is refused from now on: new reports, edits, messages, favorites and flags. Their existing reports stay visible; hide them separately if needed. You can lift the ban at any time.",
+      "confirmBan": "Ban",
+      "cancel": "Cancel",
+      "bannedToast": "{name} is banned.",
+      "unbannedToast": "The ban on {name} was lifted."
     }
   },
   "Search": {
