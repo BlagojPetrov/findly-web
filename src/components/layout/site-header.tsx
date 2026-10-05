@@ -68,6 +68,7 @@ export async function SiteHeader() {
                 displayName={user.profile.display_name}
                 email={user.email}
                 avatarPath={user.profile.avatar_path}
+                isAdmin={user.profile.role === "admin"}
               />
             </>
           ) : (

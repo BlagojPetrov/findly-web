@@ -7,8 +7,8 @@
 > updating it.
 
 - **Last updated:** 2026-10-05
-- **Current phase:** Phase 10 — Admin and moderation in progress (P10.S1–P10.S2 completed; Phase 9 completed, optional P7.S5 deferred)
-- **Next step:** P10.S3 (§22, §25)
+- **Current phase:** Phase 10 — Admin and moderation in progress (P10.S1–P10.S3 completed; Phase 9 completed, optional P7.S5 deferred)
+- **Next step:** P10.S4 (§22, §25)
 
 ---
 
@@ -171,7 +171,7 @@ to these IDs. "Next step" always means the step named in
 | P9.S3  | Favorites page                                 | `COMPLETED`   |
 | P10.S1 | Reports schema and admin policies              | `COMPLETED`   |
 | P10.S2 | Report item UI                                 | `COMPLETED`   |
-| P10.S3 | Admin area layout and dashboard                | `NOT STARTED` |
+| P10.S3 | Admin area layout and dashboard                | `COMPLETED`   |
 | P10.S4 | Reports queue and item moderation              | `NOT STARTED` |
 | P10.S5 | User management (ban/unban)                    | `NOT STARTED` |
 | P10.S6 | Category management                            | `NOT STARTED` |
@@ -295,7 +295,7 @@ src/app/[locale]/(app)/              protected: dashboard, items/new, items/[id]
                                      messages/[id], favorites, notifications, profile
 src/app/[locale]/items/              public feed + items/[id]
 src/app/[locale]/map/                public map
-src/app/[locale]/admin/              admin area (role-guarded)
+src/app/[locale]/(app)/admin/        admin area (role-guarded, P10.S3)
 src/app/api/auth/confirm/route.ts    email link verification (token_hash)
 src/app/api/auth/callback/route.ts   OAuth code exchange
 src/app/sitemap.ts, robots.ts
@@ -327,22 +327,22 @@ Route groups `(auth)` and `(app)` do not change URLs; they only share layouts.
 
 ### Route map
 
-| Route                                                           | Access          | Phase |
-| --------------------------------------------------------------- | --------------- | ----- |
-| `/`                                                             | public          | 1, 4  |
-| `/login`, `/register`, `/forgot-password`                       | guests          | 2     |
-| `/verify-email`, `/reset-password`                              | public          | 2     |
-| `/profile`                                                      | signed in       | 2     |
-| `/items`                                                        | public          | 4     |
-| `/items/[id]`                                                   | public (active) | 3, 4  |
-| `/items/new`, `/items/[id]/edit`                                | signed in/owner | 3     |
-| `/dashboard`                                                    | signed in       | 3     |
-| `/map`                                                          | public          | 5     |
-| `/notifications` ✓ (`?page=` from 2)                            | signed in       | 7     |
-| `/messages/[id]` ✓ (chat since P8.S4)                           | participants    | 8     |
-| `/messages` ✓                                                   | signed in       | 8     |
-| `/favorites`                                                    | signed in       | 9     |
-| `/admin`, `/admin/reports`, `/admin/users`, `/admin/categories` | admin           | 10    |
+| Route                                                             | Access          | Phase |
+| ----------------------------------------------------------------- | --------------- | ----- |
+| `/`                                                               | public          | 1, 4  |
+| `/login`, `/register`, `/forgot-password`                         | guests          | 2     |
+| `/verify-email`, `/reset-password`                                | public          | 2     |
+| `/profile`                                                        | signed in       | 2     |
+| `/items`                                                          | public          | 4     |
+| `/items/[id]`                                                     | public (active) | 3, 4  |
+| `/items/new`, `/items/[id]/edit`                                  | signed in/owner | 3     |
+| `/dashboard`                                                      | signed in       | 3     |
+| `/map`                                                            | public          | 5     |
+| `/notifications` ✓ (`?page=` from 2)                              | signed in       | 7     |
+| `/messages/[id]` ✓ (chat since P8.S4)                             | participants    | 8     |
+| `/messages` ✓                                                     | signed in       | 8     |
+| `/favorites`                                                      | signed in       | 9     |
+| `/admin` ✓, `/admin/reports`, `/admin/users`, `/admin/categories` | admin           | 10    |
 
 All routes also exist under `/en/...`.
 
@@ -2466,6 +2466,32 @@ MISS`, `fra1`) of `/items` contains the guest heart links, which exist only from
 - **Affects:** `src/app/[locale]/admin/{layout,page}.tsx`, `messages/*.json` (`Admin`).
 - **Manual:** make your account admin with SQL.
 - **Verify:** non-admins get 404; stats are correct.
+- **Implemented:** `src/app/[locale]/(app)/admin/{layout,page}.tsx` (inside the
+  `(app)` group, unlike the planned `[locale]/admin/`: same URL, and it inherits
+  `noindex` and the page padding). The layout calls `requireAdmin("/admin")` (404 for
+  non-admins through `[locale]/not-found.tsx`, HTTP 404) and shows the
+  "Administration" label and `AdminNav` (`src/components/admin/`, tabs with
+  `aria-current`; only "Overview" until P10.S4–P10.S6 add their sections). The page
+  checks `requireAdmin()` again (layouts do not re-run on navigation) and shows the
+  nine numbers of `admin_stats()` in four groups (users, reports, matching,
+  moderation) as tiles, formatted on the server; a failed query shows a message.
+  Reads: `getAdminStats()` (`@/lib/queries/admin`). The user menu has an
+  "Administration" link for admins (`UserMenu isAdmin`, from `SiteHeader`).
+  Messages: `Admin`, `Header.admin`. `/admin` was already in `PROTECTED_PREFIXES`
+  and `robots.txt` (P2.S3). No migration.
+- **Manual (done 2026-10-05):** the project owner's Google account
+  (`petrovblaze48@gmail.com`) was made admin with SQL in the dashboard.
+- **Verified:** 4 new unit/component tests (717 → 721): `getAdminStats` (row,
+  error), `AdminNav` (current section, other pages, both languages). Lint, typecheck,
+  `npm run build`. Browser check (production build, headless Edge, a temporary admin
+  and a regular `adm-p10s3-*@findly.test` user, deleted afterwards): 22/22 — guests on
+  `/admin` and `/en/admin` → login with `next=/admin`; robots disallows both; a
+  regular user gets HTTP 404 with the not-found page and no admin UI, and no menu
+  link; the admin reaches `/admin` from the user menu (title, h1, `noindex`, current
+  tab); the nine tiles equal counts computed independently with SQL; banning a user
+  raises the banned count after a reload; removing the admin role gives 404 on the
+  next request (the role is read per request); English at 375 px: two tile columns,
+  the content does not overflow (the header still does, F-35); no browser errors.
 
 #### P10.S4 — Reports queue and item moderation
 
@@ -2579,6 +2605,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-05 | P10.S3      | Admin area: `(app)/admin` layout (`requireAdmin`, 404 for non-admins, `AdminNav`) and dashboard with the `admin_stats()` tiles, `getAdminStats`, admin link in the user menu; owner account made admin with SQL; 4 unit tests; browser check 22/22.                                                                                                                                                                                                                   |
 | 2026-10-05 | P10.S2      | Report item UI: `ReportDialog` on the item page (reason + optional details; note when the user has an open report; login link for guests), `reportItem` action (`report_duplicate`, `report_unavailable`), `hasOpenReport`, shadcn dialog; 22 unit tests; browser check passed; F-35 logged (header overflow at 375 px).                                                                                                                                              |
 | 2026-10-04 | P10.S1      | Moderation schema: `reports` with RLS and a resolution trigger, admin policies on categories, `admin_set_banned()`, `admin_stats()`, moderation notifications on hide/restore, hidden items keep `resolved_at`; SQL tests `moderation.sql` (20/20 files). Phase 10 started.                                                                                                                                                                                           |
 | 2026-10-04 | P9.S3       | Favorites page `/favorites` (newest saved first, 20 per page, only active/resolved reports, removal with the heart, empty and error states), user menu link, shared `parsePage`; 695 unit tests; browser check 41/41. Phase 9 completed.                                                                                                                                                                                                                              |
@@ -2660,17 +2687,17 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P10.S3 — Admin area layout and dashboard** (see §22, Phase 10; design in §18).
+**P10.S4 — Reports queue and item moderation** (see §22, Phase 10; design in §18).
 
-Why next: users can now flag reports (P10.S2). P10.S3 adds the `/admin` area:
-layout guarded by `requireAdmin()` (non-admins get 404; add `/admin` to
-`src/lib/auth-routes.ts` and `robots.ts`), navigation for the later admin pages and
-a dashboard with `rpc("admin_stats")` (users, banned users, active lost/found,
-hidden items, matches, confirmed matches, open reports, reported items). Manual:
-make your own account admin with SQL (`update profiles set role = 'admin' where id =
-'<uuid>'`).
+Why next: admins can open `/admin` (P10.S3) and users can flag reports (P10.S2).
+P10.S4 adds `/admin/reports` (open flags grouped by item, oldest first, with reason,
+details and reporter) and `src/actions/admin.ts`: hide/restore an item (restore to
+`resolved` when `resolved_at` is set, else `active`; the owner gets the moderation
+notification from the P10.S1 trigger) and resolve/dismiss flags. It also adds the
+"Reports" tab to `AdminNav`, and the notification UI must render `moderation`
+entries.
 
-Production serves `a165b1d` (2026-10-04). P9.S3, P10.S1 and P10.S2 are committed
+Production serves `a165b1d` (2026-10-04). P9.S3 and P10.S1–P10.S3 are committed
 locally and not yet pushed (the P10.S1 migration is already applied to the hosted
-project); after a push, re-run the `/favorites` and report-dialog browser checks
-against Vercel.
+project); after a push, re-run the `/favorites`, report-dialog and admin browser
+checks against Vercel.

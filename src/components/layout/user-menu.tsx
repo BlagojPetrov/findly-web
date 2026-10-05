@@ -1,6 +1,13 @@
 "use client";
 
-import { FilePlus2, Heart, LayoutList, LogOut, UserRound } from "lucide-react";
+import {
+  FilePlus2,
+  Heart,
+  LayoutList,
+  LogOut,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { signOut } from "@/actions/auth";
@@ -19,10 +26,13 @@ export function UserMenu({
   displayName,
   email,
   avatarPath,
+  isAdmin = false,
 }: {
   displayName: string;
   email: string | null;
   avatarPath: string | null;
+  // Admins get a link to the admin area (§18).
+  isAdmin?: boolean;
 }) {
   const t = useTranslations();
   const [pending, startTransition] = useTransition();
@@ -59,6 +69,12 @@ export function UserMenu({
           <UserRound aria-hidden />
           {t("Header.profile")}
         </DropdownMenuLinkItem>
+        {isAdmin && (
+          <DropdownMenuLinkItem render={<Link href="/admin" />}>
+            <ShieldCheck aria-hidden />
+            {t("Header.admin")}
+          </DropdownMenuLinkItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={pending}

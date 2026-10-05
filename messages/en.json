@@ -15,7 +15,8 @@
     "favorites": "Favorites",
     "browse": "Browse",
     "map": "Map",
-    "messagesLabel": "{count, plural, =0 {Messages} one {Messages, # unread} other {Messages, # unread}}"
+    "messagesLabel": "{count, plural, =0 {Messages} one {Messages, # unread} other {Messages, # unread}}",
+    "admin": "Administration"
   },
   "Home": {
     "title": "Find what was lost, return what was found",
@@ -555,6 +556,62 @@
       "submit": "Send",
       "success": "Thank you. The moderators will review this report.",
       "reported": "You flagged this report. The moderators will review it."
+    }
+  },
+  "Admin": {
+    "area": "Administration",
+    "nav": {
+      "label": "Administration sections",
+      "overview": "Overview"
+    },
+    "dashboard": {
+      "title": "Overview",
+      "description": "Site-wide numbers, counted when the page loads.",
+      "error": "The numbers could not be loaded. Please try again.",
+      "groups": {
+        "people": "Users",
+        "items": "Reports",
+        "matching": "Matching",
+        "moderation": "Moderation"
+      },
+      "stats": {
+        "users": {
+          "label": "Users",
+          "detail": "All accounts"
+        },
+        "bannedUsers": {
+          "label": "Banned users",
+          "detail": "Can sign in and read, but not write"
+        },
+        "activeLost": {
+          "label": "Active lost reports",
+          "detail": "Visible in the feed"
+        },
+        "activeFound": {
+          "label": "Active found reports",
+          "detail": "Visible in the feed"
+        },
+        "hiddenItems": {
+          "label": "Hidden reports",
+          "detail": "Hidden by moderators"
+        },
+        "matches": {
+          "label": "Matches",
+          "detail": "Suggested or confirmed"
+        },
+        "confirmedMatches": {
+          "label": "Confirmed matches",
+          "detail": "Confirmed by an owner"
+        },
+        "openReports": {
+          "label": "Open flags",
+          "detail": "Waiting for review"
+        },
+        "reportedItems": {
+          "label": "Flagged reports",
+          "detail": "Reports with at least one open flag"
+        }
+      }
     }
   },
   "Search": {
