@@ -13,14 +13,19 @@
     "reportItem": "Report an item",
     "dashboard": "My reports",
     "favorites": "Favorites",
-    "browse": "Browse",
     "map": "Map",
     "messagesLabel": "{count, plural, =0 {Messages} one {Messages, # unread} other {Messages, # unread}}",
     "admin": "Administration"
   },
   "Home": {
-    "title": "Find what was lost, return what was found",
-    "subtitle": "Findly connects people who lost an item with those who found it — with search by location, date and category, and automatic matching of reports.",
+    "eyebrow": "Lost & found, made simple",
+    "title": "Find what you lost. <accent>Connect with the finder.</accent>",
+    "subtitle": "Findly connects people who lost items with those who found them — through smart search and automatic matching of reports.",
+    "heroCard": {
+      "title": "A possible match",
+      "description": "We'll notify you as soon as a report matches yours."
+    },
+    "heroImageAlt": "A young woman hands a found item back to its smiling owner",
     "stepsTitle": "How it works",
     "steps": {
       "report": {
@@ -58,10 +63,11 @@
       "lost": "No lost items have been reported yet.",
       "found": "No found items have been reported yet."
     },
-    "categoriesDescription": "Browse the reports in one category."
+    "categoriesDescription": "Browse the reports in one category.",
+    "stepsDescription": "Three steps from a report to the item back in its owner's hands."
   },
   "Footer": {
-    "tagline": "Diploma project — a web platform for lost and found items."
+    "tagline": "The platform for lost and found items."
   },
   "NotFound": {
     "title": "Page not found",

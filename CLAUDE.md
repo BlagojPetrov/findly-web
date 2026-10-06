@@ -51,6 +51,12 @@ status and the next step. Read it before any work.
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
   must delete only test users by their own email pattern (`…@findly.test`,
   `findly-e2e-…@mailinator.com`).
+- Showcase data on the dev project (2026-10-06): 10 demo reporters
+  (`…@demo.findly.invalid`, no password, cannot sign in), one active report each with one
+  CC0 photo (5 lost, 5 found, across North Macedonia), created through Storage +
+  `rpc("create_item")`. Keep them; never match them with test-cleanup patterns. Remove
+  with `delete from auth.users where email like '%@demo.findly.invalid'` (profiles,
+  items, images rows go with them) plus the users' folders in `item-images`.
 - Supabase dev project `lyvudeaxwibgpqsinqyz` (eu-central-1, Postgres 17), linked.
 - GitHub: `origin` = https://github.com/BlagojPetrov/findly-web, branch `main`.
   Vercel: https://findly-web-nine.vercel.app — every push to `main` deploys to
@@ -118,7 +124,7 @@ status and the next step. Read it before any work.
   (0.15/0.15/0.15/0.55, stored at ≥ 0.60) were tuned on `supabase/seed/demo.sql` (§14).
   Weight or rule changes go in a new migration and update the expectations in
   `supabase/tests/matching.sql`, `compute_matches.sql` and `matching_demo.sql`; evaluate
-  with `supabase/seed/demo-evaluation.sql` in a rolled-back transaction. The demo data is
+  with `supabase/seed/demo-evaluation.sql` in a rolled-back transaction. The `demo.sql` data is
   not loaded on the dev project (it would show on the public site).
   Triggers on `items` run `private.compute_matches(id)` after insert and after changes
   of matching columns (it upserts `suggested` rows, keeps dismissed/confirmed): SQL

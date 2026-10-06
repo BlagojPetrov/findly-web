@@ -41,7 +41,7 @@ export function ItemCard({
 
   return (
     <article className="relative flex flex-col overflow-hidden rounded-xl border bg-card shadow-xs transition-shadow focus-within:ring-3 focus-within:ring-ring/50 hover:shadow-md">
-      <div className="relative aspect-4/3 bg-muted">
+      <div className="relative aspect-4/3 overflow-hidden bg-muted">
         {item.coverPath ? (
           // Storage URLs of already compressed photos (AD-17).
           // eslint-disable-next-line @next/next/no-img-element

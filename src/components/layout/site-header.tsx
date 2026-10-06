@@ -1,4 +1,5 @@
-import { Map as MapIcon, Search, SearchCheck } from "lucide-react";
+import { Map as MapIcon } from "lucide-react";
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { MessagesLink } from "@/components/chat/messages-link";
@@ -11,6 +12,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getUnreadMessageCount } from "@/lib/queries/conversations";
 import { getUnreadNotificationCount } from "@/lib/queries/notifications";
 import { cn } from "@/lib/utils";
+import logo from "../../../public/brand/findly-icon.png";
 
 export async function SiteHeader() {
   const [t, user] = await Promise.all([
@@ -27,19 +29,15 @@ export async function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <SearchCheck className="size-5 text-primary" aria-hidden />
+        <Link
+          href="/"
+          className="flex items-center gap-2 text-lg font-semibold tracking-tight"
+        >
+          {/* The Android app's launcher icon; the name next to it is the link text. */}
+          <Image src={logo} alt="" width={28} height={28} className="size-7" />
           Findly
         </Link>
         <div className="flex items-center gap-2">
-          <Link
-            href="/items"
-            className={cn(buttonVariants({ variant: "ghost" }), "px-2")}
-          >
-            <Search aria-hidden />
-            {/* Icon only on phones; the text stays for screen readers. */}
-            <span className="max-sm:sr-only">{t("browse")}</span>
-          </Link>
           <Link
             href="/map"
             className={cn(buttonVariants({ variant: "ghost" }), "px-2")}
