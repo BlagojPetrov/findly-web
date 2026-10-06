@@ -492,6 +492,14 @@
       "itemUnavailable": "Report not available",
       "ownReport": "Your report",
       "unread": "{count, plural, one {# unread message} other {# unread messages}}",
+      "delete": {
+        "label": "Delete conversation with {name}",
+        "title": "Delete this conversation?",
+        "description": "It is removed only from your list. {name} keeps the whole conversation, and it comes back here when a new message arrives.",
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "done": "Conversation deleted."
+      },
       "error": "Your conversations could not be loaded. Please try again later.",
       "empty": {
         "title": "You have no conversations yet",

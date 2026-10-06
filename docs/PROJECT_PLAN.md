@@ -1524,6 +1524,23 @@ decay, Cyrillic vs Latin text.
   `message_rate_limit`); `mark_conversation_read()` returns the number of messages
   it marked (0 for banned users); at most 20 new conversations per user in 24 hours
   (`FL429` `daily_conversation_limit`, exact under concurrency, re-opening exempt).
+- Deleting a conversation from one's own list (2026-10-07, branch
+  `feature/hide-conversation`; outside the step plan): nothing is deleted globally.
+  `hidden_conversations (user_id, conversation_id, hidden_at)` (RLS: users select only
+  their own rows; no write grants) is written only by `rpc("hide_conversation")`
+  (security definer; participants only — others get `P0002` `not_found`, guests and
+  banned users `42501`). It marks the user's unread messages in the conversation read,
+  removes their message notification about it and sets `hidden_at` (clock time; again
+  on a repeated hide). `my_conversations()` leaves the conversation out until
+  `last_message_at > hidden_at` (a new message from either side brings it back with
+  normal unread counts and a new notification) or it has an unread message. The chat
+  itself stays readable. UI: `DeleteConversationButton` (`src/components/chat/`,
+  confirmation `AlertDialog`) on each `/messages` row → `hideConversation`
+  (`src/actions/messages.ts`, `refresh()`); the row hides at once through an optimistic
+  `[data-removed]` marker (`has-[[data-removed]]:hidden`), then the button calls
+  `noteMessagesChanged()` and dispatches `MESSAGES_READ_EVENT`. Migrations
+  `20261006215253_hide_conversations.sql` and `20261006215523_hide_conversation_fix.sql`
+  (ambiguous `on conflict` target); SQL tests `supabase/tests/hide_conversations.sql`.
 
 ---
 
@@ -2774,6 +2791,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-07 | messaging   | Per-user "Delete conversation" (§16; branch `feature/hide-conversation`, not merged): `hidden_conversations` + `hide_conversation()` (marks the user's unread read, removes their message notification), `my_conversations()` brings a conversation back on newer activity; delete button with confirmation on `/messages` (optimistic), mk/en texts; SQL tests 23/23, unit tests 804, browser check 21/21 (both participants, reappearance, stranger, English).      |
 | 2026-10-05 | P10.S6      | Category management: migration (fixed slugs, protected `other`, atomic `admin_reorder_categories`, `admin_category_item_counts`), `/admin/categories` with add/edit/reorder/delete and an icon picker (24 icons), "Categories" tab; 25 unit tests; SQL tests 22/22; browser check 32/32. Phase 10 completed.                                                                                                                                                          |
 | 2026-10-05 | P10.S5      | User management: `admin_list_users()` (migration, SQL tests), `/admin/users` with name/email search, banned filter, counts and ban/unban (`setUserBanned`, confirmation), "Users" tab, banner for banned users; 14 unit tests; browser check 40/40.                                                                                                                                                                                                                   |
 | 2026-10-05 | P10.S4      | Moderation queue `/admin/reports`: open flags grouped by item (oldest first) with hide (confirmation; resolves the flags shown), resolve and dismiss, hidden reports view with restore (to active or resolved), "Flags" tab, moderation notification texts; 32 unit tests; browser check 41/41.                                                                                                                                                                       |

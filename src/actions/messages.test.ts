@@ -1,21 +1,31 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  hideConversation,
   markConversationRead,
   sendMessage,
   startConversation,
 } from "./messages";
 
-const { requireUser, itemQuery, conversationQuery, insert, redirect, rpc } =
-  vi.hoisted(() => ({
-    requireUser: vi.fn(),
-    itemQuery: vi.fn(),
-    conversationQuery: vi.fn(),
-    insert: vi.fn(),
-    redirect: vi.fn(),
-    rpc: vi.fn(),
-  }));
+const {
+  requireUser,
+  itemQuery,
+  conversationQuery,
+  insert,
+  redirect,
+  rpc,
+  refresh,
+} = vi.hoisted(() => ({
+  refresh: vi.fn(),
+  requireUser: vi.fn(),
+  itemQuery: vi.fn(),
+  conversationQuery: vi.fn(),
+  insert: vi.fn(),
+  redirect: vi.fn(),
+  rpc: vi.fn(),
+}));
 
 vi.mock("@/lib/auth", () => ({ requireUser }));
+vi.mock("next/cache", () => ({ refresh }));
 vi.mock("next-intl/server", () => ({ getLocale: async () => "en" }));
 // redirect() ends the action by throwing, like next/navigation's.
 vi.mock("@/i18n/navigation", () => ({ redirect }));
@@ -400,5 +410,69 @@ describe("markConversationRead", () => {
     expect(console.error).toHaveBeenCalledWith(
       expect.stringContaining("XX000: raw database text"),
     );
+  });
+});
+
+describe("hideConversation", () => {
+  beforeEach(() => {
+    rpc.mockReset().mockResolvedValue({ data: null, error: null });
+    refresh.mockReset();
+  });
+
+  it("hides the conversation and refreshes the list", async () => {
+    expect(await hideConversation(form({ conversationId }))).toEqual({
+      ok: true,
+      data: undefined,
+    });
+    expect(requireUser).toHaveBeenCalledWith("/messages");
+    expect(rpc).toHaveBeenCalledWith("hide_conversation", {
+      conversation_id: conversationId,
+    });
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects an invalid id before signing in", async () => {
+    expect(await hideConversation(form({ conversationId: "abc" }))).toEqual({
+      ok: false,
+      error: "validation",
+      fieldErrors: { conversationId: ["invalidValue"] },
+    });
+    expect(requireUser).not.toHaveBeenCalled();
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("refuses banned users without asking the database", async () => {
+    requireUser.mockResolvedValue({ id: userId, profile: { is_banned: true } });
+    expect(await hideConversation(form({ conversationId }))).toEqual({
+      ok: false,
+      error: "forbidden",
+    });
+    expect(rpc).not.toHaveBeenCalled();
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ["P0002", "not_found"],
+    ["42501", "forbidden"],
+  ])("maps %s to %s", async (code, error) => {
+    rpc.mockResolvedValue({ data: null, error: { code, message: "x" } });
+    expect(await hideConversation(form({ conversationId }))).toEqual({
+      ok: false,
+      error,
+    });
+    expect(refresh).not.toHaveBeenCalled();
+  });
+
+  it("hides and logs database errors", async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: { code: "XX000", message: "raw database text" },
+    });
+    const result = await hideConversation(form({ conversationId }));
+    expect(result).toEqual({ ok: false, error: "database" });
+    expect(console.error).toHaveBeenCalledWith(
+      expect.stringContaining("XX000: raw database text"),
+    );
+    expect(refresh).not.toHaveBeenCalled();
   });
 });

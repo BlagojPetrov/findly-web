@@ -28,3 +28,8 @@ export const sendMessageSchema = z.object({
 export const markConversationReadSchema = z.object({
   conversationId: z.uuid({ error: msg("invalidValue") }),
 });
+
+// Removes a conversation from the signed-in user's own list.
+export const hideConversationSchema = z.object({
+  conversationId: z.uuid({ error: msg("invalidValue") }),
+});

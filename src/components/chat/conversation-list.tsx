@@ -1,5 +1,6 @@
 import { useNow, useTranslations } from "next-intl";
 import { ConversationTime } from "@/components/chat/conversation-time";
+import { DeleteConversationButton } from "@/components/chat/delete-conversation-button";
 import { ItemTypeBadge } from "@/components/items/item-type-badge";
 import { UserAvatar } from "@/components/profile/user-avatar";
 import { Link } from "@/i18n/navigation";
@@ -10,7 +11,8 @@ import { cn } from "@/lib/utils";
 // The user's conversations, newest activity first (the order of
 // my_conversations()). Each row links to the chat. A Server Component: only
 // the relative times are client components (ConversationTime), which start
-// from the server's time and then follow the browser's clock.
+// from the server's time and then follow the browser's clock, and the delete
+// button, which hides its row at once (has-[[data-removed]]:hidden).
 export function ConversationList({
   conversations,
 }: {
@@ -31,7 +33,7 @@ export function ConversationList({
             key={conversation.id}
             data-unread={unread}
             className={cn(
-              "relative transition-colors has-[a:hover]:bg-muted/60",
+              "relative transition-colors has-[[data-removed]]:hidden has-[a:hover]:bg-muted/60",
               unread && "bg-primary/5",
             )}
           >
@@ -107,6 +109,10 @@ export function ConversationList({
                   )}
                 </div>
               </div>
+              <DeleteConversationButton
+                conversationId={conversation.id}
+                otherName={conversation.other.displayName}
+              />
             </div>
           </li>
         );

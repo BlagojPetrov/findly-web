@@ -12,6 +12,7 @@ vi.mock("next-intl", async (importOriginal) => {
   const actual = await importOriginal<typeof import("next-intl")>();
   return { ...actual, useNow: vi.fn(actual.useNow) };
 });
+vi.mock("@/actions/messages", () => ({ hideConversation: vi.fn() }));
 vi.mock("@/i18n/navigation", () => ({
   Link: ({ href, ...props }: { href: string }) => <a href={href} {...props} />,
 }));
@@ -100,6 +101,29 @@ describe("ConversationList", () => {
       "Прва",
       "Втора",
     ]);
+  });
+
+  it("offers deleting each conversation from the list", () => {
+    const rows = render([
+      conversation({
+        id: "c1",
+        other: { id: "1", displayName: "Прва", avatarPath: null },
+      }),
+      conversation({
+        id: "c2",
+        other: { id: "2", displayName: "Втора", avatarPath: null },
+      }),
+    ]);
+    expect(
+      rows.map((row) =>
+        row.querySelector("button")?.getAttribute("aria-label"),
+      ),
+    ).toEqual([
+      "Избриши го разговорот со Прва",
+      "Избриши го разговорот со Втора",
+    ]);
+    // The button's [data-removed] marker hides the row while it is deleted.
+    expect(rows[0].className).toContain("has-[[data-removed]]:hidden");
   });
 
   it("shows the report, the last message and the time", () => {

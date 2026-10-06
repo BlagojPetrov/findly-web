@@ -1,5 +1,6 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { getLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import {
@@ -12,6 +13,7 @@ import { requireUser } from "@/lib/auth";
 import { type ChatMessage, messageColumns, toChatMessage } from "@/lib/chat";
 import { createClient } from "@/lib/supabase/server";
 import {
+  hideConversationSchema,
   markConversationReadSchema,
   sendMessageSchema,
   startConversationSchema,
@@ -173,4 +175,42 @@ export async function markConversationRead(
     return fail("database");
   }
   return ok(data);
+}
+
+// Removes a conversation from the signed-in user's /messages list (§16).
+// Nothing is deleted: the other participant keeps the conversation, and a
+// newer message brings it back. The database marks the user's unread
+// messages in it read and removes their message notification about it.
+// Non-participants get not_found (hide_conversation() raises P0002), banned
+// users forbidden (42501).
+export async function hideConversation(
+  formData: FormData,
+): Promise<ActionResult> {
+  const parsed = hideConversationSchema.safeParse({
+    conversationId: formData.get("conversationId"),
+  });
+  if (!parsed.success) return validationError(parsed.error);
+  const { conversationId } = parsed.data;
+  const user = await requireUser("/messages");
+  if (user.profile.is_banned) return fail("forbidden");
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("hide_conversation", {
+    conversation_id: conversationId,
+  });
+  if (error) {
+    switch (error.code) {
+      case "P0002": // not a participant, or no such conversation
+        return fail("not_found");
+      case "42501": // banned in the meantime
+        return fail("forbidden");
+      default:
+        console.error(
+          `Hiding conversation ${conversationId} failed: ${error.code}: ${error.message}`,
+        );
+        return fail("database");
+    }
+  }
+  refresh();
+  return ok();
 }

@@ -215,6 +215,15 @@ item_id?, sender_id }`, one per recipient and conversation
   (F-33). Code that changes the user's messages in the browser must call
   `noteMessagesChanged()`.
   Banned users cannot mark read (the RPC returns 0).
+  Deleting a conversation is per user and hides it only from the user's own list:
+  `rpc("hide_conversation")` (security definer, participants only, `P0002` →
+  `not_found`) writes `hidden_conversations` (no write grants), marks the user's unread
+  messages read and removes their message notification; `my_conversations()` shows it
+  again after a newer message (either side) or while it has an unread one. UI only
+  through `hideConversation` (`src/actions/messages.ts`) from `DeleteConversationButton`
+  (optimistic `[data-removed]` marker; the row has `has-[[data-removed]]:hidden`).
+  `hidden_conversations` links `conversations` and `profiles`: embeds between them must
+  name the foreign key (F-34).
 - Favorites (§17): `favorites (user_id, item_id)` PK, cascades from items and profiles.
   Users select/insert/delete only their own (no update); insert needs `can_write()` and a
   visible item that is not hidden. `anon` has `select` (no policy, no rows) because

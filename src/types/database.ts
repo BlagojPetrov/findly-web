@@ -126,6 +126,39 @@ export type Database = {
           },
         ]
       }
+      hidden_conversations: {
+        Row: {
+          conversation_id: string
+          hidden_at: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          hidden_at?: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          hidden_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hidden_conversations_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hidden_conversations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       item_images: {
         Row: {
           created_at: string
@@ -537,6 +570,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      hide_conversation: {
+        Args: { conversation_id: string }
+        Returns: undefined
       }
       items_in_bounds: {
         Args: {
