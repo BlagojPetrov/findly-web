@@ -6,6 +6,7 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { BannedNotice } from "@/components/layout/banned-notice";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { ThemeProvider } from "@/components/layout/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { routing } from "@/i18n/routing";
 import { env } from "@/lib/env";
@@ -55,15 +56,23 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   return (
-    <html lang={locale} className={`${inter.variable} h-full antialiased`}>
+    // next-themes sets the theme class and color-scheme on <html> before
+    // hydration.
+    <html
+      lang={locale}
+      className={`${inter.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
       <body className="flex min-h-full flex-col">
-        <NextIntlClientProvider>
-          <SiteHeader />
-          <BannedNotice />
-          <main className="flex-1">{children}</main>
-          <SiteFooter />
-          <Toaster />
-        </NextIntlClientProvider>
+        <ThemeProvider>
+          <NextIntlClientProvider>
+            <SiteHeader />
+            <BannedNotice />
+            <main className="flex-1">{children}</main>
+            <SiteFooter />
+            <Toaster />
+          </NextIntlClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

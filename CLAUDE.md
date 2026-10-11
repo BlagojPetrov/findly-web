@@ -45,7 +45,9 @@ status and the next step. Read it before any work.
   management `/admin/users` with ban/unban and a banner for banned users (P10.S5),
   category management `/admin/categories` (P10.S6); Phase 10 completed, not pushed yet.
   The owner's Google account (`petrovblaze48@gmail.com`) is admin.
-  Next: P11.S1 (dark mode), only after the user's go-ahead.
+  Per-user conversation delete on branch `feature/hide-conversation`; Phase 11 started:
+  dark mode (P11.S1, branch `feature/dark-mode` on top of it, not pushed).
+  Next: P11.S2 (responsive, accessibility, error boundaries), only after the user's go-ahead.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -377,6 +379,13 @@ item_id?, sender_id }`, one per recipient and conversation
   The runner wraps each file in `begin … rollback`.
 - UI: shadcn/ui (Base UI primitives; `cn` from `@/lib/utils`), Tailwind 4 tokens in
   `src/app/globals.css`, lucide icons. Server Components by default.
+- Theme (P11.S1): `next-themes` via `ThemeProvider` (`src/components/layout/`, class
+  `dark` on `<html>`, default `system`, `localStorage` key `theme`); the choice is only in
+  the account menu (`ThemeMenuGroup`). Use theme tokens (`bg-card`, `text-muted-foreground`,
+  `lost`/`found`, …), never fixed light colours; each token in `:root` needs a `.dark`
+  value. Third-party CSS that is not in a layer (Leaflet) is overridden in `globals.css`
+  under `.dark` with higher specificity. Browser checks of no-flash: `<html>` must
+  have `dark` by the time `<header>` is parsed.
 - Match the existing code style; Prettier formats (`npm run format`).
 
 ## Commands
@@ -403,9 +412,9 @@ item_id?, sender_id }`, one per recipient and conversation
   `--disable-background-timer-throttling --disable-renderer-backgrounding
 --disable-backgrounding-occluded-windows`, or the window not in front misses its
   timers (Realtime reloads look broken). Chat bubbles carry `data-own="true|false"`.
-- Local `npm run build` (Turbopack) works again since 2026-09-30; it failed earlier when
-  Windows Application Control blocked the native SWC binary (F-22). If that happens again,
-  verify with `npx next build --webpack`; do not change the scripts. webpack and Turbopack
+- Local `npm run build` (Turbopack) fails again since 2026-10-11 (it worked from
+  2026-09-30): Windows Application Control blocks the native SWC binary (F-22). While it
+  does, verify with `npx next build --webpack`; do not change the scripts. webpack and Turbopack
   can differ (F-25): after pushing browser-facing changes (maps, assets), re-run the
   browser check against the Vercel deployment. The Vercel CLI is logged out and the
   repo is private, so confirm a deployment by markup that only the new commit renders

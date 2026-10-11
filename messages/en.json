@@ -15,7 +15,13 @@
     "favorites": "Favorites",
     "map": "Map",
     "messagesLabel": "{count, plural, =0 {Messages} one {Messages, # unread} other {Messages, # unread}}",
-    "admin": "Administration"
+    "admin": "Administration",
+    "theme": "Theme",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    }
   },
   "Home": {
     "eyebrow": "Lost & found, made simple",

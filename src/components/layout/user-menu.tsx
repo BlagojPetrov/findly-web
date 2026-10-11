@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Link } from "@/i18n/navigation";
+import { ThemeMenuGroup } from "./theme-menu-group";
 
 export function UserMenu({
   displayName,
@@ -75,6 +76,8 @@ export function UserMenu({
             {t("Header.admin")}
           </DropdownMenuLinkItem>
         )}
+        <DropdownMenuSeparator />
+        <ThemeMenuGroup />
         <DropdownMenuSeparator />
         <DropdownMenuItem
           disabled={pending}
