@@ -38,17 +38,20 @@ status and the next step. Read it before any work.
   deployed: Vercel serves `a62c026` (2026-10-03), production smoke tests passed.
   Phase 9 started: favorites schema with `is_favorite` in `search_items` (P9.S1). Item page
   embed fixed after P9.S1 (F-34). Favorite toggle on cards and the item page (P9.S2),
-  deployed at `a165b1d` (2026-10-04). Favorites page `/favorites` (P9.S3, not pushed yet);
+  deployed at `a165b1d` (2026-10-04). Favorites page `/favorites` (P9.S3);
   Phase 9 completed. Phase 10 started: moderation schema (P10.S1), report dialog on
   the item page (P10.S2), admin area `/admin` with the stats dashboard (P10.S3),
   moderation queue `/admin/reports` with hide/restore and resolve/dismiss (P10.S4), user
   management `/admin/users` with ban/unban and a banner for banned users (P10.S5),
-  category management `/admin/categories` (P10.S6); Phase 10 completed, not pushed yet.
+  category management `/admin/categories` (P10.S6); Phase 10 completed. P9.S3–P10.S6 and
+  the home page redesign deployed: Vercel serves `15377e2` (pushed 2026-10-06; no Vercel
+  browser check of them recorded yet).
   The owner's Google account (`petrovblaze48@gmail.com`) is admin.
-  Per-user conversation delete on branch `feature/hide-conversation`; Phase 11 started:
-  dark mode (P11.S1, branch `feature/dark-mode` on top of it, not pushed); responsive,
-  accessibility and error boundaries (P11.S2, branch `feature/a11y-polish` on top of
-  that, not pushed). Next: P11.S3 (performance pass), only after the user's go-ahead.
+  Not on `main` yet (stacked, fast-forward from `main`; migrations already applied):
+  per-user conversation delete (`feature/hide-conversation`), Phase 11 dark mode (P11.S1,
+  `feature/dark-mode`) and responsive/accessibility/error boundaries (P11.S2,
+  `feature/a11y-polish`). Next: deploy them (merge, push, Vercel checks; plan §25), each
+  step only with the user's approval; then P11.S3 (performance pass).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
