@@ -106,6 +106,8 @@ describe("NearFilter", () => {
       "25",
       "50",
     ]);
+    // Worded by a message, not Intl (F-30).
+    expect(select.options[4].textContent).toBe("10 km");
     expect(select.value).toBe("");
   });
 

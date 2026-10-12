@@ -92,6 +92,16 @@ describe("itemSchema", () => {
     ).toEqual({});
   });
 
+  it("counts form line breaks once and stores them as \\n (F-32)", () => {
+    const lines = Array.from({ length: 400 }, () => "abcd").join("\r\n");
+    expect(lines.length).toBe(2398);
+    const item = schema.parse({ ...valid, description: `${lines}\r\n` });
+    expect(item.description).toBe(lines.replaceAll("\r\n", "\n"));
+    expect(item.description).toHaveLength(1999);
+    const short = schema.parse({ ...valid, description: "Line one\r\ntwo\r" });
+    expect(short.description).toBe("Line one\ntwo");
+  });
+
   it.each([
     [null, "required"],
     ["", "required"],

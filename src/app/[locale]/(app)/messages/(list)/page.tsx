@@ -28,7 +28,8 @@ export async function generateMetadata({
 // The signed-in user's conversations, newest activity first, with unread
 // counts (§16). A failed query shows a message instead of breaking the page.
 // New messages and reads re-render it (events from the header's
-// subscription).
+// subscription). In the (list) group so its loading.tsx does not wrap
+// /messages/[id], which answers 404 (F-23).
 export default async function MessagesPage({
   params,
 }: PageProps<"/[locale]/messages">) {

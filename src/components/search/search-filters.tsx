@@ -122,12 +122,13 @@ export function SearchFilters({
         </div>
       </div>
 
-      {/* No name, so it is never submitted. */}
+      {/* No name, so it is never submitted. Hidden (not only sr-only) on wide
+          screens with its label, so it leaves the tab order there. */}
       <input
         id="search-filters-toggle"
         type="checkbox"
         aria-controls="search-filters-panel"
-        className="peer sr-only"
+        className="peer sr-only lg:hidden"
       />
       <label
         htmlFor="search-filters-toggle"

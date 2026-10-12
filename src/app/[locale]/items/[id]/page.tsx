@@ -109,13 +109,15 @@ function Detail({
   label: string;
   children: ReactNode;
 }) {
+  // A <dl> group may only hold <dt>/<dd> directly, so the icon sits in the
+  // <dt>, positioned beside both lines.
   return (
-    <div className="flex gap-3">
-      <span className="mt-0.5 text-muted-foreground">{icon}</span>
-      <div className="min-w-0">
-        <dt className="text-xs text-muted-foreground">{label}</dt>
-        <dd className="text-sm font-medium break-words">{children}</dd>
-      </div>
+    <div className="relative min-w-0 pl-7">
+      <dt className="text-xs text-muted-foreground">
+        <span className="absolute top-0.5 left-0">{icon}</span>
+        {label}
+      </dt>
+      <dd className="text-sm font-medium break-words">{children}</dd>
     </div>
   );
 }

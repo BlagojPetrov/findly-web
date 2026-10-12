@@ -213,6 +213,8 @@ describe("MapExplorer", () => {
     expect(popup.textContent).toContain("Пронајдено");
     expect(popup.textContent).toContain("Паричник");
     expect(popup.textContent).toContain("Кавадарци");
+    // Worded by a message, not Intl (F-30).
+    expect(popup.textContent).toContain("1.9.2026");
     expect(popup.querySelector("ul")!.getAttribute("aria-label")).toBe(
       "2 пријави на ова место",
     );

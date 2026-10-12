@@ -71,7 +71,12 @@ export function itemSchema({ categoryIds, userId }: ItemSchemaContext) {
         .min(1, msg("required"))
         .min(ITEM_LIMITS.titleMin, msg("titleTooShort"))
         .max(ITEM_LIMITS.titleMax, msg("titleTooLong")),
-      description: text()
+      // Form data sends line breaks as "\r\n"; normalized before the length
+      // checks so a description that fits the field also fits here (F-32).
+      description: z
+        .string({ error: msg("required") })
+        .overwrite((value) => value.replace(/\r\n?/g, "\n"))
+        .trim()
         .min(1, msg("required"))
         .min(ITEM_LIMITS.descriptionMin, msg("descriptionTooShort"))
         .max(ITEM_LIMITS.descriptionMax, msg("descriptionTooLong")),

@@ -54,6 +54,7 @@ export default async function LocaleLayout({
     notFound();
   }
   setRequestLocale(locale);
+  const t = await getTranslations("Header");
 
   return (
     // next-themes sets the theme class and color-scheme on <html> before
@@ -66,9 +67,21 @@ export default async function LocaleLayout({
       <body className="flex min-h-full flex-col">
         <ThemeProvider>
           <NextIntlClientProvider>
+            {/* First focusable element: keyboard users can jump past the
+                header. */}
+            <a
+              href="#main"
+              className="fixed top-2 left-2 z-50 -translate-y-16 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-md transition-transform focus-visible:translate-y-0 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+            >
+              {t("skipToContent")}
+            </a>
             <SiteHeader />
             <BannedNotice />
-            <main className="flex-1">{children}</main>
+            {/* tabIndex: the skip link moves focus here, so the next Tab
+                continues in the page, not in the header. */}
+            <main id="main" tabIndex={-1} className="flex-1 outline-none">
+              {children}
+            </main>
             <SiteFooter />
             <Toaster />
           </NextIntlClientProvider>

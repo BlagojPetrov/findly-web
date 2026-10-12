@@ -28,7 +28,9 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
+      {/* Tighter gaps on phones, so the signed-in controls fit at 360 px
+          (F-35). */}
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-2 px-4 sm:gap-4">
         <Link
           href="/"
           className="flex items-center gap-2 text-lg font-semibold tracking-tight"
@@ -37,7 +39,7 @@ export async function SiteHeader() {
           <Image src={logo} alt="" width={28} height={28} className="size-7" />
           Findly
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Link
             href="/map"
             className={cn(buttonVariants({ variant: "ghost" }), "px-2")}

@@ -46,8 +46,9 @@ status and the next step. Read it before any work.
   category management `/admin/categories` (P10.S6); Phase 10 completed, not pushed yet.
   The owner's Google account (`petrovblaze48@gmail.com`) is admin.
   Per-user conversation delete on branch `feature/hide-conversation`; Phase 11 started:
-  dark mode (P11.S1, branch `feature/dark-mode` on top of it, not pushed).
-  Next: P11.S2 (responsive, accessibility, error boundaries), only after the user's go-ahead.
+  dark mode (P11.S1, branch `feature/dark-mode` on top of it, not pushed); responsive,
+  accessibility and error boundaries (P11.S2, branch `feature/a11y-polish` on top of
+  that, not pushed). Next: P11.S3 (performance pass), only after the user's go-ahead.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -286,7 +287,8 @@ item_id?, sender_id }`, one per recipient and conversation
   pages in a separate context.
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
-  (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals) or render on the server.
+  (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals, `dayParts()` + a
+  `{day}.{month}.{year}` message) or render on the server.
 - Security: RLS on every table in the same migration that creates it (Supabase grants
   table privileges to anon/authenticated by default). `private.can_write()` in write
   policies, `private.is_admin()` for admin access. Policy helpers go in schema
@@ -343,6 +345,10 @@ item_id?, sender_id }`, one per recipient and conversation
   without JavaScript or redirect with 307 (F-23): show pending state with
   `LinkPendingMarker`/`FormPendingMarker` (`data-pending`) and style it with
   `group-has-[[data-pending]]/…:`. Sibling elements must not share a `key`.
+  `loading.tsx` (render `PageLoading` from `src/components/layout/`) only on signed-in
+  pages without canonical redirects or `notFound()` (now `/dashboard`, `/profile`,
+  `/messages`): a boundary also wraps nested routes, which is why the messages list lives
+  in `messages/(list)/` (`/messages/[id]` answers 404).
 - Maps: Leaflet via `react-leaflet`. Any module importing `leaflet`/`react-leaflet`
   (even `Marker`) is browser-only: it imports `./base-map` and is exported from
   `@/components/map` (`index.tsx`) with `dynamic(..., { ssr: false, loading: MapLoading })`;
@@ -386,6 +392,21 @@ item_id?, sender_id }`, one per recipient and conversation
   value. Third-party CSS that is not in a layer (Leaflet) is overridden in `globals.css`
   under `.dark` with higher specificity. Browser checks of no-flash: `<html>` must
   have `dark` by the time `<header>` is parsed.
+- Errors (P11.S2): `src/app/[locale]/error.tsx` (inside the site layout, translated,
+  `retry()`, digest as error code) and `src/app/global-error.tsx` (errors of the locale
+  layout; own document with `globals.css`, Inter and `ThemeProvider`; inline mk/en texts by
+  path). Both are client components; never show `error.message` (server messages are
+  hidden in production anyway).
+- Accessibility (P11.S2): the locale layout starts with a skip link to
+  `<main id="main" tabIndex={-1}>` (no other `<main>`). Text colours must reach 4.5:1 in
+  both themes, including `text-lost`/`text-found` on their `/10` tints (light tokens were
+  darkened for this). A `<dl>` group holds only `<dt>`/`<dd>` (put icons inside the
+  `<dt>`). Visually hidden controls that are pointless at a breakpoint must also be
+  `hidden` there, or they stay invisible tab stops. Decorative avatars are `aria-hidden`
+  (`UserAvatar`). Header controls must fit at 360 px. Browser checks: Lighthouse and axe-core
+  installed in the scratchpad next to `playwright-core`; Lighthouse connects to a
+  persistent Edge context started with `--remote-debugging-port` (`disableStorageReset`
+  keeps the session and the stored theme).
 - Match the existing code style; Prettier formats (`npm run format`).
 
 ## Commands
@@ -412,9 +433,9 @@ item_id?, sender_id }`, one per recipient and conversation
   `--disable-background-timer-throttling --disable-renderer-backgrounding
 --disable-backgrounding-occluded-windows`, or the window not in front misses its
   timers (Realtime reloads look broken). Chat bubbles carry `data-own="true|false"`.
-- Local `npm run build` (Turbopack) fails again since 2026-10-11 (it worked from
-  2026-09-30): Windows Application Control blocks the native SWC binary (F-22). While it
-  does, verify with `npx next build --webpack`; do not change the scripts. webpack and Turbopack
+- Local `npm run build` (Turbopack) works again since 2026-10-12. It has failed on and off
+  (F-22: Windows Application Control blocks the native SWC binary); when it does, verify
+  with `npx next build --webpack`; do not change the scripts. webpack and Turbopack
   can differ (F-25): after pushing browser-facing changes (maps, assets), re-run the
   browser check against the Vercel deployment. The Vercel CLI is logged out and the
   repo is private, so confirm a deployment by markup that only the new commit renders

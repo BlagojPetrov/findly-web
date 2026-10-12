@@ -1,13 +1,13 @@
 "use client";
 
 import { LoaderCircle, RotateCw } from "lucide-react";
-import { useFormatter, useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { CategoryIcon } from "@/components/items/category-icon";
 import { ItemTypeBadge } from "@/components/items/item-type-badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
-import { calendarDay } from "@/lib/dates";
+import { dayParts } from "@/lib/dates";
 import { itemImageUrl } from "@/lib/item-images";
 import { MACEDONIA_BOUNDS } from "@/lib/map";
 import {
@@ -132,7 +132,6 @@ export function MapExplorer({ type }: { type: Enums<"item_type"> | null }) {
 // The items of one marker, each linking to its page.
 export function MapItemList({ items }: { items: MapItem[] }) {
   const t = useTranslations("MapPage");
-  const format = useFormatter();
   const locale = useLocale();
 
   return (
@@ -167,10 +166,7 @@ export function MapItemList({ items }: { items: MapItem[] }) {
             <p className="text-xs text-muted-foreground">
               {locale === "mk" ? item.category.name_mk : item.category.name_en}
               {" · "}
-              {format.dateTime(calendarDay(item.occurredOn), {
-                dateStyle: "medium",
-                timeZone: "UTC",
-              })}
+              {t("date", dayParts(item.occurredOn))}
             </p>
             {item.locationName && (
               <p className="truncate text-xs text-muted-foreground">

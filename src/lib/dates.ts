@@ -38,9 +38,16 @@ export function elapsedSince(date: Date, now = new Date()): Elapsed {
   if (hours < 24) return { unit: "hours", count: hours };
   const days = Math.floor(hours / 24);
   if (days < 7) return { unit: "days", count: days };
-  const [year, month, day] = todayInAppTimeZone(date).split("-");
-  // Strings, so message formatting does not group or localize the digits.
-  return { unit: "date", day: String(+day), month: String(+month), year };
+  return { unit: "date", ...dayParts(todayInAppTimeZone(date)) };
+}
+
+// A "YYYY-MM-DD" day as parts for a date message such as
+// "{day}.{month}.{year}". Client components word dates this way instead of
+// Intl.DateTimeFormat, which has no Macedonian data in Chromium (F-30).
+// Strings, so message formatting does not group or localize the digits.
+export function dayParts(day: string) {
+  const [year, month, date] = day.split("-");
+  return { day: String(+date), month: String(+month), year };
 }
 
 // The time of day in Macedonia as "HH:MM" (24-hour). en-GB only gives the

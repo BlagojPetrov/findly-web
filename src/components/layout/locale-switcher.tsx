@@ -23,7 +23,7 @@ export function LocaleSwitcher() {
           locale={locale}
           aria-current={locale === currentLocale ? "true" : undefined}
           className={cn(
-            "rounded-md px-2 py-1 font-medium uppercase transition-colors",
+            "rounded-md px-1.5 py-1 font-medium uppercase transition-colors sm:px-2",
             locale === currentLocale
               ? "bg-muted text-foreground"
               : "text-muted-foreground hover:text-foreground",

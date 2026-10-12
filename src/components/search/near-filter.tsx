@@ -1,7 +1,7 @@
 "use client";
 
 import { LoaderCircle, LocateFixed, Map as MapIcon, X } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { useId, useState } from "react";
 import { LocationPickerMap, MapFrame } from "@/components/map";
 import type { MapViewTarget } from "@/components/map/location-picker-map";
@@ -45,7 +45,6 @@ export function NearFilter({
   defaultRadius: SearchRadius | null;
 }) {
   const t = useTranslations("Search.near");
-  const format = useFormatter();
   const id = useId();
   const [near, setNear] = useState(defaultNear);
   const [radius, setRadius] = useState(defaultRadius);
@@ -105,8 +104,9 @@ export function NearFilter({
       : geoStatus !== "idle"
         ? t(`geo.${geoStatus}`)
         : null;
-  const km = (value: number) =>
-    format.number(value, { style: "unit", unit: "kilometer" });
+  // A message, not Intl unit formatting: Chromium has no Macedonian data
+  // for it (F-30). The radii are whole numbers.
+  const km = (value: number) => t("km", { value: String(value) });
 
   return (
     <div className="grid gap-2">

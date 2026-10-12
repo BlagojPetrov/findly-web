@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   calendarDay,
   clockTime,
+  dayParts,
   elapsedSince,
   previousDay,
   todayInAppTimeZone,
@@ -48,6 +49,21 @@ describe("calendarDay", () => {
     expect(calendarDay("2026-03-01").toISOString()).toBe(
       "2026-03-01T00:00:00.000Z",
     );
+  });
+});
+
+describe("dayParts", () => {
+  it("splits a day without leading zeros", () => {
+    expect(dayParts("2026-09-01")).toEqual({
+      day: "1",
+      month: "9",
+      year: "2026",
+    });
+    expect(dayParts("2026-12-25")).toEqual({
+      day: "25",
+      month: "12",
+      year: "2026",
+    });
   });
 });
 
