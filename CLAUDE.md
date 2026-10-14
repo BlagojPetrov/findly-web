@@ -47,11 +47,9 @@ status and the next step. Read it before any work.
   the home page redesign deployed: Vercel serves `15377e2` (pushed 2026-10-06; no Vercel
   browser check of them recorded yet).
   The owner's Google account (`petrovblaze48@gmail.com`) is admin.
-  Not on `main` yet (stacked, fast-forward from `main`; migrations already applied):
-  per-user conversation delete (`feature/hide-conversation`), Phase 11 dark mode (P11.S1,
-  `feature/dark-mode`) and responsive/accessibility/error boundaries (P11.S2,
-  `feature/a11y-polish`). Next: deploy them (merge, push, Vercel checks; plan §25), each
-  step only with the user's approval; then P11.S3 (performance pass).
+  Per-user conversation delete, Phase 11 dark mode (P11.S1) and responsive/accessibility/
+  error boundaries (P11.S2) deployed: Vercel serves `4e7a762` (pushed 2026-10-12,
+  production browser check 2026-10-14). Next: P11.S3 (performance pass).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -119,7 +117,8 @@ status and the next step. Read it before any work.
   `form:has(input[name="email"])` (the Google button is a form of its own) and record
   toasts with a `MutationObserver` (they close after 4 s; a CLI SQL call takes longer);
   create temporary users with SQL and delete them
-  afterwards. Custom SMTP is on: a sign-up that succeeds **sends a real email**, so
+  afterwards. Assert on rendered text (`innerText`, roles), never on the page source or
+  `body.textContent`: every page carries all message texts in its scripts (F-04). Custom SMTP is on: a sign-up that succeeds **sends a real email**, so
   never sign up with `@findly.test` (it bounces) — use a disposable inbox
   (`…@mailinator.com`) and read the confirmation `token_hash` from
   `auth.one_time_tokens` instead of the email.
