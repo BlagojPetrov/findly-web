@@ -194,7 +194,7 @@ export function LocationPicker({
         ? t(`geo.${geoStatus}`)
         : null;
   const addressHint = {
-    idle: t("addressHint"),
+    idle: undefined,
     loading: t("addressLoading"),
     notFound: t("addressNotFound"),
     failed: t("addressFailed"),

@@ -243,7 +243,7 @@
   "ImagePicker": {
     "add": "Add photos",
     "count": "{count}/{max}",
-    "hint": "Up to {max} photos (JPG, PNG or WebP, up to 10 MB). The first one is the cover. You can also drag them here.",
+    "hint": "Up to {max} photos (JPG, PNG or WebP, up to 10 MB).",
     "listLabel": "Item photos",
     "photoAlt": "Photo {number}",
     "cover": "Cover",
@@ -870,7 +870,6 @@
     "pinLabel": "Chosen location",
     "pinAt": "Pin at {lat}, {lng}. Drag it to move it.",
     "addressLabel": "Address or place",
-    "addressHint": "Filled in from the pin. You can edit it.",
     "addressLoading": "Finding the address…",
     "addressNotFound": "No address for this spot. Type it in.",
     "addressFailed": "The address could not be found. Type it in."
