@@ -7,8 +7,8 @@
 > updating it.
 
 - **Last updated:** 2026-10-17
-- **Current phase:** Phase 11 — UI polish, testing and final delivery (P11.S1–P11.S2 completed; optional P7.S5 deferred)
-- **Next step:** P11.S3 (§22, §25)
+- **Current phase:** Phase 11 — UI polish, testing and final delivery (P11.S1–P11.S3 completed; optional P7.S5 deferred)
+- **Next step:** deploy and verify P11.S3 on Vercel, then P11.S4 (§22, §25)
 
 ---
 
@@ -177,7 +177,7 @@ to these IDs. "Next step" always means the step named in
 | P10.S6 | Category management                            | `COMPLETED`   |
 | P11.S1 | Dark mode                                      | `COMPLETED`   |
 | P11.S2 | Responsive, accessibility, error boundaries    | `COMPLETED`   |
-| P11.S3 | Map view in the feed (replaces `/map`)         | `NOT STARTED` |
+| P11.S3 | Map view in the feed (replaces `/map`)         | `COMPLETED`   |
 | P11.S4 | Drop `items_in_bounds` (after P11.S3 is live)  | `NOT STARTED` |
 | P11.S5 | Performance pass                               | `NOT STARTED` |
 | P11.S6 | End-to-end tests and CI                        | `NOT STARTED` |
@@ -296,7 +296,7 @@ src/app/[locale]/(auth)/             login, register, verify-email, forgot-passw
 src/app/[locale]/(app)/              protected: dashboard, items/new, items/[id]/edit, messages,
                                      messages/[id], favorites, notifications, profile
 src/app/[locale]/items/              public feed + items/[id]
-src/app/[locale]/map/                public map
+src/app/[locale]/map/                redirect to /items?view=map (P11.S3; was the public map)
 src/app/[locale]/(app)/admin/        admin area (role-guarded, P10.S3)
 src/app/api/auth/confirm/route.ts    email link verification (token_hash)
 src/app/api/auth/callback/route.ts   OAuth code exchange
@@ -339,7 +339,7 @@ Route groups `(auth)` and `(app)` do not change URLs; they only share layouts.
 | `/items/[id]`                                                                                                                     | public (active) | 3, 4  |
 | `/items/new`, `/items/[id]/edit`                                                                                                  | signed in/owner | 3     |
 | `/dashboard`                                                                                                                      | signed in       | 3     |
-| `/map`                                                                                                                            | public          | 5     |
+| `/map` → `/items?view=map` (308 since P11.S3)                                                                                     | public          | 5, 11 |
 | `/notifications` ✓ (`?page=` from 2)                                                                                              | signed in       | 7     |
 | `/messages/[id]` ✓ (chat since P8.S4)                                                                                             | participants    | 8     |
 | `/messages` ✓                                                                                                                     | signed in       | 8     |
@@ -360,10 +360,9 @@ All routes also exist under `/en/...`.
 - Complex reads (search, map bounding box, conversation list) are Postgres
   functions called with `supabase.rpc(...)` and declared `security invoker` so RLS
   still applies.
-- Interactive reads that change with every map move (`/map`, P5.S6) call the
-  RPC from the browser with `@/lib/supabase/client` (publishable key, the
-  visitor's session, so RLS is the same); the helpers stay client-safe
-  (`@/lib/map-items`). The header bell (P7.S3) reads notifications the same way
+- The former `/map` (P5.S6) loaded its area from the browser on every map
+  move; since P11.S3 the feed's map view is read on the server like the list
+  (`searchItemLocations()`, `search_item_locations()`). The header bell (P7.S3) reads notifications the same way
   (`@/lib/notifications`), because Realtime events and the panel refresh in the
   browser; its first unread count comes from the server
   (`@/lib/queries/notifications`).
@@ -1017,9 +1016,26 @@ keep them). Rules:
 - Canonical URLs: `/items` is the default feed; defaults are never written. The
   feed page redirects any other URL for the same filters to the canonical one
   (P4.S4).
-- Planned (P11.S3): `view`: `list` (default, never written) | `map`. With
-  `view=map` the canonical query has no `page`; every other filter (including
-  `sort`) is kept, so switching views in either direction keeps the criteria.
+- `view` (P11.S3 ✓): `list` (default, never written) | `map`; anything else →
+  `list`. With `view=map` the page is 1 and the canonical query has no `page`;
+  every other filter (including `sort`) is kept, so switching views in either
+  direction keeps the criteria (`searchQuery({ ...filters, view })`). `view` is
+  written last. `mapRedirectQuery()` maps a former `/map?type=` URL to the map
+  view.
+
+### `search_item_locations` (P11.S3 ✓, `20261017123944_search_item_locations.sql`)
+
+The map view's query: the arguments of `search_items` without paging plus
+`max_rows` (default 300, clamped 1–300); the same validation (`22023`
+`invalid_sort`/`invalid_center`/`invalid_radius`), filters, exclusion of hidden
+items and order, so it returns the first rows of the list. Returns `id, type,
+status, title, occurred_on, location_name, lat, lng, category_slug,
+category_name_mk, category_name_en, category_icon, cover_path, total_count`
+(`location_name` and `cover_path` can be null). `security invoker`, executable by
+`anon`/`authenticated`. The filter code is a copy of `search_items`'s: a change to
+the filters of one function must be made in both; `search_item_locations.sql`
+compares their results. The app passes both the same arguments (`searchArgs()` in
+`@/lib/queries/items`).
 
 ---
 
@@ -1065,7 +1081,7 @@ MapLoading })`. Pages render it inside `MapFrame` (labelled region, size via
   JavaScript the radius works only on URLs that already have a center.
 - Leaflet 1.9 fix (F-27): `leaflet-fixes.ts` (imported by `base-map`) skips the
   zoom-animation timer of a map removed while zooming.
-- **`/map` page (P5.S6 ✓):** `items_in_bounds(min_lat, min_lng, max_lat,
+- **`/map` page (P5.S6 ✓, replaced by the map view in P11.S3):** `items_in_bounds(min_lat, min_lng, max_lat,
 max_lng, item_type, max_rows)` (`20260929170935_items_in_bounds.sql`,
   `security invoker`): active items only, inside a plain lng/lat rectangle
   (planar GiST index `items_location_geom_idx` on `location::geometry`; edges
@@ -1083,14 +1099,24 @@ max_lng, item_type, max_rows)` (`20260929170935_items_in_bounds.sql`,
   category, date, place). A view across the antimeridian asks for every
   longitude (`clampBounds()`). Changing the type keeps the map mounted and its
   view. Scroll-wheel zoom is on here (the map is the page).
-- **Planned (decided 2026-10-17): map view in the feed (P11.S3), `/map` retired.**
-  The map becomes a second view of `/items` (`?view=map`) that shows the same
-  filtered results as the list, loaded from the filters (not from the visible
-  area) through a new RPC `search_item_locations()` (§12). `/map` becomes a
-  permanent redirect to `/items?view=map`. `items_in_bounds()` and
-  `items_location_geom_idx` are dropped only in P11.S4, after the P11.S3
-  deployment is live: until then the deployed `/map` calls the function from
-  the browser (checked 2026-10-17; no database object depends on it). The
+- **Map view of the feed (P11.S3 ✓, decided 2026-10-17; replaces `/map`).**
+  `/items?view=map` shows the same filtered results as the list, loaded on the
+  server from the filters (not from the visible area): `searchItemLocations()`
+  (`@/lib/queries/items`) → `search_item_locations()` (§12), at most
+  `MAP_RESULTS_LIMIT` = 300 with the total. `MapResults`
+  (`src/components/search/`) shows a `role="status"` notice when more match
+  ("the first 300 of N … narrow the filters or use the list"), a `noscript` link
+  to the list and `ResultsMap` (`src/components/map/results-map.tsx`, client:
+  `groupByPoint`, `resultArea()` from `@/lib/map-items`, `MapItemList` popups with
+  type, resolved status, title link, category, date, place). `ItemsMap` fits the
+  area again only when it changes (compared by value), draws the radius circle,
+  scroll-wheel zoom off. Without results the feed's empty state is shown. The
+  List/Map switch is `ViewSwitch` (`src/components/search/`). The filter form
+  (`SearchForm`) goes straight to the canonical URL in the map view: the redirect
+  of a plain submit would remount the map. `/map` and `/en/map` answer 308 to the
+  map view (`mapRedirectQuery()`), not in the sitemap. `items_in_bounds()` and
+  `items_location_geom_idx` stay until P11.S4 (the previously deployed `/map`
+  calls the function from the browser; no database object depends on it). The
   location picker, the item page map and the radius filter's map are unchanged.
 - Privacy note: the exact point chosen by the user is stored and shown. Users are
   told in the form to pick an approximate public place for found items.
@@ -2731,7 +2757,7 @@ MISS`, `fra1`) of `/items` contains the guest heart links, which exist only from
 - **Notes:** Lighthouse's unscored `label-content-name-mismatch` still names the account-menu button (it ignores `aria-hidden` on the initials); the initials are not a text label, so it stays. On a full load React reveals streamed content shortly after `load`: browser checks of pages with `loading.tsx` wait for their content, not only `load`.
 - **Production (2026-10-14):** `424601e` (conversation delete), `72cea39` (P11.S1), `b7e0894` (P11.S2) and `4e7a762` (docs) reached `main` as a fast-forward from `15377e2` and were pushed on 2026-10-12 (not recorded then); no database change (migrations were already applied). Deployment confirmed by markup: uncached (`X-Vercel-Cache: MISS`, `fra1`) `/items` and `/en/items` render the skip link in mk/en. Browser check against Vercel (headless Edge `mk-MK`, Turbopack build; three temporary `@findly.test` users, one admin, and a seeded conversation whose temporary item was deleted in the same transaction, so nothing became public; all deleted afterwards, row counts equal to the baseline): 172/176, and the 4 failures were faults of the checks, re-run correctly 8/8 — status codes (mk/en contexts kept apart; guests 307 to login with `next`, 404s, canonical 307s, user 404 on `/admin`); dark mode (no flash with an OS dark scheme, Leaflet popup dark, menu choice stored and kept, back to System); skip link, keyboard walkthrough of 18 pages (the notification link shows focus with an underline), account menu by keyboard, 360 px on 23 page/role combinations including F-35, axe clean on 40 page/theme combinations; favorites (guest login link, save, `/favorites`, remove, empty state); report dialog (guest link, five reasons, focus in and back, Escape; not submitted); admin tabs, stats, queue, hidden view, categories, user search, ban/unban with the banner shown and gone; conversation delete (confirmation, cancel, optimistic removal, toast, header unread 2 → 0, gone after reload with the empty state, the other participant keeps it, a stranger gets 404, a newer message brings it back live with 1 unread); no unexpected console errors. F-36 logged (404 HTML is the client-fallback shell; also on `15377e2`).
 
-#### P11.S3 — Map view in the feed (replaces `/map`)
+#### P11.S3 — Map view in the feed (replaces `/map`) — `COMPLETED` (2026-10-17)
 
 - **Decision (2026-10-17):** `/map` duplicated the feed with fewer filters (type only, active only) and a count of the visible area that differed from the list's. The map becomes a second view of `/items` with the same filters and results; the separate page is retired. Loading is driven by the filters, not by the visible area: the map count equals the list count, and the radius filter covers searching an area.
 - **Affects:** new migration `*_search_item_locations.sql` (additive only; `items_in_bounds` stays until P11.S4), `supabase/tests/search_item_locations.sql`, `src/types/database.ts`, `src/lib/validation/search.ts` (`view`), `src/lib/queries/items.ts` (`searchItemLocations`), `src/app/[locale]/items/page.tsx` (view switch, map view), `src/components/search/search-filters.tsx` (hidden `view`), `src/components/map/` (results map built from `ItemsMap`, `MapItemList`, `groupByPoint`, `itemMarkerIcon`; `MapExplorer` and the browser loading in `@/lib/map-items` removed), `src/app/[locale]/map/page.tsx` (permanent redirect), `@/lib/validation/map` (removed), `site-header.tsx`, `sitemap.ts`, messages mk/en.
@@ -2743,6 +2769,10 @@ MISS`, `fra1`) of `/items` contains the guest heart links, which exist only from
 - **SEO and routes:** the canonical URL of a map view is the list URL of the same filters (without `view`); `/map` leaves the sitemap. `/map` and `/en/map` redirect permanently to `/items?view=map` (keeping a valid `type`). Header: the Map link opens `/items?view=map`, and a new link opens the report list `/items`; both fit at 360 px (icon only below `sm`, F-35).
 - **Unchanged:** `search_items` and the list view, matching, the location picker in the report form, the item page map, `NearFilter`, `items_in_bounds` (P11.S4).
 - **Verify:** SQL tests: for each filter and sort the same ids in the same order as `search_items`, hidden items excluded (also for owner and admin), 300 cap with `total_count`, invalid parameters raise `22023`; dry run in a rolled-back transaction, `db:push`, `db:types`, advisors. Unit and component tests: `view` parsing and canonical query (page dropped, all other filters kept in both directions), switch links, map status (count, more than 300), `noscript` link, hidden `view` in the filter form. Browser check (`mk-MK` and English, desktop and 360 px, light and dark): list → map → list keeps every criterion; a filter change in map view stays in map view and refits; Back/Forward; a popup link opens the report; `/map`, `/map?type=found`, `/en/map` redirect permanently; header links; keyboard walkthrough, axe clean, Lighthouse accessibility ≥ 90 on the map view; no console errors. After the push, the same check against Vercel (F-25).
+- **Implemented:** migration `20261017123944_search_item_locations.sql` (additive: `select extensions.show_limit()`, the function, its grants; §12), applied to `lyvudeaxwibgpqsinqyz`; types regenerated (also `PostgrestVersion` 14.5 → 14.17 from the generator). `@/lib/validation/search`: `SEARCH_VIEWS`, `view`, `mapRedirectQuery()`. `@/lib/queries/items`: `searchArgs()` (shared by both RPCs), `searchItemLocations()`. `@/lib/map-items`: `MapItem.status`, `MAP_RESULTS_LIMIT`, `MapArea`, `resultArea()`; `fetchMapItems`/`clampBounds`/`MAP_ITEMS_LIMIT`/`MapBounds` removed. Components: `ResultsMap` + `MapItemList` (`results-map.tsx`), `ItemsMap` (`area`, `circle`; no bounds reporting, no wheel zoom), `ViewSwitch`, `MapResults`, `SearchForm` (client wrapper of `next/form`); `MapExplorer` and `@/lib/validation/map` removed. Page `/items`: `FeedLayout` shared by both views (heading, switch, results), map view without pagination, canonical = list URL, empty state's "Clear filters" keeps the view; filter form posts a hidden `view` and its "Clear" keeps the view. `/map`: `permanentRedirect` (exported from `@/i18n/navigation`). Header: "All reports" (`LayoutList`) and Map (`/items?view=map`), icons only below `sm`. Sitemap without `/map`. Messages: `Search.views.*`, `Search.map.*`, `Header.reports` (mk/en); `MapPage` removed.
+- **Changed during implementation:** (1) The filter form in the map view navigates to the canonical URL itself (`SearchForm`, same `parseSearchParams`/`searchQuery` as the page): the browser check showed that the server's canonical redirect after a plain submit (empty fields, field order) remounts the map, while a direct navigation keeps it; the list view and browsers without JavaScript still submit normally. (2) Without results the map view shows the feed's empty state instead of an empty map of North Macedonia. (3) `MapResults` is its own component so the over-300 notice and the `noscript` link have component tests (the real data has 16 reports). (4) Popups mark resolved reports (the map now follows the status filter). (5) `/map` keeps only a valid `type` (its only filter).
+- **Verified:** dry run of migration + tests in a rolled-back transaction (an inverted assert fails the run), pushed; `db:test` 24/24 (`search_item_locations.sql`: same ids and order as `search_items` for 16 filter/sort combinations as guest, owner and admin, hidden never returned, 300 cap with total 305, `max_rows` clamped, row contents, 8 invalid calls → `22023`; `items_in_bounds.sql` still passes); advisors: only F-12/F-19. 833 unit tests (new: `view` parsing/canonical/round trips, `mapRedirectQuery`, `searchItemLocations` arguments equal to the list's without paging, mapping, `resultArea`, `ResultsMap`, `MapResults` (notice mk/en, circle, `noscript` link), `ViewSwitch` and the filter form's `view`, `SearchForm`). Lint, typecheck, `npm run build`. Browser check (production build on port 3100, headless Edge `mk-MK`; one temporary `@findly.test` user for the signed-in header, deleted afterwards, counts equal to the baseline): 77/77 — `/map`, `/map?type=found`, invalid type, `/en/map`, `/en/map?type=lost` → 308 to the map view; `view=map&page=3`, `view=grid`, `view=list&page=2` → canonical 307; sitemap without `/map`; switch (`aria-current`, links), header links; map view: region, same count as the list (16), 13 markers, no pagination, no notice, canonical = list; markers named and focusable; popup link opens the report, Back returns; wheel scrolls the page without zooming; a filter change in the map view stays in the map view and keeps the map mounted; list keeps the filter and the count matches; the list view's form still works; Back/Forward between views; all criteria (text, type, two categories, status, dates, center, radius, sort) survive list → map → list; radius circle drawn; empty state and both "Clear" links keep the map view; keyboard: Tab to the switch with a focus ring, Enter opens the map, Enter on a marker opens its popup; dark mode (popup colours); English labels, popup links and date; without JavaScript the note links to the list with the same filters; 360 px guest and signed in: no horizontal scroll on `/items`, the map view and `/`, header controls inside the viewport, map 328 px wide, switch visible, popup inside the viewport; axe clean on 7 page/theme/width combinations with a popup open; item page map and the radius filter's map unchanged; no console errors. Lighthouse accessibility (mobile): map view 96 in mk and en (`target-size`: markers overlap at country zoom, accepted as for `/map` in P11.S2), list 100. Two faults of the first run were in the check (it clicked a covered marker; axe ran while the popup was still fading in) and were fixed in the check.
+- **Not yet:** pushed or deployed (waiting for the owner's approval); the Vercel check follows the push.
 
 #### P11.S4 — Drop `items_in_bounds` (after P11.S3 is live)
 
@@ -2833,6 +2863,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-17 | P11.S3      | Map view of `/items` (`?view=map`): `search_item_locations()` (additive migration, applied), same filters and results as the list, at most 300 with a notice, List/Map switch, map kept mounted across filter changes, `/map` → 308, header "All reports" + Map; `MapExplorer` and browser loading removed, `items_in_bounds` kept for P11.S4; `db:test` 24/24, 833 unit tests, browser check 77/77, Lighthouse a11y 96/100. Not pushed.                                                                                                            |
 | 2026-10-17 | deploy      | Production baseline `7b4b093` (after `0340681`, docs; `7b4b093`, copy only). Uncached `/items` and `/en/items` (`MISS`, `fra1`) serve its texts: new `ImagePicker.hint` (mk/en), no `LocationPicker.addressHint`, new mk `item_hidden`; no old text. The hash is inferred from these texts (only `7b4b093`, the tip of `origin/main`, renders them), not read from Vercel (CLI logged out). Push date unknown. No database change, no browser check.                                                                                                |
 | 2026-10-17 | plan        | The map becomes a view of `/items` (`?view=map`, same filters and results, loaded from the filters, at most 300 with a notice) and `/map` a permanent redirect: new P11.S3; `items_in_bounds` is removed in the new P11.S4 once P11.S3 is live (the deployed `/map` still calls it; no database dependency). Former P11.S3–P11.S6 renumbered to P11.S5–P11.S8.                                                                                                                                                                                      |
 | 2026-10-14 | deploy      | Recorded the deployment of `4e7a762` (conversation delete, P11.S1, P11.S2; fast-forward from `15377e2`, pushed 2026-10-12): confirmed by uncached markup; Vercel browser check 172/176 with the 4 check faults re-run 8/8 (dark mode, accessibility, 360 px, axe, favorites, report dialog, admin incl. ban/unban, conversation delete); temporary data deleted, row counts equal to the baseline. F-36 logged.                                                                                                                                     |
@@ -2925,13 +2956,14 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P11.S3 — Map view in the feed (replaces `/map`)** (see §22, Phase 11).
+**Deploy and verify P11.S3, then P11.S4 — Drop `items_in_bounds`** (see §22, Phase 11).
 
-Why next: decided on 2026-10-17, before the performance pass, so that pass measures
-the final page structure. P11.S3 adds the map as a second view of `/items` with the
-same filters (`search_item_locations()`, at most 300 with a notice) and turns `/map`
-into a permanent redirect. Then P11.S4 drops `items_in_bounds` once P11.S3 is live
-on Vercel.
+Why next: P11.S3 is implemented and checked locally (2026-10-17); its migration is
+already applied (additive, so the deployed `/map` keeps working). After the owner
+approves the push, confirm the deployment by markup (the List/Map switch on an
+uncached `/items`) and re-run the browser check against Vercel (F-25). Only then
+P11.S4 drops `items_in_bounds` and `items_location_geom_idx` (re-check callers
+first).
 
 After that, **P11.S5 — Performance pass**. P11.S2 is done and deployed with the
 conversation delete and P11.S1 (`4e7a762`, checked on Vercel 2026-10-14), followed by

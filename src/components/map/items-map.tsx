@@ -1,77 +1,72 @@
 "use client";
 
-import type { LatLngBoundsExpression } from "leaflet";
-import { type ReactNode, useCallback, useEffect, useMemo, useRef } from "react";
-import { Marker, Popup, useMap, useMapEvents } from "react-leaflet";
-import { DEFAULT_CENTER } from "@/lib/map";
-import type { MapBounds, MapItemGroup } from "@/lib/map-items";
+import { type ReactNode, useEffect } from "react";
+import { Circle, Marker, Popup, useMap } from "react-leaflet";
+import { DEFAULT_CENTER, type LatLng } from "@/lib/map";
+import type { MapArea, MapItemGroup } from "@/lib/map-items";
 import BaseMap from "./base-map";
 import { type ItemMarkerKind, itemMarkerIcon } from "./item-marker-icon";
 
 export type ItemsMapProps = {
   groups: MapItemGroup[];
-  // Initial view (fitted once); later moves are the user's.
-  initialBounds: LatLngBoundsExpression;
-  // The visible area after the map is ready and after every move or zoom.
-  onBoundsChange: (bounds: MapBounds) => void;
+  // The area to show; fitted again whenever it changes (new results), so
+  // the user's own moves are kept while the results stay the same.
+  area: MapArea;
+  // The search circle of a radius filter, drawn around its center.
+  circle?: { center: LatLng; radiusKm: number } | null;
   // Accessible name (marker title) of a group, e.g. its item or "3 reports".
   groupLabel: (group: MapItemGroup) => string;
   // Popup content of a group (its items with links).
   renderPopup: (group: MapItemGroup) => ReactNode;
 };
 
+// Zoom for an area of a single point (or a few close ones), so one report
+// does not open at street level.
+const MAX_FIT_ZOOM = 15;
+
 function kind(group: MapItemGroup): ItemMarkerKind {
   const [first, ...rest] = group.items;
   return rest.every((item) => item.type === first.type) ? first.type : "mixed";
 }
 
-function ReportBounds({
-  initialBounds,
-  onBoundsChange,
-}: Pick<ItemsMapProps, "initialBounds" | "onBoundsChange">) {
+function FitArea({ area }: { area: MapArea }) {
   const map = useMap();
-  const report = useCallback(() => {
-    const b = map.getBounds();
-    onBoundsChange({
-      south: b.getSouth(),
-      west: b.getWest(),
-      north: b.getNorth(),
-      east: b.getEast(),
-    });
-  }, [map, onBoundsChange]);
-  const handlers = useMemo(() => ({ moveend: report }), [report]);
-  useMapEvents(handlers);
-
-  // Fit the initial area once, then report it (a fit that does not move the
-  // map fires no moveend).
-  const fitted = useRef(false);
+  // Compared by value: a re-render with the same results keeps the view.
+  const key = JSON.stringify(area);
   useEffect(() => {
-    if (fitted.current) return;
-    fitted.current = true;
-    map.fitBounds(initialBounds, { animate: false });
-    report();
-  }, [map, initialBounds, report]);
+    map.fitBounds(JSON.parse(key) as MapArea, {
+      animate: false,
+      padding: [24, 24],
+      maxZoom: MAX_FIT_ZOOM,
+    });
+  }, [map, key]);
   return null;
 }
 
-// Map of the /map page: one marker per point (items at the same point share
-// it), popups with the items. Loading is done by the parent through
-// `onBoundsChange`. Browser only: loaded through `ItemsMap` from
-// `@/components/map`.
+// Map of the feed's map view: one marker per point (items at the same point
+// share it), popups with the items, the search circle. Browser only: loaded
+// through `ItemsMap` from `@/components/map`. Scroll-wheel zoom stays off
+// (the map is part of a scrolling page).
 export default function ItemsMap({
   groups,
-  initialBounds,
-  onBoundsChange,
+  area,
+  circle,
   groupLabel,
   renderPopup,
 }: ItemsMapProps) {
   return (
-    // The center is replaced by the initial fit right away.
-    <BaseMap center={DEFAULT_CENTER} zoom={8} scrollWheelZoom>
-      <ReportBounds
-        initialBounds={initialBounds}
-        onBoundsChange={onBoundsChange}
-      />
+    // The center is replaced by the first fit right away.
+    <BaseMap center={DEFAULT_CENTER} zoom={8}>
+      <FitArea area={area} />
+      {circle && (
+        <Circle
+          center={circle.center}
+          radius={circle.radiusKm * 1000}
+          interactive={false}
+          className="fill-primary stroke-primary"
+          pathOptions={{ weight: 2, fillOpacity: 0.08 }}
+        />
+      )}
       {groups.map((group) => (
         <Marker
           key={group.key}

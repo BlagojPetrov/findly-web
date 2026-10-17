@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SEARCH_FILTERS,
+  mapRedirectQuery,
   parseSearchParams,
   type SearchFilters,
   searchQuery,
@@ -46,6 +47,7 @@ describe("parseSearchParams", () => {
       radius: 5,
       sort: "newest",
       page: 3,
+      view: "list",
     } satisfies SearchFilters);
   });
 
@@ -67,6 +69,9 @@ describe("parseSearchParams", () => {
     ["page", "abc", { page: 1 }],
     ["page", "", { page: 1 }],
     ["page", "1001", { page: 1 }],
+    ["view", "grid", { view: "list" }],
+    ["view", "MAP", { view: "list" }],
+    ["view", "", { view: "list" }],
   ])("invalid %s=%j falls back to the default", (key, value, expected) => {
     expect(parse({ [key]: value })).toEqual({
       ...DEFAULT_SEARCH_FILTERS,
@@ -287,6 +292,7 @@ describe("round trip", () => {
       radius: null,
       sort: "relevance",
       page: 7,
+      view: "list",
     },
     { ...DEFAULT_SEARCH_FILTERS, type: "found", status: "resolved" },
     {
@@ -303,6 +309,20 @@ describe("round trip", () => {
       sort: "relevance",
       page: 2,
     },
+    { ...DEFAULT_SEARCH_FILTERS, view: "map" },
+    {
+      q: "Samsung telefon",
+      type: "lost",
+      categories: ["electronics", "other"],
+      status: "all",
+      from: "2026-01-31",
+      to: "2026-02-28",
+      near: { lat: 41.9981, lng: 21.4254 },
+      radius: 25,
+      sort: "relevance",
+      page: 1,
+      view: "map",
+    },
   ];
 
   it.each(cases)("parse(serialize(%j)) returns the same filters", (filters) => {
@@ -318,6 +338,8 @@ describe("round trip", () => {
     "lat=41.99812&lng=21.42540&radius=5&sort=nearest",
     "radius=5&sort=nearest",
     "lat=41.9981&lng=21.4254&q=keys&sort=relevance",
+    "view=map&page=3&type=found",
+    "view=list&page=2",
   ])("serialize(parse(%s)) is canonical", (search) => {
     const once = searchQuery(
       parseSearchParams(new URLSearchParams(search), { categorySlugs }),
@@ -339,5 +361,59 @@ describe("round trip", () => {
         ),
       ),
     ).toEqual({ q: "keys ring", category: "keys,wallet" });
+  });
+});
+
+describe("view", () => {
+  const all = {
+    q: "паричник",
+    type: "lost",
+    category: "wallet,keys",
+    status: "all",
+    from: "2026-09-01",
+    to: "2026-09-20",
+    lat: "41.9981",
+    lng: "21.4254",
+    radius: "5",
+    sort: "relevance",
+  };
+
+  it("is list by default and never written", () => {
+    expect(parse({}).view).toBe("list");
+    expect(searchQuery({ view: "list" })).toEqual({});
+    expect(searchQuery({ view: "list", page: 2 })).toEqual({ page: "2" });
+  });
+
+  it("writes the map view and drops the page", () => {
+    const filters = parse({ view: "map", page: "4" });
+    expect(filters).toMatchObject({ view: "map", page: 1 });
+    expect(searchQuery(filters)).toEqual({ view: "map" });
+    expect(searchQuery({ view: "map", page: 4 })).toEqual({ view: "map" });
+  });
+
+  it("keeps every other criterion when switching views", () => {
+    const list = parse({ ...all, page: "3" });
+    const toMap = searchQuery({ ...list, view: "map" });
+    expect(toMap).toEqual({ ...all, view: "map" });
+
+    const map = parse(toMap);
+    const toList = searchQuery({ ...map, view: "list" });
+    expect(toList).toEqual(all);
+    expect({ ...parse(toList), view: "map" }).toEqual(map);
+  });
+});
+
+describe("mapRedirectQuery", () => {
+  it.each([
+    [{}, { view: "map" }],
+    [{ type: "found" }, { type: "found", view: "map" }],
+    [{ type: ["lost", "found"] }, { type: "lost", view: "map" }],
+    [{ type: "stolen" }, { view: "map" }],
+    [
+      { type: "lost", page: "2", q: "keys" },
+      { type: "lost", view: "map" },
+    ],
+  ])("maps /map?%j to the map view %j", (params, expected) => {
+    expect(mapRedirectQuery(params)).toEqual(expected);
   });
 });

@@ -60,7 +60,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "hourly",
       priority: 0.9,
     }),
-    ...entries("/map", { changeFrequency: "daily", priority: 0.7 }),
     ...items.flatMap((item) =>
       entries(`/items/${item.id}`, { lastModified: item.updated_at }),
     ),

@@ -1,10 +1,9 @@
 import { Search, SlidersHorizontal } from "lucide-react";
-import Form from "next/form";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { CategoryIcon } from "@/components/items/category-icon";
 import { NearFilter } from "@/components/search/near-filter";
-import { FormPendingMarker } from "@/components/search/pending-marker";
+import { SearchForm } from "@/components/search/search-form";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +15,7 @@ import {
   SEARCH_LIMITS,
   SEARCH_STATUSES,
   type SearchFilters as Filters,
+  searchQuery,
 } from "@/lib/validation/search";
 
 export type CategoryOption = { slug: string; icon: string; name: string };
@@ -76,11 +76,12 @@ function Choice({
   );
 }
 
-// Filter form of the public feed. A GET form (next/form): without
-// JavaScript the browser submits it normally, with JavaScript it navigates
-// on the client. Either way the filters end up in the URL, and the page
+// Filter form of the public feed. A GET form (next/form, `SearchForm`):
+// without JavaScript the browser submits it normally, with JavaScript it
+// navigates on the client. Either way the filters end up in the URL, and the page
 // redirects to the canonical URL. The page remounts this form when the URL
-// changes, so back/forward always show the URL's filters.
+// changes, so back/forward always show the URL's filters. It stays in the
+// current view (list or map): the map view posts a hidden `view`.
 // On small screens the panel is collapsed behind a CSS-only toggle.
 export function SearchFilters({
   action,
@@ -100,10 +101,15 @@ export function SearchFilters({
   const sorts = availableSorts(filters);
 
   return (
-    <Form
+    <SearchForm
       action={action}
+      mapView={filters.view === "map"}
       className="grid gap-4 rounded-xl border bg-card p-4 shadow-xs lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto"
     >
+      {/* The list is the default view and never in the URL. */}
+      {filters.view === "map" && (
+        <input type="hidden" name="view" value="map" />
+      )}
       <div className="grid gap-1.5">
         <Label htmlFor="search-q">{t("searchLabel")}</Label>
         <div className="flex gap-2">
@@ -269,7 +275,10 @@ export function SearchFilters({
           </Button>
           {(active > 0 || filters.q) && (
             <Link
-              href="/items"
+              href={{
+                pathname: "/items",
+                query: searchQuery({ view: filters.view }),
+              }}
               className={cn(buttonVariants({ variant: "ghost" }))}
             >
               {t("clear")}
@@ -277,7 +286,6 @@ export function SearchFilters({
           )}
         </div>
       </div>
-      <FormPendingMarker />
-    </Form>
+    </SearchForm>
   );
 }

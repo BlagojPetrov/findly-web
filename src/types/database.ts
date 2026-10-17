@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -622,6 +622,37 @@ export type Database = {
           other_display_name: string
           other_user_id: string
           unread_count: number
+        }[]
+      }
+      search_item_locations: {
+        Args: {
+          category_slugs?: string[]
+          date_from?: string
+          date_to?: string
+          item_status?: Database["public"]["Enums"]["item_status"]
+          item_type?: Database["public"]["Enums"]["item_type"]
+          max_rows?: number
+          near_lat?: number
+          near_lng?: number
+          q?: string
+          radius_km?: number
+          sort?: string
+        }
+        Returns: {
+          category_icon: string
+          category_name_en: string
+          category_name_mk: string
+          category_slug: string
+          cover_path: string
+          id: string
+          lat: number
+          lng: number
+          location_name: string
+          occurred_on: string
+          status: Database["public"]["Enums"]["item_status"]
+          title: string
+          total_count: number
+          type: Database["public"]["Enums"]["item_type"]
         }[]
       }
       search_items: {

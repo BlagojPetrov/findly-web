@@ -1,4 +1,4 @@
-import { Map as MapIcon } from "lucide-react";
+import { LayoutList, Map as MapIcon } from "lucide-react";
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
@@ -40,8 +40,17 @@ export async function SiteHeader() {
           Findly
         </Link>
         <div className="flex items-center gap-1 sm:gap-2">
+          {/* The feed as a list and as a map (P11.S3); icons only on
+              phones. */}
           <Link
-            href="/map"
+            href="/items"
+            className={cn(buttonVariants({ variant: "ghost" }), "px-2")}
+          >
+            <LayoutList aria-hidden />
+            <span className="max-sm:sr-only">{t("reports")}</span>
+          </Link>
+          <Link
+            href={{ pathname: "/items", query: { view: "map" } }}
             className={cn(buttonVariants({ variant: "ghost" }), "px-2")}
           >
             <MapIcon aria-hidden />

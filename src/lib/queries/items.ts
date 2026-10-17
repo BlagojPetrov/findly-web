@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
+import type { MapItem } from "@/lib/map-items";
 import type { Category } from "@/lib/queries/categories";
 import { createClient } from "@/lib/supabase/server";
 import type { SearchFilters } from "@/lib/validation/search";
@@ -104,15 +105,10 @@ export function coverPath(
 // Page size of the public feed.
 export const SEARCH_PAGE_SIZE = 20;
 
-// One page of the public feed (search_items(), P4.S2) for the parsed URL
-// filters, with the total number of matches. A page past the end has no
-// rows and total 0. Other lists (the home page) can ask for fewer rows.
-export async function searchItems(
-  filters: SearchFilters,
-  { pageSize = SEARCH_PAGE_SIZE }: { pageSize?: number } = {},
-): Promise<{ items: ItemSummary[]; total: number }> {
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc("search_items", {
+// The filter arguments shared by search_items() and search_item_locations(),
+// so the list and the map always search the same way.
+function searchArgs(filters: SearchFilters) {
+  return {
     q: filters.q || undefined,
     item_type: filters.type ?? undefined,
     category_slugs:
@@ -127,6 +123,19 @@ export async function searchItems(
     near_lng: filters.near?.lng,
     radius_km: filters.radius ?? undefined,
     sort: filters.sort,
+  };
+}
+
+// One page of the public feed (search_items(), P4.S2) for the parsed URL
+// filters, with the total number of matches. A page past the end has no
+// rows and total 0. Other lists (the home page) can ask for fewer rows.
+export async function searchItems(
+  filters: SearchFilters,
+  { pageSize = SEARCH_PAGE_SIZE }: { pageSize?: number } = {},
+): Promise<{ items: ItemSummary[]; total: number }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("search_items", {
+    ...searchArgs(filters),
     page: filters.page,
     page_size: pageSize,
   });
@@ -152,6 +161,44 @@ export async function searchItems(
       coverPath: row.cover_path ?? null,
       distance: row.distance_m ?? null,
       isFavorite: row.is_favorite,
+    })),
+    total: data[0]?.total_count ?? 0,
+  };
+}
+
+// The map view of the feed (P11.S3): the reports of search_items() for the
+// same filters, with their points, at most MAP_RESULTS_LIMIT (the first ones
+// of the list), and the number of all matches.
+export async function searchItemLocations(
+  filters: SearchFilters,
+): Promise<{ items: MapItem[]; total: number }> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc(
+    "search_item_locations",
+    searchArgs(filters),
+  );
+  if (error) {
+    throw new Error(`Failed to load item locations: ${error.message}`);
+  }
+  return {
+    // The generated types mark every column as non-null; location_name and
+    // cover_path can be null.
+    items: data.map((row) => ({
+      id: row.id,
+      type: row.type,
+      status: row.status,
+      title: row.title,
+      occurredOn: row.occurred_on,
+      locationName: row.location_name ?? null,
+      lat: row.lat,
+      lng: row.lng,
+      category: {
+        slug: row.category_slug,
+        icon: row.category_icon,
+        name_mk: row.category_name_mk,
+        name_en: row.category_name_en,
+      },
+      coverPath: row.cover_path ?? null,
     })),
     total: data[0]?.total_count ?? 0,
   };

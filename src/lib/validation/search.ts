@@ -5,12 +5,14 @@ import { ITEM_TYPES } from "./items";
 // Filters of the public feed (/items), kept in the URL (§12 URL contract):
 //   ?q=&type=lost|found&category=keys,wallet&status=active|resolved|all
 //    &from=YYYY-MM-DD&to=YYYY-MM-DD&lat=41.9981&lng=21.4254&radius=5
-//    &sort=newest|relevance|nearest&page=2
+//    &sort=newest|relevance|nearest&page=2&view=map
 // Every field falls back to its default when it is missing or invalid, so a
 // broken or hand-edited URL still shows a feed.
 
 export const SEARCH_STATUSES = ["active", "resolved", "all"] as const;
 export const SEARCH_SORTS = ["newest", "relevance", "nearest"] as const;
+// How the results are shown: a paged list (default) or a map (P11.S3).
+export const SEARCH_VIEWS = ["list", "map"] as const;
 // Radius choices in km (search_items() accepts up to 50).
 export const SEARCH_RADII = [1, 2, 5, 10, 25, 50] as const;
 // Decimals of the center in the URL (~11 m): enough for a 1 km radius, and a
@@ -27,6 +29,7 @@ export const SEARCH_LIMITS = {
 export type SearchStatus = (typeof SEARCH_STATUSES)[number];
 export type SearchSort = (typeof SEARCH_SORTS)[number];
 export type SearchRadius = (typeof SEARCH_RADII)[number];
+export type SearchView = (typeof SEARCH_VIEWS)[number];
 
 export type SearchFilters = {
   // Trimmed, whitespace collapsed; "" = no text search.
@@ -43,7 +46,9 @@ export type SearchFilters = {
   near: LatLng | null;
   radius: SearchRadius | null;
   sort: SearchSort;
+  // Always 1 in the map view, which has no pages.
   page: number;
+  view: SearchView;
 };
 
 // Search params as Next.js passes them to a page.
@@ -96,6 +101,7 @@ export const DEFAULT_SEARCH_FILTERS: SearchFilters = {
   radius: null,
   sort: "newest",
   page: 1,
+  view: "list",
 };
 
 const slugPattern = /^[a-z0-9-]+$/;
@@ -185,6 +191,7 @@ export function searchParamsSchema({
           z.coerce.number().int().min(1).max(SEARCH_LIMITS.pageMax),
         )
         .catch(1),
+      view: z.preprocess(first, z.enum(SEARCH_VIEWS)).catch("list"),
     })
     .transform(
       ({
@@ -195,6 +202,7 @@ export function searchParamsSchema({
         lng,
         radius,
         sort,
+        page,
         ...rest
       }): SearchFilters => {
         // A reversed range is most likely the two dates swapped.
@@ -213,6 +221,7 @@ export function searchParamsSchema({
             sort && available.includes(sort)
               ? sort
               : defaultSort({ q: rest.q, near }),
+          page: rest.view === "map" ? 1 : page,
         };
       },
     );
@@ -235,7 +244,8 @@ export function parseSearchParams(
 
 // The URL query of the filters, without default values (so "/items" is the
 // default feed and every filter set has one canonical URL). Use it as a
-// Link's `query` or with new URLSearchParams().
+// Link's `query` or with new URLSearchParams(). The map view has no page;
+// switching views with `{ ...filters, view }` keeps every other criterion.
 export function searchQuery(
   filters: Partial<SearchFilters>,
 ): Record<string, string> {
@@ -255,6 +265,16 @@ export function searchQuery(
   if (f.sort !== defaultSort(f) && availableSorts(f).includes(f.sort)) {
     query.sort = f.sort;
   }
-  if (f.page > 1) query.page = String(f.page);
+  if (f.view === "map") query.view = f.view;
+  else if (f.page > 1) query.page = String(f.page);
   return query;
+}
+
+// Query of the feed's map view for a URL of the former /map page (P11.S3):
+// its only filter, a valid type, is kept; everything else is dropped.
+export function mapRedirectQuery(
+  params: RawSearchParams,
+): Record<string, string> {
+  const { type } = parseSearchParams({ type: params.type });
+  return searchQuery({ type, view: "map" });
 }

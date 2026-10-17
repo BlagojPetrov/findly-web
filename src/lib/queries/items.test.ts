@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_SEARCH_FILTERS } from "@/lib/validation/search";
-import { getItem, searchItems } from "./items";
+import { getItem, searchItemLocations, searchItems } from "./items";
 
 const { query, rpc } = vi.hoisted(() => ({ query: vi.fn(), rpc: vi.fn() }));
 
@@ -146,5 +146,108 @@ describe("searchItems", () => {
       category: { id: 3, slug: "wallet" },
     });
     expect(total).toBe(1);
+  });
+});
+
+describe("searchItemLocations", () => {
+  const filters = {
+    ...DEFAULT_SEARCH_FILTERS,
+    q: "паричник",
+    type: "lost" as const,
+    categories: ["wallet", "keys"],
+    status: "all" as const,
+    from: "2026-09-01",
+    to: "2026-10-01",
+    near: { lat: 41.9981, lng: 21.4254 },
+    radius: 5 as const,
+    sort: "relevance" as const,
+    view: "map" as const,
+  };
+
+  function locationRow(overrides: object = {}) {
+    return {
+      id: itemId,
+      type: "lost",
+      status: "resolved",
+      title: "Црн паричник",
+      occurred_on: "2026-10-01",
+      location_name: null,
+      lat: 41.99,
+      lng: 21.42,
+      category_slug: "wallet",
+      category_name_mk: "Паричник",
+      category_name_en: "Wallet",
+      category_icon: "wallet",
+      cover_path: null,
+      total_count: 301,
+      ...overrides,
+    };
+  }
+
+  it("passes the same filter arguments as the list, without paging", async () => {
+    rpc.mockResolvedValue({ data: [], error: null });
+    await searchItems(filters);
+    await searchItemLocations(filters);
+    const [[listName, listArgs], [mapName, mapArgs]] = rpc.mock.calls;
+    expect(listName).toBe("search_items");
+    expect(mapName).toBe("search_item_locations");
+    const { page, page_size, ...listFilters } = listArgs;
+    expect(page).toBe(1);
+    expect(page_size).toBe(20);
+    expect(mapArgs).toEqual(listFilters);
+    expect(mapArgs).toEqual({
+      q: "паричник",
+      item_type: "lost",
+      category_slugs: ["wallet", "keys"],
+      item_status: null,
+      date_from: "2026-09-01",
+      date_to: "2026-10-01",
+      near_lat: 41.9981,
+      near_lng: 21.4254,
+      radius_km: 5,
+      sort: "relevance",
+    });
+  });
+
+  it("maps the rows and the total", async () => {
+    rpc.mockResolvedValue({
+      data: [locationRow(), locationRow({ id: "b", cover_path: "u/i/c.webp" })],
+      error: null,
+    });
+    const { items, total } = await searchItemLocations(filters);
+    expect(items[0]).toEqual({
+      id: itemId,
+      type: "lost",
+      status: "resolved",
+      title: "Црн паричник",
+      occurredOn: "2026-10-01",
+      locationName: null,
+      lat: 41.99,
+      lng: 21.42,
+      category: {
+        slug: "wallet",
+        icon: "wallet",
+        name_mk: "Паричник",
+        name_en: "Wallet",
+      },
+      coverPath: null,
+    });
+    expect(items[1].coverPath).toBe("u/i/c.webp");
+    expect(total).toBe(301);
+  });
+
+  it("has total 0 without rows", async () => {
+    rpc.mockResolvedValue({ data: [], error: null });
+    expect(await searchItemLocations(DEFAULT_SEARCH_FILTERS)).toEqual({
+      items: [],
+      total: 0,
+    });
+  });
+
+  it("throws on errors", async () => {
+    rpc.mockResolvedValue({ data: null, error: { message: "boom" } });
+    await expect(searchItemLocations(DEFAULT_SEARCH_FILTERS)).rejects.toThrow(
+      "Failed to load item locations: boom",
+    );
   });
 });

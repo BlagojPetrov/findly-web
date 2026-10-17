@@ -54,10 +54,10 @@ status and the next step. Read it before any work.
   `7b4b093`. Verified on 2026-10-17 on uncached live pages: `7b4b093`'s message texts
   are served and the old ones are gone. The commit hash itself is inferred from those
   unique texts (Vercel CLI logged out), not read from Vercel. Copy only, so no browser
-  check. Next: P11.S3 (map as a view of `/items`,
-  `?view=map`, same filters; `/map` becomes a redirect), then P11.S4 (drop
-  `items_in_bounds` only after P11.S3 is live on Vercel: the deployed `/map` calls
-  it), then P11.S5 (performance pass).
+  check. P11.S3 (map as a view of `/items`, `?view=map`; `/map` redirects) is
+  implemented and its migration applied, not pushed yet (2026-10-17). Next: deploy
+  and verify P11.S3 on Vercel, then P11.S4 (drop `items_in_bounds` only after that:
+  the previously deployed `/map` calls it), then P11.S5 (performance pass).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -372,10 +372,18 @@ item_id?, sender_id }`, one per recipient and conversation
   `osmUrl()` (`@/lib/map`). Leaflet workarounds go in `src/components/map/leaflet-fixes.ts`
   (imported by `base-map`; F-27). Mount a map only when it is visible (Leaflet cannot
   size a hidden one, e.g. in the collapsed filter panel). Distances: `distanceDisplay()`.
-  `/map`: `MapExplorer` loads `rpc("items_in_bounds")` from the browser (`fetchMapItems()`
-  in `@/lib/map-items`, client-safe; debounced, aborting) and passes grouped items to
-  `ItemsMap`; its type filter is `?type=` (`@/lib/validation/map`). Pages that redirect to
-  a canonical query compare it with `requestQuery()` (`@/lib/validation/search`).
+  Map view of the feed (P11.S3): `/items?view=map` (`view` in `SearchFilters`; the map
+  view has no page) reads `searchItemLocations(filters)` on the server
+  (`rpc("search_item_locations")`, same arguments as the list via `searchArgs()`, at most
+  `MAP_RESULTS_LIMIT` with the total) and renders `MapResults` (notice above 300,
+  `noscript` link) → `ResultsMap` → `ItemsMap` (`area` fitted when it changes, `circle`).
+  Switch views with `searchQuery({ ...filters, view })` (`ViewSwitch`). Keep the map at
+  the same place in the tree (no `key` per URL); the filter form (`SearchForm`) goes
+  straight to the canonical URL in the map view, because a redirect remounts the map.
+  `/map` only redirects (308, `mapRedirectQuery()`). Filter changes to `search_items`
+  must also go into `search_item_locations` (and its test). `items_in_bounds` is unused
+  by the app and dropped in P11.S4. Pages that redirect to a canonical query compare it
+  with `requestQuery()` (`@/lib/validation/search`).
   Geocoding only through `@/lib/geocoding` (`searchAddress`, `reverseGeocode`): it holds
   the shared Nominatim throttle (≥ 1 s between requests, policy) and cache; never call
   Nominatim directly. Location input: `LocationPicker` (`src/components/map/location-picker.tsx`)
