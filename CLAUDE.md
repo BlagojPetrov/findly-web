@@ -380,7 +380,8 @@ item_id?, sender_id }`, one per recipient and conversation
   Switch views with `searchQuery({ ...filters, view })` (`ViewSwitch`). Keep the map at
   the same place in the tree (no `key` per URL); the filter form (`SearchForm`) goes
   straight to the canonical URL in the map view, because a redirect remounts the map.
-  `/map` only redirects (308, `mapRedirectQuery()`). Filter changes to `search_items`
+  `/map` only redirects (308, `mapRedirectQuery()`); the header has no Map link ("All
+  reports" only; the map is reached through the switch). Filter changes to `search_items`
   must also go into `search_item_locations` (and its test). `items_in_bounds` is unused
   by the app and dropped in P11.S4. Pages that redirect to a canonical query compare it
   with `requestQuery()` (`@/lib/validation/search`).

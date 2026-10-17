@@ -15,7 +15,6 @@
     "dashboard": "My reports",
     "favorites": "Favorites",
     "reports": "All reports",
-    "map": "Map",
     "messagesLabel": "{count, plural, =0 {Messages} one {Messages, # unread} other {Messages, # unread}}",
     "admin": "Administration",
     "theme": "Theme",
