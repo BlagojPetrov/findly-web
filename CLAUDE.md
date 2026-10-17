@@ -48,8 +48,16 @@ status and the next step. Read it before any work.
   browser check of them recorded yet).
   The owner's Google account (`petrovblaze48@gmail.com`) is admin.
   Per-user conversation delete, Phase 11 dark mode (P11.S1) and responsive/accessibility/
-  error boundaries (P11.S2) deployed: Vercel serves `4e7a762` (pushed 2026-10-12,
-  production browser check 2026-10-14). Next: P11.S3 (performance pass).
+  error boundaries (P11.S2) deployed (`4e7a762`, pushed 2026-10-12, production
+  browser check 2026-10-14). Since then `0340681` (docs) and `7b4b093` (copy: shorter
+  form hints, mk moderation notification) reached `origin/main`. Production baseline:
+  `7b4b093`. Verified on 2026-10-17 on uncached live pages: `7b4b093`'s message texts
+  are served and the old ones are gone. The commit hash itself is inferred from those
+  unique texts (Vercel CLI logged out), not read from Vercel. Copy only, so no browser
+  check. Next: P11.S3 (map as a view of `/items`,
+  `?view=map`, same filters; `/map` becomes a redirect), then P11.S4 (drop
+  `items_in_bounds` only after P11.S3 is live on Vercel: the deployed `/map` calls
+  it), then P11.S5 (performance pass).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
