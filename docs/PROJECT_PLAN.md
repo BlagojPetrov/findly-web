@@ -6,9 +6,9 @@
 > progress of the Findly web project. Every step starts by reading it and ends by
 > updating it.
 
-- **Last updated:** 2026-10-17
-- **Current phase:** Phase 11 — UI polish, testing and final delivery (P11.S1–P11.S3 completed; optional P7.S5 deferred)
-- **Next step:** P11.S4 — drop `items_in_bounds` (§22, §25)
+- **Last updated:** 2026-10-20
+- **Current phase:** Phase 11 — UI polish, testing and final delivery (P11.S1–P11.S4 completed; optional P7.S5 deferred)
+- **Next step:** P11.S5 — performance pass (§22, §25)
 
 ---
 
@@ -178,7 +178,7 @@ to these IDs. "Next step" always means the step named in
 | P11.S1 | Dark mode                                      | `COMPLETED`   |
 | P11.S2 | Responsive, accessibility, error boundaries    | `COMPLETED`   |
 | P11.S3 | Map view in the feed (replaces `/map`)         | `COMPLETED`   |
-| P11.S4 | Drop `items_in_bounds` (after P11.S3 is live)  | `NOT STARTED` |
+| P11.S4 | Drop `items_in_bounds` (after P11.S3 is live)  | `COMPLETED`   |
 | P11.S5 | Performance pass                               | `NOT STARTED` |
 | P11.S6 | End-to-end tests and CI                        | `NOT STARTED` |
 | P11.S7 | Production environment                         | `NOT STARTED` |
@@ -510,7 +510,7 @@ Legend: **PK** primary key, **FK** foreign key, ✓ implemented.
 | `handle_new_user()`                | Trigger on `auth.users` insert → creates the `profiles` row.                           | 2     |
 | `normalize_text(text)`             | lowercase + unaccent + Cyrillic→Latin transliteration, `immutable`.                    | 4     |
 | `search_items(...)`                | Filtered, paginated search (see §12).                                                  | 4     |
-| `items_in_bounds(...)`             | Active items inside a map bounding box (see §13). ✓                                    | 5     |
+| `items_in_bounds(...)`             | Active items inside a map bounding box (see §13). Dropped in P11.S4.                   | 5     |
 | `private.match_score(lost, found)` | Candidate rules + score and breakdown jsonb of a lost/found pair (see §14). ✓          | 6     |
 | `compute_matches(item_id)`         | Recomputes matches for one item.                                                       | 6     |
 | `my_conversations()`               | The caller's conversations for `/messages` (see §9 `conversations`). ✓                 | 8     |
@@ -1081,7 +1081,7 @@ MapLoading })`. Pages render it inside `MapFrame` (labelled region, size via
   JavaScript the radius works only on URLs that already have a center.
 - Leaflet 1.9 fix (F-27): `leaflet-fixes.ts` (imported by `base-map`) skips the
   zoom-animation timer of a map removed while zooming.
-- **`/map` page (P5.S6 ✓, replaced by the map view in P11.S3):** `items_in_bounds(min_lat, min_lng, max_lat,
+- **`/map` page (P5.S6 ✓, replaced by the map view in P11.S3; its function and index dropped in P11.S4):** `items_in_bounds(min_lat, min_lng, max_lat,
 max_lng, item_type, max_rows)` (`20260929170935_items_in_bounds.sql`,
   `security invoker`): active items only, inside a plain lng/lat rectangle
   (planar GiST index `items_location_geom_idx` on `location::geometry`; edges
@@ -1115,8 +1115,8 @@ max_lng, item_type, max_rows)` (`20260929170935_items_in_bounds.sql`,
   (`SearchForm`) goes straight to the canonical URL in the map view: the redirect
   of a plain submit would remount the map. `/map` and `/en/map` answer 308 to the
   map view (`mapRedirectQuery()`), not in the sitemap. `items_in_bounds()` and
-  `items_location_geom_idx` stay until P11.S4 (the previously deployed `/map`
-  calls the function from the browser; no database object depends on it). The
+  `items_location_geom_idx` were dropped in P11.S4
+  (`20261020114607_drop_items_in_bounds.sql`) once P11.S3 was live. The
   location picker, the item page map and the radius filter's map are unchanged.
 - Privacy note: the exact point chosen by the user is stored and shown. Users are
   told in the form to pick an approximate public place for found items.
@@ -2774,12 +2774,16 @@ MISS`, `fra1`) of `/items` contains the guest heart links, which exist only from
 - **Verified:** dry run of migration + tests in a rolled-back transaction (an inverted assert fails the run), pushed; `db:test` 24/24 (`search_item_locations.sql`: same ids and order as `search_items` for 16 filter/sort combinations as guest, owner and admin, hidden never returned, 300 cap with total 305, `max_rows` clamped, row contents, 8 invalid calls → `22023`; `items_in_bounds.sql` still passes); advisors: only F-12/F-19. 833 unit tests (new: `view` parsing/canonical/round trips, `mapRedirectQuery`, `searchItemLocations` arguments equal to the list's without paging, mapping, `resultArea`, `ResultsMap`, `MapResults` (notice mk/en, circle, `noscript` link), `ViewSwitch` and the filter form's `view`, `SearchForm`). Lint, typecheck, `npm run build`. Browser check (production build on port 3100, headless Edge `mk-MK`; one temporary `@findly.test` user for the signed-in header, deleted afterwards, counts equal to the baseline): 77/77 — `/map`, `/map?type=found`, invalid type, `/en/map`, `/en/map?type=lost` → 308 to the map view; `view=map&page=3`, `view=grid`, `view=list&page=2` → canonical 307; sitemap without `/map`; switch (`aria-current`, links), header links; map view: region, same count as the list (16), 13 markers, no pagination, no notice, canonical = list; markers named and focusable; popup link opens the report, Back returns; wheel scrolls the page without zooming; a filter change in the map view stays in the map view and keeps the map mounted; list keeps the filter and the count matches; the list view's form still works; Back/Forward between views; all criteria (text, type, two categories, status, dates, center, radius, sort) survive list → map → list; radius circle drawn; empty state and both "Clear" links keep the map view; keyboard: Tab to the switch with a focus ring, Enter opens the map, Enter on a marker opens its popup; dark mode (popup colours); English labels, popup links and date; without JavaScript the note links to the list with the same filters; 360 px guest and signed in: no horizontal scroll on `/items`, the map view and `/`, header controls inside the viewport, map 328 px wide, switch visible, popup inside the viewport; axe clean on 7 page/theme/width combinations with a popup open; item page map and the radius filter's map unchanged; no console errors. Lighthouse accessibility (mobile): map view 96 in mk and en (`target-size`: markers overlap at country zoom, accepted as for `/map` in P11.S2), list 100. Two faults of the first run were in the check (it clicked a covered marker; axe ran while the popup was still fading in) and were fixed in the check.
 - **Deployed (2026-10-20):** pushed `47d5153..b10755d`; Vercel serves `b10755d` (an uncached `/en/items`, `X-Vercel-Cache: MISS`, renders the `view=map` switch link; `/map` answers 308). Browser check against Vercel (headless Edge, `mk-MK`, guest): 43/43 — `/map`, `/map?type=found`, invalid type, `/en/map`, `/en/map?type=lost` → 308 to the map view; `view=map&page=3`, `view=grid`, `view=list&page=2` → canonical 307; sitemap without `/map`; switch `aria-current`, header "All reports" without a Map link; map view: region, count equal to the list (16), 13 named markers, tiles, no pagination, no notice, canonical = list; wheel scrolls the page without zooming; Enter on a focused marker opens its popup, the link opens the report (its map marker image loads, F-25), Back returns; a filter change in the map view stays in the map view with the map kept mounted; list keeps the filter and count; Back/Forward between views; all criteria survive list → map → list; radius circle drawn; 360 px dark: no horizontal scroll, map 328 px, header inside the viewport, dark popup inside the viewport; English labels and `/en` popup links; without JavaScript the note links to the list with the same filters; no console errors.
 
-#### P11.S4 — Drop `items_in_bounds` (after P11.S3 is live)
+#### P11.S4 — Drop `items_in_bounds` (after P11.S3 is live) — `COMPLETED` (2026-10-20)
 
 - **Precondition:** Vercel serves the P11.S3 commit (confirmed by markup) and its `/map` redirects; the earlier deployment's `/map` bundle calls `items_in_bounds` from the browser (found in the production chunk on 2026-10-17).
 - **Before the migration:** re-check that nothing uses the function or the index: `git grep`, the production bundle, and the catalog (function bodies, views, policies, `pg_depend`; checked 2026-10-17: none); `EXPLAIN` shows that `search_items` and `search_item_locations` do not use `items_location_geom_idx`.
 - **Affects:** a migration that drops `public.items_in_bounds(...)` and `items_location_geom_idx`; `supabase/tests/items_in_bounds.sql` removed; `src/types/database.ts` regenerated; §13 updated.
 - **Verify:** dry run in a rolled-back transaction, `db:push`, `db:test`, advisors; lint, typecheck, unit tests, build; the map view works locally and on Vercel.
+- **Implemented:** migration `20261020114607_drop_items_in_bounds.sql`: `drop function public.items_in_bounds(double precision, double precision, double precision, double precision, public.item_type, integer)` and `drop index public.items_location_geom_idx` (no `cascade`; no other schema or data change), applied to `lyvudeaxwibgpqsinqyz` after the owner reviewed the SQL; `supabase/tests/items_in_bounds.sql` removed; types regenerated (`items_in_bounds` removed); §9 and §13 updated. No app code changed.
+- **Checked before the migration (2026-10-20):** Vercel serves `b10755d` (uncached `/items?view=map` and `/en/items?view=map` render the switch, `/map`/`/en/map`/`/map?type=found` → 308). `git grep`: only the types and the function's own test. Production bundle: none of the 21 chunks of `/items?view=map` contains the name. Catalog: no function body, view, policy or `pg_depend` entry references the function or the index; `idx_scan` = 0.
+- **Changed during implementation:** instead of `EXPLAIN` (16 rows: the planner uses no index at that size), the function sources were checked: `items_in_bounds` is the only function in `public`/`private` that casts `location` to `geometry`, the only expression the index covers; `search_items` and `search_item_locations` use `ST_DWithin`/`ST_Distance` on the geography column (`items_location_idx`).
+- **Verified:** dry run in a rolled-back transaction (both objects gone inside it, still present after the rollback); `db:push`; `db:test` 23/23 (24 minus the removed test); advisors: only F-12/F-19; lint, typecheck, 833 unit tests, `npm run build`. Browser check 43/43 against a local production build (port 3100) and 43/43 against Vercel after the migration (`/map`, `/map?type=found`, invalid type, `/en/map`, `/en/map?type=lost` → 308; canonical 307s; sitemap; map view in mk and en with the list's count, markers, tiles, keyboard popup → report; filters in the map view; Back/Forward; radius circle; 360 px dark; without JavaScript; no console errors). A tab still open on a deployment before `b10755d` gets the old `/map`'s load error until it reloads (accepted).
 
 #### P11.S5 — Performance pass
 
@@ -2863,6 +2867,7 @@ started (no auth code or profile tables exist yet).
 
 | Date       | Step        | Change                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ---------- | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-20 | P11.S4      | Dropped `items_in_bounds()` and `items_location_geom_idx` (migration `20261020114607_drop_items_in_bounds.sql`, applied; callers re-checked in git, the production bundle and the catalog); its SQL test removed, types regenerated. `db:test` 23/23, advisors only F-12/F-19, 833 unit tests, build; browser check 43/43 locally and on Vercel.                                                                                                                                                                                                    |
 | 2026-10-20 | deploy      | P11.S3 pushed (`47d5153..b10755d`); Vercel serves `b10755d` (confirmed by the map switch on an uncached `/en/items` and the `/map` 308). Browser check against Vercel 43/43 (redirects, map view, popups, filters in the map view, Back/Forward, 360 px dark, English, without JavaScript, no console errors). P11.S4 unblocked.                                                                                                                                                                                                                    |
 | 2026-10-17 | P11.S3      | Header simplified after review: the separate Map link and `Header.map` (mk/en) removed; "All reports" is the only feed link, the map is reached through the List/Map switch. Header checked at 360 px. Not pushed.                                                                                                                                                                                                                                                                                                                                  |
 | 2026-10-17 | P11.S3      | Map view of `/items` (`?view=map`): `search_item_locations()` (additive migration, applied), same filters and results as the list, at most 300 with a notice, List/Map switch, map kept mounted across filter changes, `/map` → 308, header "All reports" + Map; `MapExplorer` and browser loading removed, `items_in_bounds` kept for P11.S4; `db:test` 24/24, 833 unit tests, browser check 77/77, Lighthouse a11y 96/100. Not pushed.                                                                                                            |
@@ -2958,16 +2963,14 @@ started (no auth code or profile tables exist yet).
 
 ## 25. Next Recommended Step
 
-**P11.S4 — Drop `items_in_bounds`** (see §22, Phase 11).
+**P11.S5 — Performance pass** (see §22, Phase 11).
 
-Why next: P11.S3 is live (Vercel serves `b10755d`, checked 2026-10-20), so no
-deployed code calls `items_in_bounds` any more. Re-check callers (`git grep`, the
-production bundle, the catalog, `EXPLAIN` for `items_location_geom_idx`) before the
-migration.
-
-After that, **P11.S5 — Performance pass**: images (`next/image` or pre-sized WebP),
-keeping the map bundle to the pages that use it, and client message namespaces (F-04:
-every page currently ships all message texts); target Lighthouse performance ≥ 85 on
-the feed and item page (mobile). Measure first (Lighthouse mobile on the feed and an
-item page, local production build and Vercel), then change. Also look into F-36 (404
-pages sent as the client-fallback shell) while working on server rendering.
+Why next: the map rework is finished (P11.S3 live on Vercel at `b10755d`, P11.S4
+dropped the old `/map` RPC and index on 2026-10-20). P11.S5 covers images
+(`next/image` or pre-sized WebP), keeping the map bundle to the pages that use it,
+and client message namespaces (F-04: every page currently ships all message texts);
+target Lighthouse performance ≥ 85 on the feed and item page (mobile). Measure first
+(Lighthouse mobile on the feed and an item page, local production build and Vercel),
+then change. Also look into F-36 (404 pages sent as the client-fallback shell) while
+working on server rendering. P11.S4 changes only the database (already applied) and
+docs, so pushing it needs no deployment check.

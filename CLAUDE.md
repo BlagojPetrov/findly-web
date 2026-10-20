@@ -56,7 +56,8 @@ status and the next step. Read it before any work.
   unique texts (Vercel CLI logged out), not read from Vercel. Copy only, so no browser
   check. P11.S3 (map as a view of `/items`, `?view=map`; `/map` redirects) deployed:
   Vercel serves `b10755d` (pushed 2026-10-20, browser check against Vercel 43/43).
-  Next: P11.S4 (drop `items_in_bounds`), then P11.S5 (performance pass).
+  P11.S4 dropped `items_in_bounds()` and `items_location_geom_idx` (migration applied
+  2026-10-20). Next: P11.S5 (performance pass).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -381,8 +382,8 @@ item_id?, sender_id }`, one per recipient and conversation
   straight to the canonical URL in the map view, because a redirect remounts the map.
   `/map` only redirects (308, `mapRedirectQuery()`); the header has no Map link ("All
   reports" only; the map is reached through the switch). Filter changes to `search_items`
-  must also go into `search_item_locations` (and its test). `items_in_bounds` is unused
-  by the app and dropped in P11.S4. Pages that redirect to a canonical query compare it
+  must also go into `search_item_locations` (and its test). `items_in_bounds` and its planar
+  index were dropped in P11.S4. Pages that redirect to a canonical query compare it
   with `requestQuery()` (`@/lib/validation/search`).
   Geocoding only through `@/lib/geocoding` (`searchAddress`, `reverseGeocode`): it holds
   the shared Nominatim throttle (≥ 1 s between requests, policy) and cache; never call

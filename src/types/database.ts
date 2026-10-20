@@ -575,31 +575,6 @@ export type Database = {
         Args: { conversation_id: string }
         Returns: undefined
       }
-      items_in_bounds: {
-        Args: {
-          item_type?: Database["public"]["Enums"]["item_type"]
-          max_lat: number
-          max_lng: number
-          max_rows?: number
-          min_lat: number
-          min_lng: number
-        }
-        Returns: {
-          category_icon: string
-          category_name_en: string
-          category_name_mk: string
-          category_slug: string
-          cover_path: string
-          id: string
-          lat: number
-          lng: number
-          location_name: string
-          occurred_on: string
-          title: string
-          total_count: number
-          type: Database["public"]["Enums"]["item_type"]
-        }[]
-      }
       mark_conversation_read: {
         Args: { conversation_id: string }
         Returns: number
