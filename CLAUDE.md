@@ -54,10 +54,9 @@ status and the next step. Read it before any work.
   `7b4b093`. Verified on 2026-10-17 on uncached live pages: `7b4b093`'s message texts
   are served and the old ones are gone. The commit hash itself is inferred from those
   unique texts (Vercel CLI logged out), not read from Vercel. Copy only, so no browser
-  check. P11.S3 (map as a view of `/items`, `?view=map`; `/map` redirects) is
-  implemented and its migration applied, not pushed yet (2026-10-17). Next: deploy
-  and verify P11.S3 on Vercel, then P11.S4 (drop `items_in_bounds` only after that:
-  the previously deployed `/map` calls it), then P11.S5 (performance pass).
+  check. P11.S3 (map as a view of `/items`, `?view=map`; `/map` redirects) deployed:
+  Vercel serves `b10755d` (pushed 2026-10-20, browser check against Vercel 43/43).
+  Next: P11.S4 (drop `items_in_bounds`), then P11.S5 (performance pass).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
