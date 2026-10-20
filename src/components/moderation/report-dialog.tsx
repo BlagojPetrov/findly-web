@@ -27,7 +27,7 @@ import type { ValidationMessage } from "@/lib/validation/messages";
 import {
   REPORT_DETAILS_MAX_LENGTH,
   REPORT_REASONS,
-} from "@/lib/validation/reports";
+} from "@/lib/validation/report-reasons";
 
 const triggerClass = cn(
   buttonVariants({ variant: "ghost", size: "sm" }),

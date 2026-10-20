@@ -57,7 +57,9 @@ status and the next step. Read it before any work.
   check. P11.S3 (map as a view of `/items`, `?view=map`; `/map` redirects) deployed:
   Vercel serves `b10755d` (pushed 2026-10-20, browser check against Vercel 43/43).
   P11.S4 dropped `items_in_bounds()` and `items_location_geom_idx` (migration applied
-  2026-10-20). Next: P11.S5 (performance pass).
+  2026-10-20). P11.S5 (performance pass: lazy signed-in header chunk, Zod out of browser
+  code, deferred item map; Lighthouse mobile 90–92 locally) implemented, not pushed yet.
+  Next: deploy and verify P11.S5 on Vercel, then P11.S6 (end-to-end tests and CI).
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -165,7 +167,7 @@ item_id?, sender_id }`, one per recipient and conversation
   SQL tests that insert messages also create notifications. The bell shows no toast for
   the chat open in a visible tab (`isConversationPath`); message entries link to
   `/messages/<id>` and show the sender (`profiles` public columns).
-  UI: `NotificationBell` (`src/components/notifications/`, in `SiteHeader` with
+  UI: `NotificationBell` (`src/components/notifications/`, in `AccountControls` with
   `key = user id`; first count from `getUnreadNotificationCount`), state and Realtime in
   `useNotifications` (one channel per mount with a unique topic, INSERT/UPDATE filtered
   by `user_id`, batched reloads, session check, cleanup on unmount), rows rendered by
@@ -295,6 +297,15 @@ item_id?, sender_id }`, one per recipient and conversation
   Browser checks use a temporary `…@findly.test` user made admin with SQL. Visiting an
   `/en` page sets the locale cookie for that browser context: check public English
   pages in a separate context.
+- Client bundle (P11.S5): every client component imported by the locale layout lands in
+  every page's entry chunks (Turbopack). Signed-in-only header controls live in
+  `AccountControls`, rendered through `LazyAccountControls` (`next/dynamic` in a Client
+  Component; a Server Component's `dynamic()` does not split client code). Browser code
+  must not import Zod modules: take constants from the Zod-free modules
+  (`@/lib/validation/search-center`, `report-reasons`, `item-limits`; the Zod modules
+  re-export them), and load schemas only on demand with `import()` (`SearchForm`).
+  `@/lib/env` is validated without Zod (`parseEnv`). Check guest JS per page after
+  changes to shared client code.
 - Client components must not format dates, relative times or numbers with `Intl` for
   `mk`: Chromium has no Macedonian `Intl` data (F-30; only `PluralRules`). Use messages
   (e.g. `elapsedSince()` from `@/lib/dates` + ICU plurals, `dayParts()` + a
@@ -363,7 +374,8 @@ item_id?, sender_id }`, one per recipient and conversation
   (even `Marker`) is browser-only: it imports `./base-map` and is exported from
   `@/components/map` (`index.tsx`) with `dynamic(..., { ssr: false, loading: MapLoading })`;
   pages never import react-leaflet. Render maps inside `MapFrame` (label, size via
-  `className`; `isolate` keeps Leaflet's z-indexes under the header). Constants
+  `className`; `isolate` keeps Leaflet's z-indexes under the header; `deferred` mounts the
+  map only near the viewport, used for the item page map below the photos). Constants
   (`DEFAULT_CENTER`, OSM tile URL/attribution) in `@/lib/map`. Markers use `markerIcon`
   (`src/components/map/marker-icon.ts`), passed as `icon`. Image imports from
   `node_modules` are `StaticImageData` in webpack but URL strings in Turbopack (Vercel) and

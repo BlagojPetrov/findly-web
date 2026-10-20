@@ -49,8 +49,9 @@ afterEach(() => {
 });
 
 // The fields as the filter form posts them: empty ones included, in the
-// form's order (not the canonical one).
-function render(mapView: boolean, action = "/items") {
+// form's order (not the canonical one). The map view loads its URL rules
+// with import(), so the click is awaited.
+async function render(mapView: boolean, action = "/items") {
   act(() =>
     root.render(
       <SearchForm action={action} mapView={mapView}>
@@ -67,25 +68,28 @@ function render(mapView: boolean, action = "/items") {
       </SearchForm>,
     ),
   );
-  act(() => container.querySelector("button")!.click());
+  await act(async () => {
+    container.querySelector("button")!.click();
+    await vi.dynamicImportSettled();
+  });
 }
 
 describe("SearchForm", () => {
-  it("goes straight to the canonical map URL in the map view", () => {
-    render(true);
+  it("goes straight to the canonical map URL in the map view", async () => {
+    await render(true);
     expect(push).toHaveBeenCalledWith(
       "/items?q=keys&type=found&category=wallet%2Ckeys&view=map",
     );
     expect(nativeSubmit).not.toHaveBeenCalled();
   });
 
-  it("keeps the locale path", () => {
-    render(true, "/en/items");
+  it("keeps the locale path", async () => {
+    await render(true, "/en/items");
     expect(push.mock.calls[0][0]).toMatch(/^\/en\/items\?/);
   });
 
-  it("submits normally in the list view (the page redirects)", () => {
-    render(false);
+  it("submits normally in the list view (the page redirects)", async () => {
+    await render(false);
     expect(push).not.toHaveBeenCalled();
     expect(nativeSubmit).toHaveBeenCalledOnce();
   });

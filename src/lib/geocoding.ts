@@ -1,5 +1,5 @@
 import type { LatLng } from "@/lib/map";
-import { ITEM_LIMITS } from "@/lib/validation/items";
+import { ITEM_LIMITS } from "@/lib/validation/item-limits";
 
 // Address search and reverse geocoding with OpenStreetMap Nominatim, called
 // from the browser (AD-13). Usage policy: at most 1 request per second, cache

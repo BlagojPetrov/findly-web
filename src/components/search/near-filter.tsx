@@ -14,7 +14,7 @@ import {
   centerParam,
   SEARCH_RADII,
   type SearchRadius,
-} from "@/lib/validation/search";
+} from "@/lib/validation/search-center";
 
 // Radius chosen when a center is set for the first time.
 export const DEFAULT_RADIUS: SearchRadius = 5;

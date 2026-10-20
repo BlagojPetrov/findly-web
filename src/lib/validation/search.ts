@@ -1,6 +1,15 @@
 import { z } from "zod";
 import type { LatLng } from "@/lib/map";
 import { ITEM_TYPES } from "./items";
+import {
+  CENTER_DECIMALS,
+  centerParam,
+  roundCoordinate,
+  SEARCH_RADII,
+  type SearchRadius,
+} from "./search-center";
+
+export { CENTER_DECIMALS, centerParam, SEARCH_RADII, type SearchRadius };
 
 // Filters of the public feed (/items), kept in the URL (§12 URL contract):
 //   ?q=&type=lost|found&category=keys,wallet&status=active|resolved|all
@@ -13,11 +22,6 @@ export const SEARCH_STATUSES = ["active", "resolved", "all"] as const;
 export const SEARCH_SORTS = ["newest", "relevance", "nearest"] as const;
 // How the results are shown: a paged list (default) or a map (P11.S3).
 export const SEARCH_VIEWS = ["list", "map"] as const;
-// Radius choices in km (search_items() accepts up to 50).
-export const SEARCH_RADII = [1, 2, 5, 10, 25, 50] as const;
-// Decimals of the center in the URL (~11 m): enough for a 1 km radius, and a
-// device location is not put into links more precisely than needed.
-export const CENTER_DECIMALS = 4;
 export const SEARCH_LIMITS = {
   queryMax: 100,
   categoriesMax: 20,
@@ -28,7 +32,6 @@ export const SEARCH_LIMITS = {
 
 export type SearchStatus = (typeof SEARCH_STATUSES)[number];
 export type SearchSort = (typeof SEARCH_SORTS)[number];
-export type SearchRadius = (typeof SEARCH_RADII)[number];
 export type SearchView = (typeof SEARCH_VIEWS)[number];
 
 export type SearchFilters = {
@@ -108,12 +111,6 @@ const slugPattern = /^[a-z0-9-]+$/;
 
 // A repeated parameter (?type=lost&type=found) counts with its first value.
 const first = (value: unknown) => (Array.isArray(value) ? value[0] : value);
-
-const roundCoordinate = (value: number) =>
-  Number(value.toFixed(CENTER_DECIMALS));
-
-// A center coordinate as written to the URL ("41.9981", "21.4").
-export const centerParam = (value: number) => String(roundCoordinate(value));
 
 // A coordinate in the URL: a plain decimal number (no "", "1e2", "0x1").
 function coordinate(max: number) {

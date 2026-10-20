@@ -1,17 +1,9 @@
 import { z } from "zod";
 import { todayInAppTimeZone } from "@/lib/dates";
+import { ITEM_LIMITS } from "./item-limits";
 import { msg } from "./messages";
 
-// Limits shared with the forms (maxLength, image count). The database has
-// the same limits as check constraints (migration *_items.sql).
-export const ITEM_LIMITS = {
-  titleMin: 3,
-  titleMax: 100,
-  descriptionMin: 10,
-  descriptionMax: 2000,
-  locationNameMax: 200,
-  images: 5,
-} as const;
+export { ITEM_LIMITS };
 
 export const ITEM_TYPES = ["lost", "found"] as const;
 

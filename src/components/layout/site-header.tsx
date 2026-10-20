@@ -2,10 +2,8 @@ import { LayoutList } from "lucide-react";
 import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
-import { MessagesLink } from "@/components/chat/messages-link";
+import { LazyAccountControls } from "@/components/layout/lazy-account-controls";
 import { LocaleSwitcher } from "@/components/layout/locale-switcher";
-import { NotificationBell } from "@/components/notifications/notification-bell";
-import { UserMenu } from "@/components/layout/user-menu";
 import { buttonVariants } from "@/components/ui/button";
 import { Link } from "@/i18n/navigation";
 import { getCurrentUser } from "@/lib/auth";
@@ -53,26 +51,17 @@ export async function SiteHeader() {
             <LocaleSwitcher />
           </Suspense>
           {user ? (
-            <>
-              {/* A new key per account: no state or subscription of the
-                  previous user survives an account switch. */}
-              <MessagesLink
-                key={`messages-${user.id}`}
-                userId={user.id}
-                initialUnread={unreadMessages}
-              />
-              <NotificationBell
-                key={user.id}
-                userId={user.id}
-                initialUnread={unread}
-              />
-              <UserMenu
-                displayName={user.profile.display_name}
-                email={user.email}
-                avatarPath={user.profile.avatar_path}
-                isAdmin={user.profile.role === "admin"}
-              />
-            </>
+            // Its own chunk: guests never load the Supabase client,
+            // Realtime or the notification code (P11.S5).
+            <LazyAccountControls
+              userId={user.id}
+              displayName={user.profile.display_name}
+              email={user.email}
+              avatarPath={user.profile.avatar_path}
+              isAdmin={user.profile.role === "admin"}
+              unread={unread}
+              unreadMessages={unreadMessages}
+            />
           ) : (
             <>
               <Link

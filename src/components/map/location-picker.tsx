@@ -23,7 +23,7 @@ import {
 } from "@/lib/geocoding";
 import { DEFAULT_CENTER, DEFAULT_ZOOM, type LatLng } from "@/lib/map";
 import { cn } from "@/lib/utils";
-import { ITEM_LIMITS } from "@/lib/validation/items";
+import { ITEM_LIMITS } from "@/lib/validation/item-limits";
 import type { ValidationMessage } from "@/lib/validation/messages";
 import { LocationPickerMap, MapFrame } from "./index";
 import type { MapViewTarget } from "./location-picker-map";

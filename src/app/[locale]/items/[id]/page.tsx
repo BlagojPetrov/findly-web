@@ -406,6 +406,7 @@ export default async function ItemPage({
           <MapFrame
             label={t(`detail.mapLabel.${item.type}`)}
             className="aspect-4/3 sm:aspect-video"
+            deferred
           >
             <ItemMap
               point={point}

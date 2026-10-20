@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { MapPinOff } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { MapErrorBoundary } from "./map-error-boundary";
 
@@ -58,18 +58,40 @@ function MapUnavailable() {
 // panes and controls use z-index up to 1000 and would otherwise cover the
 // sticky header. A map that fails (code not loaded, Leaflet error) is replaced
 // by a message; the rest of the page keeps working.
+// `deferred`: the map (its code and tiles) loads only when the frame comes
+// near the viewport, e.g. below the photos on a phone, so it does not compete
+// with the page's main content (P11.S5).
 export function MapFrame({
   label,
   className,
+  deferred = false,
   children,
 }: {
   // Accessible name of the map region.
   label: string;
   className?: string;
+  deferred?: boolean;
   children: ReactNode;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(!deferred);
+
+  useEffect(() => {
+    const frame = ref.current;
+    if (visible || !frame) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) setVisible(true);
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, [visible]);
+
   return (
     <div
+      ref={ref}
       role="region"
       aria-label={label}
       className={cn(
@@ -77,9 +99,13 @@ export function MapFrame({
         className,
       )}
     >
-      <MapErrorBoundary fallback={<MapUnavailable />}>
-        {children}
-      </MapErrorBoundary>
+      {visible ? (
+        <MapErrorBoundary fallback={<MapUnavailable />}>
+          {children}
+        </MapErrorBoundary>
+      ) : (
+        <MapLoading />
+      )}
     </div>
   );
 }

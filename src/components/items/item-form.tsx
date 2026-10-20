@@ -19,7 +19,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { ActionResult } from "@/lib/action-result";
 import type { LatLng } from "@/lib/map";
-import { ITEM_LIMITS } from "@/lib/validation/items";
+import { ITEM_LIMITS } from "@/lib/validation/item-limits";
 import type { ValidationMessage } from "@/lib/validation/messages";
 
 type ItemType = "lost" | "found";

@@ -1,6 +1,6 @@
 import { env } from "@/lib/env";
 import type { EncodedImage } from "@/lib/images";
-import { ITEM_LIMITS } from "@/lib/validation/items";
+import { ITEM_LIMITS } from "@/lib/validation/item-limits";
 
 // Item photos live in the public "item-images" bucket at
 // "<user id>/<item id>/<random uuid>.<ext>" (P3.S2). The item id is generated

@@ -1,19 +1,12 @@
 import { z } from "zod";
 import { msg } from "./messages";
+import {
+  REPORT_DETAILS_MAX_LENGTH,
+  REPORT_REASONS,
+  type ReportReason,
+} from "./report-reasons";
 
-// Reasons a user can give when flagging a report (enum report_reason, §18).
-export const REPORT_REASONS = [
-  "spam",
-  "inappropriate",
-  "fraud",
-  "duplicate",
-  "other",
-] as const;
-
-export type ReportReason = (typeof REPORT_REASONS)[number];
-
-// Same limit as the database check on reports.details.
-export const REPORT_DETAILS_MAX_LENGTH = 500;
+export { REPORT_DETAILS_MAX_LENGTH, REPORT_REASONS, type ReportReason };
 
 // A signed-in user flags another user's report for the moderators (§18).
 // The reporter comes from the session. Details are optional: line breaks
