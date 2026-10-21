@@ -58,8 +58,10 @@ status and the next step. Read it before any work.
   Vercel serves `b10755d` (pushed 2026-10-20, browser check against Vercel 43/43).
   P11.S4 dropped `items_in_bounds()` and `items_location_geom_idx` (migration applied
   2026-10-20). P11.S5 (performance pass: lazy signed-in header chunk, Zod out of browser
-  code, deferred item map; Lighthouse mobile 90–92 locally) implemented, not pushed yet.
-  Next: deploy and verify P11.S5 on Vercel, then P11.S6 (end-to-end tests and CI).
+  code, deferred item map) deployed: Vercel serves `6298a52` (pushed 2026-10-21, browser
+  check against Vercel 23/23, Lighthouse mobile 87–95). P11.S6 (Playwright E2E, local
+  only, 11/11; GitHub Actions CI) implemented, not committed; CI needs the repository
+  variables before its first run. Next: finish P11.S6, then P11.S7.
 - Open manual items: minimum password length 8 (F-07); decision on locale
   detection (F-13); optional leaked password protection (F-19).
 - The dev project has **real accounts of the project owner** (email and Google). Test cleanup
@@ -117,6 +119,16 @@ status and the next step. Read it before any work.
   `// @vitest-environment jsdom`, rendered with `react-dom/client` + `act` inside
   `NextIntlClientProvider` (mk messages); mock server actions, `@/i18n/navigation` and
   browser-only parts (pickers, maps). Example: `src/components/items/item-form.test.tsx`.
+- E2E (P11.S6): Playwright specs in `e2e/` against `next start` on port 3100 (run
+  `npm run build` first; installed Edge, `E2E_CHANNEL` to change), one worker, against
+  the linked dev project. Setup/cleanup SQL only through `e2e/support/db.ts` (Supabase
+  CLI); users from `createUser()` (`e2e-<run>-…@findly.test`, confirmed, no email) and
+  `signIn()`; only the sign-up test sends an email (`findly-e2e-<run>@mailinator.com`).
+  The teardown deletes those patterns and fails the run if a real user got a
+  notification or a test report matched a real one: test reports must not be able to
+  match real ones (category, place, made-up words). Never run E2E in CI. CI
+  (`.github/workflows/ci.yml`): lint, typecheck, unit tests, build; needs the
+  `NEXT_PUBLIC_*` repository variables.
 - Forms: React resets a form after every action. Controlled radios/checkboxes whose
   state did not change get unchecked by that reset: remount them after each result
   (`key` = result counter) so React writes the current value as the default (F-24). Browser checks: headless Edge via
@@ -447,6 +459,7 @@ item_id?, sender_id }`, one per recipient and conversation
 | `npm run dev` / `build` / `start`        | Next.js                                        |
 | `npm run lint`, `npm run typecheck`      | ESLint, `next typegen && tsc --noEmit`         |
 | `npm test` / `npm run test:watch`        | Vitest unit tests                              |
+| `npm run test:e2e`                       | Playwright E2E (after `npm run build`; local)  |
 | `npm run db:new -- <name>`               | New migration in `supabase/migrations/`        |
 | `npm run db:push`                        | Apply migrations to the linked project         |
 | `npm run db:types`                       | Regenerate `src/types/database.ts` (commit it) |
